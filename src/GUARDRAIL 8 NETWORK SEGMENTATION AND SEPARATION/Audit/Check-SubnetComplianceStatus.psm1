@@ -18,7 +18,10 @@ function Get-SubnetComplianceInformation {
         $LogType="GuardrailsCompliance",
         [Parameter(Mandatory=$false)]
         [string]
-        $ExcludedSubnets
+        $ExcludedSubnets,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime
     )
     #module for Tags handling
     #import-module '..\..\GUARDRAIL COMMON\Get-Tags.psm1'
@@ -55,9 +58,14 @@ function Get-SubnetComplianceInformation {
                             $ComplianceStatus=$false
                             $Comments="No NSG is present."
                             $MitigationCommands=@"
+# https://docs.microsoft.com/en-us/powershell/module/az.network/set-azvirtualnetworksubnetconfig?view=azps-8.0.0#2-add-a-network-security-group-to-a-subnet
 #Creates NSG Resource for subnet $($subnet.Name)
 Select-azsubscription $($sub.SubscriptionId)
-New-AzNetworkSecurityGroup -Name '$($subnet.Name)-nsg' -ResourceGroupName $vnet.ResourceGroupName -Location $VNet.Location
+`$nsg=New-AzNetworkSecurityGroup -Name '$($subnet.Name)-nsg' -ResourceGroupName $($vnet.ResourceGroupName) -Location $($VNet.Location)
+# Assign NSG to subnet
+`$subnet=(Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet.Name)).Subnets | Where-Object Name -eq $($subnet.Name)
+`$subnet.NetworkSecurityGroup = `$nsg
+Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet.Name) | set-azvirtual-network
 "@
                             if ($null -ne $subnet.NetworkSecurityGroup)
                             {
@@ -78,10 +86,10 @@ New-AzNetworkSecurityGroup -Name '$($subnet.Name)-nsg' -ResourceGroupName $vnet.
                                         $Comments="NSG is present but not properly configured (Missing Deny all last Rule)."
                                         $MitigationCommands=@"
 Select-azsubscription $($sub.SubscriptionId)
-$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
-$RuleParams = @{
+`$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
+`$RuleParams = @{
     'Name'                     = 'Denyall'
-    'NetworkSecurityGroup'     = $nsg
+    'NetworkSecurityGroup'     = `$nsg
     'Protocol'                 = '*'
     'Direction'                = 'Inbound'
     'Priority'                 = 4096
@@ -101,10 +109,10 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                     $Comments="NSG is present but not properly configured (Missing Custom Rules)."
                                     $MitigationCommands=@"
 Select-azsubscription $($sub.SubscriptionId)
-$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
-$RuleParams = @{
+`$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
+`$RuleParams = @{
     'Name'                     = 'Denyall'
-    'NetworkSecurityGroup'     = $nsg
+    'NetworkSecurityGroup'     = `$nsg
     'Protocol'                 = '*'
     'Direction'                = 'Inbound'
     'Priority'                 = 4096
@@ -126,6 +134,7 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                 ItemName = "Segmentation"
                                 ControlName = $ControlName
                                 MitigationCommands=$MitigationCommands
+                                ReportTime = $ReportTime
                             }
                             $SubnetList.add($SubnetObject) | Out-Null
 
@@ -167,6 +176,7 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                             Comments = $Comments
                             ItemName = "Separation"
                             ControlName = $ControlName
+                            ReportTime = $ReportTime
                             MitigationCommands=$MitigationCommands
                         }
                         $SubnetList.add($SubnetObject) | Out-Null

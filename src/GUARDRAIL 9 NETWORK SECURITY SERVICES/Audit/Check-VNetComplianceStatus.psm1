@@ -17,7 +17,10 @@ function Get-VNetComplianceInformation {
         $LogType="GuardrailsCompliance",
         [Parameter(Mandatory=$false)]
         [string]
-        $ExcludedVNets
+        $ExcludedVNets,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime
     )
 [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
 
@@ -52,12 +55,17 @@ foreach ($sub in $subs)
                     $ComplianceStatus = $false
                     $Comments="DDos Protection not enabled."
                     $MitigationCommands=@"
+                    # https://docs.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview
+                    # Selects Subscription
                     Select-azsubscription $($sub.SubscriptionId)
-                    $plan=new-azddosProtectionPlan -ResourceGroupName $($Vnet.ResourceGroupName) -Name '$($Vnet.Name)-plan' -Location '$($vnet.Location)'
-                    $vnet=Get-AzVirtualNetwork -Name $($vnet.Name) -ResourceGroupName $($Vnet.ResourceGroupName)
-                    $vnet.EnableDdosProtection=$true
-                    $vnet.DdosProtectionPlan.Id=$plan.id
-                    Set-azvirtualNetwork -VirtualNetwork $vnet
+                    # Create a new DDos Plan
+                    `$plan=new-azddosProtectionPlan -ResourceGroupName $($Vnet.ResourceGroupName) -Name '$($Vnet.Name)-plan' -Location '$($vnet.Location)'
+                    `$vnet=Get-AzVirtualNetwork -Name $($vnet.Name) -ResourceGroupName $($Vnet.ResourceGroupName)
+                    #change DDos configuration
+                    `$vnet.EnableDdosProtection=$true
+                    `$vnet.DdosProtectionPlan.Id=`$plan.id
+                    #Apply configuration
+                    Set-azvirtualNetwork -VirtualNetwork `$vnet
 "@
                 }
                 # Create PSOBject with Information.
@@ -69,6 +77,7 @@ foreach ($sub in $subs)
                     ItemName = "VNet DDos configuration"
                     ControlName = $ControlName
                     MitigationCommands=$MitigationCommands
+                    ReportTime = $ReportTime
                 }
                 $VNetList.add($VNetObject) | Out-Null                
             }
