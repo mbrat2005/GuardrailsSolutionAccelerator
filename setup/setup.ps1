@@ -213,8 +213,7 @@ catch {"Error adding WS secret to KV.";break}
 #endregion
 #region Copy modules definition to recently created Storage account
 Import-Module ./blob-functions.psm1
-copy-toBlob -FilePath ./modules.json -storageaccountName $storageaccountName -ResourceGroupName $resourceGroup -force
-
+copy-toBlob -FilePath ./modules.json -storageaccountName $storageaccountName -resourcegroup $resourceGroup -force -containerName "configuration"
 #endregion
 
 #region Import main runbook
