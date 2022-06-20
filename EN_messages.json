@@ -7,7 +7,7 @@
         "Id" : "",
         "Module": "Check-BreakGlassAccountProcedure",
         "Description":"File not found",
-        "Value":"StorageAccountName"
+        "Value":"Excluding {0} based on tagging."
       }
     ]
   }
