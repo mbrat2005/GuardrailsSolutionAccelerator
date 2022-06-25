@@ -25,7 +25,7 @@ param (
 # test
 #Configuration Variables
 $version='1.0'
-$releaseDate='2002-05-06'
+$releaseDate='2022-07-01' #yyyy-mm-dd
 $randomstoragechars=-join ((97..122) | Get-Random -Count 4 | ForEach-Object {[char]$_})
 Write-Output "Reading Config file:"
 try {
@@ -35,7 +35,8 @@ catch {
     "Error reading config file."
     break
 }
-$tenantIDtoAppend="-"+$($env:ACC_TID).Split("-")[0]
+#$tenantIDtoAppend="-"+$($env:ACC_TID).Split("-")[0]
+$tenantIDtoAppend="-"+$((Get-AzContext).Tenant.Id).Split("-")[0]
 $keyVaultName=$config.keyVaultName+$tenantIDtoAppend
 $resourcegroup=$config.resourcegroup+$tenantIDtoAppend
 $region=$config.region
@@ -51,6 +52,11 @@ $bga2=$config.SecondBreakGlassAccountUPN #Break glass account 2
 $PBMMPolicyID=$config.PBMMPolicyID
 $AllowedLocationPolicyId=$config.AllowedLocationPolicyId
 $DepartmentNumber=$config.DepartmentNumber
+if ($config.SecurityLAWResourceId.split("/").Count -ne 9 -or $config.HealthLAWResourceId.Split("/").Count -ne 9)
+{
+    Write-Output "Error in SecurityLAWResourceId or HealthLAWResourceId ID. Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
+    Break
+}
 
 #Other Variables
 $mainRunbookName="main"
@@ -160,6 +166,7 @@ $parameterTemplate=$parameterTemplate.Replace("%SecurityLAWResourceId%",$config.
 $parameterTemplate=$parameterTemplate.Replace("%HealthLAWResourceId%",$config.HealthLAWResourceId)
 $parameterTemplate=$parameterTemplate.Replace("%version%",$version)
 $parameterTemplate=$parameterTemplate.Replace("%releasedate%",$releaseDate)
+$parameterTemplate=$parameterTemplate.Replace("%Locale%",$config.Locale)
 #writes the file
 $parameterTemplate | out-file .\parameters.json -Force
 #endregion
@@ -203,6 +210,10 @@ try {
     $secret = Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceKey" -SecretValue $secretvalue
 }
 catch {"Error adding WS secret to KV.";break}
+#endregion
+#region Copy modules definition to recently created Storage account
+Import-Module ./blob-functions.psm1
+copy-toBlob -FilePath ./modules.json -storageaccountName $storageaccountName -resourcegroup $resourceGroup -force -containerName "configuration"
 #endregion
 
 #region Import main runbook
