@@ -82,6 +82,23 @@ Get-AzPolicySetDefinition | Select-Object Name -ExpandProperty Properties | sele
 
 Get-AzPolicyDefinition | Select-Object Name -ExpandProperty Properties | select Name,DisplayName | Out-GridView`
 ```
+
+## Adding Tags to the Resource Group
+
+In many organizations, Tags may be required in order for Resource Groups to be created. The Guardrails setup uses a file called `tags.json` to create tags for the Resource Group (only).
+
+The only default tag is:
+    
+    {
+
+        "Name":"Solution",
+
+        "Value": "Guardrails Accelerator"
+
+    }
+
+Add tags as required per your policies in a json array format.
+
 ## Deployment
 
 If the deployment is being done using the Azure Cloud Shell, the currentuserUPN parameter below refers to the user logged in. This is required when using the cloud shell.
