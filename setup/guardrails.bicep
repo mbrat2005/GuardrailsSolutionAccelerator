@@ -15,8 +15,9 @@ param deployLAW bool = true
 param CBSSubscriptionName string 
 param SecurityLAWResourceId string
 param HealthLAWResourceId string
-param CustomModulesBaseURL string = 'https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/Final/psmodules'
+param CustomModulesBaseURL string = 'https://github.com/Azure/GuardrailsSolutionAccelerator/raw/main/psmodules'
 param DeployTelemetry bool = true
+param Locale string = 'EN'
 param version string
 param releaseDate string 
 var containername = 'guardrailsstorage'
@@ -542,15 +543,6 @@ resource module5 'modules' ={
       }
     }
   }
-resource module6 'modules' ={
-    name: 'Check-GuardRailsConditionalAccessPolicie'
-    properties: {
-      contentLink: {
-        uri: '${CustomModulesBaseURL}/Check-GuardRailsConditionalAccessPolicie.zip'
-        version: '1.0.0'
-      }
-    }
-  }
 resource module7 'modules' ={
     name: 'Check-MonitorAccount'
     properties: {
@@ -658,7 +650,7 @@ resource module14 'modules' ={
     properties: {
       contentLink: {
         uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.2.7.2.nupkg'
-        version: '0.3.0'
+        version: '2.7.2'
       }
     }
   }
@@ -680,7 +672,16 @@ resource module14 'modules' ={
       }
     }
   }
-  resource variable1 'variables' = {
+  resource module21 'modules' ={
+    name: 'GR-ComplianceChecks'
+    properties: {
+      contentLink: {
+        uri: '${CustomModulesBaseURL}/GR-ComplianceChecks.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+resource variable1 'variables' = {
     name: 'KeyvaultName'
     properties: {
         isEncrypted: false
@@ -763,13 +764,20 @@ resource module14 'modules' ={
     'properties': {
       'isEncrypted': false
       'value': '"${SecurityLAWResourceId}"'
+    }
   }
-  }
-  resource variable14 'variables' = {
+  resource variable13 'variables' = {
     name: 'HealthLAWResourceId'
     'properties': {
       'isEncrypted': false
       'value': '"${HealthLAWResourceId}"'
+    }
+  }
+  resource variable15 'variables' = {
+    name: 'GuardRailsLocale'
+    'properties': {
+      'isEncrypted': false
+      'value': '"${Locale}"'
   }
   }
 }
@@ -862,7 +870,7 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
       }
     }
     resource container2 'containers'={
-      name: 'psmodules'
+      name: 'configuration'
       properties: {
         immutableStorageWithVersioning: {
             enabled: false
@@ -874,5 +882,3 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
     }
   }
 }
-
-

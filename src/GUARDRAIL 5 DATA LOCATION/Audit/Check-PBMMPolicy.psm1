@@ -8,7 +8,10 @@ function new-customObject {
         [bool] $ComplianceStatus,
         [string] $Comments,
         [string] $ItemName,
-        [string] $test
+        [string] $test,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime
     )
     $tempObject=[PSCustomObject]@{ 
         Type = $Type
@@ -19,28 +22,36 @@ function new-customObject {
         Comments = $Comments
         ItemName = $ItemName
         ControlName = $CtrlName
+        ReportTime = $ReportTime
     }
     return $tempObject
 }
 function update-object 
 {
     param (
-        [Object] $object, [string] $comments, [string] $ControlName, [string] $ItemName, [bool] $ComplianceStatus
+        [Object] $object, [string] $comments, [string] $ControlName, [string] $ItemName, [bool] $ComplianceStatus,
+        [string] $ReportTime
     )
 
     $object | Add-Member -MemberType NoteProperty -Name Comments -Value $comments
     $object | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $ComplianceStatus
     $object | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force   
     $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName -Force
+    $object | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
     return $object
 }
 function Test-ExemptionExists {
     param (
-        [object] $object, [string] $ControlName, [string] $ItemName, [string] $ScopeId, [array] $requiredPolicyExemptionIds
+        [object] $object,
+        [string] $ControlName,
+        [string] $ItemName,
+        [string] $ScopeId,
+        [array]  $requiredPolicyExemptionIds,
+        [string] $ReportTime
     )
     $newObject=new-customObject -Type $object.Type -Name $object.Name -DisplayName $object.DisplayName `
-    -Id $object.Id -ComplianceStatus $true -Comments "" -ItemName $ItemName `
-    -CtrlName $ControlName
+    -Id $object.Id -ComplianceStatus $true -Comments "" -ItemName $ItemName  `
+    -CtrlName $ControlName -ReportTime $ReportTime
     $exemptionsIds=(Get-AzPolicyExemption -Scope $ScopeId).Properties.PolicyDefinitionReferenceIds
     if ($null -ne $exemptionsIds)
     {
@@ -61,9 +72,23 @@ function Test-ExemptionExists {
 
 function Verify-PBMMPolicy {
     param (
-            [string] $ControlName, [string] $CtrName6, [string] $CtrName7,
-            [string]$ItemName,[string]$ItemName6, [string]$ItemName7, [string] $PolicyID, `
-            [string] $WorkSpaceID, [string] $workspaceKey, [string] $LogType
+            [string] $ControlName,
+            [string] $CtrName6,
+            [string] $CtrName7,
+            [string]$ItemName,
+            [string]$ItemName6, 
+            [string]$ItemName7, 
+            [string] $PolicyID, `
+            [string] $WorkSpaceID,
+            [string] $workspaceKey,
+            [string] $LogType,
+            [hashtable] $msgTable,
+            [Parameter(Mandatory=$true)]
+            [string]
+            $ReportTime,
+            [Parameter(Mandatory=$true)]
+            [string]
+            $CBSSubscriptionName
     )
     [System.Object] $RootMG = $null
     [string] $PolicyID = $policyID
@@ -72,12 +97,6 @@ function Verify-PBMMPolicy {
     [PSCustomObject] $SubscriptionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $CompliantList = New-Object System.Collections.ArrayList
     [PSCustomObject] $NonCompliantList = New-Object System.Collections.ArrayList
-    [string] $Comment1 = "The Policy or Initiative is not assigned on the "
-    [string] $Comment2 = " is excluded from the scope of the assignment"
-    [string] $Comment3 = "Compliant"
-    [string] $Comment4 = "The Policy or Initiative is not assigned on the Root Management Groups"
-    [string] $Comment5="This Root Management Groups is excluded from the scope of the assignment"
-    [string] $Comment6="PBMM Initiative is not applied."
 
     $gr6RequiredPolicies=@("TransparentDataEncryptionOnSqlDatabasesShouldBeEnabled","DiskEncryptionShouldBeAppliedOnVirtualMachines")
     $gr7RequiredPolicies=@("FunctionAppShouldOnlyBeAccessibleOverHttps","WebApplicationShouldOnlyBeAccessibleOverHttps", "ApiAppShouldOnlyBeAccessibleOverHttps", "OnlySecureConnectionsToYourRedisCacheShouldBeEnabled","SecureTransferToStorageAccountsShouldBeEnabled")
@@ -94,54 +113,54 @@ function Verify-PBMMPolicy {
         foreach ($Children in $items.Children ) {
             foreach ($c in $Children) {
                 Write-Output "Children: $($c.DisplayName)"
-                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c))) {
-                    [string]$type = "subscription"
+                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c)) -and $c.DisplayName -ne $CBSSubscriptionName) {
+                    [string]$type = $msgTable.subscription
                     $SubscriptionList.Add($c)
                     $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID
                     If ($null -eq $AssignedPolicyList) {
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $false `
-                        -Comments "$Comment1$type" `
+                        -Comments $($msgTable.policyNotAssigned -f $type) `
                         -ItemName $ItemName `
-                        -CtrlName $ControlName
+                        -CtrlName $ControlName -ReportTime $ReportTime
                         $NonCompliantList.add($c)
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName -ComplianceStatus $false `
-                            -Comments $Comment6 `
+                            -Comments $msgTable.pbmmNotApplied `
                             -ItemName $ItemName6 `
-                            -CtrlName $CtrName6
+                            -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName `
                             -ComplianceStatus $false `
-                            -Comments $Comment6 `
+                            -Comments $msgTable.pbmmNotApplied `
                             -ItemName $ItemName7 `
-                            -CtrlName $CtrName7
+                            -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $false `
-                        -Comments "$Comment1$type" `
+                        -Comments $($msgTable.policyNotAssigned -f $type) `
                         -ItemName $ItemName `
-                        -CtrlName $ControlName
+                        -CtrlName $ControlName -ReportTime $ReportTime
                         $NonCompliantList.add($c)  
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName -ComplianceStatus $false `
-                            -Comments $Comment6 `
+                            -Comments $msgTable.pbmmNotApplied `
                             -ItemName $ItemName6 `
-                            -CtrlName $CtrName6
+                            -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object = new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                             -DisplayName $c.DisplayName `
                             -ComplianceStatus $false `
-                            -Comments $Comment6 `
+                            -Comments $msgTable.pbmmNotApplied `
                             -ItemName $ItemName7 `
-                            -CtrlName $CtrName7
+                            -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     else {
@@ -149,13 +168,14 @@ function Verify-PBMMPolicy {
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $true `
                         -CtrlName $ControlName `
-                        -Comments $Comment3 `
+                        -Comments $msgTable.isCompliant `
                         -ItemName $ItemName `
-                        -Test $ControlName
+                        -Test $ControlName -ReportTime $ReportTime
                         $CompliantList.add($c) # it has PBMM, fine, but has anything been exempted and is related to GR6 or GR7?
                         #At this point the PBMM Initiative has been found and is applied at that scope.
                         #The funcion tests and updates the object with the proper status and control name.
-                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies
+                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies -ReportTime $ReportTime
                         if ($c2.ComplianceStatus)
                         {
                             $CompliantList.add($c2)
@@ -163,7 +183,8 @@ function Verify-PBMMPolicy {
                         else {
                             $NonCompliantList.add($c2) 
                         }
-                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies
+                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies -ReportTime $ReportTime
                         if ($c3.ComplianceStatus)
                         {
                             $CompliantList.add($c3)
@@ -174,56 +195,69 @@ function Verify-PBMMPolicy {
                     }
                 }
                 elseif ($c.Type -like "*managementGroups*" -and (-not $MGList.Contains($c)) ) {
-                    [string]$type = "Management Groups"
+                    [string]$type = $msgTable.managementGroup
                     $MGList.Add($c)
                     $AssignedPolicyList = Get-AzPolicyAssignment -scope $C.Id -PolicyDefinitionId $PolicyID
                     If ($null -eq $AssignedPolicyList) {
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name -DisplayName $c.DisplayName `
-                        -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -Comments "$Comment1$type"
+                        -CtrlName $ControlName `
+                        -ComplianceStatus $false `
+                        -ItemName $ItemName `
+                        -Comments $($msgTable.policyNotAssigned -f $type) `
+                        -ReportTime $ReportTime
                         $NonCompliantList.add($c)
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $false `
-                        -Comments $Comment6 `
+                        -Comments $msgTable.pbmmNotApplied `
                         -ItemName $ItemName6 `
-                        -CtrlName $CtrName6
+                        -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $false `
-                        -Comments $Comment6 `
+                        -Comments $msgTable.pbmmNotApplied `
                         -ItemName $ItemName7 `
-                        -CtrlName $CtrName7
+                        -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name -DisplayName $c.DisplayName `
-                        -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -Comments "$type$Comment2"
+                        -CtrlName $ControlName `
+                        -ComplianceStatus $false `
+                        -ItemName $ItemName `
+                        -Comments $($msgTable.excludedFromScope -f $type) `
+                        -ReportTime $ReportTime
                         $NonCompliantList.add($c)
                         # the lines below create an entry for modules 6 and 7
                         $GR6Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName `
                         -ComplianceStatus $false `
-                        -Comments $Comment6 `
+                        -Comments $msgTable.pbmmNotApplied `
                         -ItemName $ItemName6 `
-                        -CtrlName $CtrName6
+                        -CtrlName $CtrName6 -ReportTime $ReportTime
                         $NonCompliantList.add($GR6Object)
                         $GR7Object=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name `
                         -DisplayName $c.DisplayName -ComplianceStatus $false `
-                        -Comments $Comment6 `
+                        -Comments $msgTable.pbmmNotApplied `
                         -ItemName $ItemName7 `
-                        -CtrlName $CtrName7
+                        -CtrlName $CtrName7 -ReportTime $ReportTime
                         $NonCompliantList.add($GR7Object)
                     }
                     else {       
                         $c=new-customObject -Type $c.Type -Id $c.Id -Name $c.Name -DisplayName $c.DisplayName `
-                        -CtrlName $ControlName -ComplianceStatus $true -ItemName $ItemName -Comments $Comment3
+                        -CtrlName $ControlName `
+                        -ComplianceStatus $true `
+                        -ItemName $ItemName `
+                        -Comments $msgTable.isCompliant `
+                        -ReportTime $ReportTime
                         $CompliantList.add($c)
                         # it has PBMM, fine, but has anything been exempted and is related to GR6 or GR7?
                         #At this point the PBMM Initiative has been found and is applied at that scope.
                         #The funcion tests and updates the object with the proper status and control name.
-                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies
+                        $c2=Test-ExemptionExists -object $c -ControlName $CtrName6 -ItemName $ItemName6 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr6RequiredPolicies -ReportTime $ReportTime
                         if ($c2.ComplianceStatus)
                         {
                             $CompliantList.add($c2)
@@ -231,7 +265,8 @@ function Verify-PBMMPolicy {
                         else {
                             $NonCompliantList.add($c2) 
                         }
-                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies
+                        $c3=Test-ExemptionExists -object $c -ControlName $CtrName7 -ItemName $ItemName7 `
+                        -ScopeId $c.Id -requiredPolicyExemptionIds $gr7RequiredPolicies -ReportTime $ReportTime
                         if ($c3.ComplianceStatus)
                         {
                             $CompliantList.add($c3)
@@ -248,38 +283,39 @@ function Verify-PBMMPolicy {
     If ($null -eq $AssignedPolicyList) {
         Write-Output "RootMG: $($RootMG.DisplayName)"
         $RootMG2=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -comments $Comment4 -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName
+        -comments $msgTable.policyNotAssignedRootMG -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -ReportTime $ReportTime
         $NonCompliantList.add($RootMG2)
         # the lines below create an entry for modules 6 and 7
         $GR6Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName6 `
-        -CtrlName $CtrName6
+        -ComplianceStatus $false -Comments $msgTable.pbmmNotApplied -ItemName $ItemName6 `
+        -CtrlName $CtrName6 -ReportTime $ReportTime
         $NonCompliantList.add($GR6Object)
         $GR7Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName7 `
-        -CtrlName $CtrName7
+        -ComplianceStatus $false -Comments $msgTable.pbmmNotApplied -ItemName $ItemName7 `
+        -CtrlName $CtrName7 -ReportTime $ReportTime
         $NonCompliantList.add($GR7Object)
     }
     elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
         $RootMG2=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -comments $Comment5 -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName
+        -comments $msgTable.rootMGExcluded -CtrlName $ControlName -ComplianceStatus $false -ItemName $ItemName -ReportTime $ReportTime
         $NonCompliantList.add($RootMG2)
         # the lines below create an entry for modules 6 and 7
         $GR6Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName6 `
-        -CtrlName $CtrName6
+        -ComplianceStatus $false -Comments $msgTable.pbmmNotApplied -ItemName $ItemName6 `
+        -CtrlName $CtrName6 -ReportTime $ReportTime
         $NonCompliantList.add($GR6Object)
         $GR7Object=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -ComplianceStatus $false -Comments $Comment6 -ItemName $ItemName7 `
-        -CtrlName $CtrName7
+        -ComplianceStatus $false -Comments $msgTable.pbmmNotApplied -ItemName $ItemName7 `
+        -CtrlName $CtrName7 -ReportTime $ReportTime
         $NonCompliantList.add($GR7Object)
     }
     else {       
         $RootMG1=new-customObject -Type $RootMG.Type -Id $RootMG.Id -Name $RootMG.Name -DisplayName $RootMG.DisplayName `
-        -comments $Comment3 -CtrlName $ControlName -ComplianceStatus $true -ItemName $ItemName
+        -comments $msgTable.isCompliant -CtrlName $ControlName -ComplianceStatus $true -ItemName $ItemName -ReportTime $ReportTime
         $CompliantList.add($RootMG1) 
         # add detection of exemptions
-        $RootMG2=Test-ExemptionExists -object $RootMG -ControlName $CtrName6 -ItemName $ItemName6 -ScopeId $RootMG -requiredPolicyExemptionIds $gr6RequiredPolicies
+        $RootMG2=Test-ExemptionExists -object $RootMG -ControlName $CtrName6 -ItemName $ItemName6 `
+        -ScopeId $RootMG -requiredPolicyExemptionIds $gr6RequiredPolicies -ReportTime $ReportTime
         if ($RootMG2.ComplianceStatus)
         {
             $CompliantList.add($RootMG2)
@@ -287,7 +323,8 @@ function Verify-PBMMPolicy {
         else {
             $NonCompliantList.add($RootMG2) 
         }
-        $RootMG3=Test-ExemptionExists -object $RootMG -ControlName $CtrName7 -ItemName $ItemName6 -ScopeId $RootMG.Id -requiredPolicyExemptionIds $gr7RequiredPolicies
+        $RootMG3=Test-ExemptionExists -object $RootMG -ControlName $CtrName7 -ItemName $ItemName6 `
+        -ScopeId $RootMG.Id -requiredPolicyExemptionIds $gr7RequiredPolicies -ReportTime $ReportTime
         if ($RootMG3.ComplianceStatus)
         {
             $CompliantList.add($RootMG3)
@@ -328,10 +365,10 @@ function Verify-PBMMPolicy {
 }
 
 # SIG # Begin signature block
-# MIInswYJKoZIhvcNAQcCoIInpDCCJ6ACAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIInpwYJKoZIhvcNAQcCoIInmDCCJ5QCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDkieZSLbv51D9t
-# KJkNEL1fo0yT8uVfECkQIgJY9ESzl6CCDYUwggYDMIID66ADAgECAhMzAAACU+OD
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAbts4AIbrz/271
+# fAfjALkVN7abw4WyAjWUDvfV6zDe8qCCDYUwggYDMIID66ADAgECAhMzAAACU+OD
 # 3pbexW7MAAAAAAJTMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -403,141 +440,141 @@ function Verify-PBMMPolicy {
 # BL7fQccOKO7eZS/sl/ahXJbYANahRr1Z85elCUtIEJmAH9AAKcWxm6U/RXceNcbS
 # oqKfenoi+kiVH6v7RyOA9Z74v2u3S5fi63V4GuzqN5l5GEv/1rMjaHXmr/r8i+sL
 # gOppO6/8MO0ETI7f33VtY5E90Z1WTk+/gFcioXgRMiF670EKsT/7qMykXcGhiJtX
-# cVZOSEXAQsmbdlsKgEhr/Xmfwb1tbWrJUnMTDXpQzTGCGYQwghmAAgEBMIGVMH4x
+# cVZOSEXAQsmbdlsKgEhr/Xmfwb1tbWrJUnMTDXpQzTGCGXgwghl0AgEBMIGVMH4x
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
 # b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01p
 # Y3Jvc29mdCBDb2RlIFNpZ25pbmcgUENBIDIwMTECEzMAAAJT44Pelt7FbswAAAAA
 # AlMwDQYJYIZIAWUDBAIBBQCggbAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIGiA
-# LzNb/PXYY5LqCErDAykcbMxwa/3Y3yEV+vgyXlHOMEQGCisGAQQBgjcCAQwxNjA0
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIM46
+# 5Jq02n0As4rmaECR/HNhO0qUMPdWNqRwbGwbEKoBMEQGCisGAQQBgjcCAQwxNjA0
 # oBSAEgBNAGkAYwByAG8AcwBvAGYAdKEcgBpodHRwczovL3d3dy5taWNyb3NvZnQu
-# Y29tIDANBgkqhkiG9w0BAQEFAASCAQBw/UYlnzFfmWsB/LWkzMUuZIwwZORCkZJv
-# RAOh5Dl3K1fS53DZIr1raLRYKdTyFGDhMtEBAcrwa+ZCU+rXN+Jy+XHlk9toe6C1
-# fm7v2f6VM3+raP1bqZ1lXCgfR87oFqeP5GImJ7gBfxhyLcSGKHOeekjDoJ04HZVK
-# 1avYn5eYOIAaiLfxRWY/5A0+deqJmGZe8XPdXxXQJFS2x9i0Nn4jITJILp+1h3oM
-# RkAco10qqM3J2++3BWCwbD8nihsrCxCSISVTloUvvyXwyZVIErwncb01BCbnpElu
-# Nfjagvdj2umaa7ZP23tWImBlkza1oILHow2KQ7s8x3tfiiZYp7L3oYIXDDCCFwgG
-# CisGAQQBgjcDAwExghb4MIIW9AYJKoZIhvcNAQcCoIIW5TCCFuECAQMxDzANBglg
-# hkgBZQMEAgEFADCCAVUGCyqGSIb3DQEJEAEEoIIBRASCAUAwggE8AgEBBgorBgEE
-# AYRZCgMBMDEwDQYJYIZIAWUDBAIBBQAEILFY+s7GKVKBd/jO5UaMHQFw6+lFkLwY
-# 6UIoq3rNqDfCAgZiaxg8hkkYEzIwMjIwNTEzMDUyNjMyLjQ1MlowBIACAfSggdSk
-# gdEwgc4xCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQH
-# EwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNV
-# BAsTIE1pY3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1U
-# aGFsZXMgVFNTIEVTTjo0NjJGLUUzMTktM0YyMDElMCMGA1UEAxMcTWljcm9zb2Z0
-# IFRpbWUtU3RhbXAgU2VydmljZaCCEV8wggcQMIIE+KADAgECAhMzAAABpAfP44+j
-# um/WAAEAAAGkMA0GCSqGSIb3DQEBCwUAMHwxCzAJBgNVBAYTAlVTMRMwEQYDVQQI
-# EwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3Nv
-# ZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1wIFBD
-# QSAyMDEwMB4XDTIyMDMwMjE4NTExOFoXDTIzMDUxMTE4NTExOFowgc4xCzAJBgNV
-# BAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4w
-# HAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1pY3Jvc29m
-# dCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVT
-# Tjo0NjJGLUUzMTktM0YyMDElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUtU3RhbXAg
-# U2VydmljZTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMBHjgD6FPy8
-# 1PUhcOIVGh4bOSaq634Y+TjW2hNF9BlnWxLJCEuMiV6YF5x6YTM7T1ZLM6NnH0wh
-# Pypiz3bVZRmwgGyTURKfVyPJ89R3WaZ/HMvcAJZnCMgL+mOpxE94gwQJD/qo8Uqu
-# OrCKCY/fcjchxV8yMkfIqP69HnWfW0ratk+I2GZF2ISFyRtvEuxJvacIFDFkQXj3
-# H+Xy9IHzNqqi+g54iQjOAN6s3s68mi6rqv6+D9DPVPg1ev6worI3FlYzrPLCIuns
-# btYt3Xw3aHKMfA+SH8CV4iqJ/eEZUP1uFJT50MAPNQlIwWERa6cccSVB5mN2YgHf
-# 8zDUqQU4k2/DWw+14iLkwrgNlfdZ38V3xmxC9mZc9YnwFc32xi0czPzN15C8wiZE
-# IqCddxbwimc+0LtPKandRXk2hMfwg0XpZaJxDfLTgvYjVU5PXTgB10mhWAA/Yosg
-# bB8KzvAxXPnrEnYg3XLWkgBZ+lOrHvqiszlFCGQC9rKPVFPCCsey356VhfcXlvwA
-# JauAk7V0nLVTgwi/5ILyHffEuZYDnrx6a+snqDTHL/ZqRsB5HHq0XBo/i7BVuMXn
-# SSXlFCo3On8IOl8JOKQ4CrIlri9qWJYMxsSICscotgODoYOO4lmXltKOB0l0IAhE
-# XwSSKID5QAa9wTpIagea2hzjI6SUY1W/AgMBAAGjggE2MIIBMjAdBgNVHQ4EFgQU
-# 4tATn6z4CBL2xZQd0jjN6SnjJMIwHwYDVR0jBBgwFoAUn6cVXQBeYl2D9OXSZacb
-# UzUZ6XIwXwYDVR0fBFgwVjBUoFKgUIZOaHR0cDovL3d3dy5taWNyb3NvZnQuY29t
-# L3BraW9wcy9jcmwvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUyMDIwMTAo
-# MSkuY3JsMGwGCCsGAQUFBwEBBGAwXjBcBggrBgEFBQcwAoZQaHR0cDovL3d3dy5t
-# aWNyb3NvZnQuY29tL3BraW9wcy9jZXJ0cy9NaWNyb3NvZnQlMjBUaW1lLVN0YW1w
-# JTIwUENBJTIwMjAxMCgxKS5jcnQwDAYDVR0TAQH/BAIwADATBgNVHSUEDDAKBggr
-# BgEFBQcDCDANBgkqhkiG9w0BAQsFAAOCAgEACVYcUNEMlyTuPDBGhiZ1U548ssF6
-# J2g9QElWEb2cZ4dL0+5G8721/giRtTPvgxQhDF5rJCjHGj8nFSqOE8fnYz9vgb2Y
-# clYHvkoKWUJODxjhWS+S06ZLR/nDS85HeDAD0FGduAA80Q7vGzknKW2jxoNHTb74
-# KQEMWiUK1M2PDN+eISPXPhPudGVGLbIEAk1Goj5VjzbQuLKhm2Tk4a22rkXkeE98
-# gyNojHlBhHbb7nex3zGBTBGkVtwt2ud7qN2rcpuJhsJ/vL/0XYLtyOk7eSQZdfye
-# 0TT1/qj18iSXHsIXDhHOuTKqBiiatoo4Unwk7uGyM0lv38Ztr+YpajSP+p0PEMRH
-# 9RdfrKRm4bHV5CmOTIzAmc49YZt40hhlVwlClFA4M+zn3cyLmEGwfNqD693hD5W3
-# vcpnhf3xhZbVWTVpJH1CPGTmR4y5U9kxwysK8VlfCFRwYUa5640KsgIv1tJhF9LX
-# emWIPEnuw9JnzHZ3iSw5dbTSXp9HmdOJIzsO+/tjQwZWBSFqnayaGv3Y8w1KYiQJ
-# S8cKJhwnhGgBPbyan+E5D9TyY9dKlZ3FikstwM4hKYGEUlg3tqaWEilWwa9SaNet
-# NxjSfgah782qzbjTQhwDgc6Jf07F2ak0YMnNJFHsBb1NPw77dhmo9ki8vrLOB++d
-# 6Gm2Z/jDpDOSst8wggdxMIIFWaADAgECAhMzAAAAFcXna54Cm0mZAAAAAAAVMA0G
-# CSqGSIb3DQEBCwUAMIGIMQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3Rv
-# bjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0
-# aW9uMTIwMAYDVQQDEylNaWNyb3NvZnQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3Jp
-# dHkgMjAxMDAeFw0yMTA5MzAxODIyMjVaFw0zMDA5MzAxODMyMjVaMHwxCzAJBgNV
-# BAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4w
-# HAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29m
-# dCBUaW1lLVN0YW1wIFBDQSAyMDEwMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIIC
-# CgKCAgEA5OGmTOe0ciELeaLL1yR5vQ7VgtP97pwHB9KpbE51yMo1V/YBf2xK4OK9
-# uT4XYDP/XE/HZveVU3Fa4n5KWv64NmeFRiMMtY0Tz3cywBAY6GB9alKDRLemjkZr
-# BxTzxXb1hlDcwUTIcVxRMTegCjhuje3XD9gmU3w5YQJ6xKr9cmmvHaus9ja+NSZk
-# 2pg7uhp7M62AW36MEBydUv626GIl3GoPz130/o5Tz9bshVZN7928jaTjkY+yOSxR
-# nOlwaQ3KNi1wjjHINSi947SHJMPgyY9+tVSP3PoFVZhtaDuaRr3tpK56KTesy+uD
-# RedGbsoy1cCGMFxPLOJiss254o2I5JasAUq7vnGpF1tnYN74kpEeHT39IM9zfUGa
-# RnXNxF803RKJ1v2lIH1+/NmeRd+2ci/bfV+AutuqfjbsNkz2K26oElHovwUDo9Fz
-# pk03dJQcNIIP8BDyt0cY7afomXw/TNuvXsLz1dhzPUNOwTM5TI4CvEJoLhDqhFFG
-# 4tG9ahhaYQFzymeiXtcodgLiMxhy16cg8ML6EgrXY28MyTZki1ugpoMhXV8wdJGU
-# lNi5UPkLiWHzNgY1GIRH29wb0f2y1BzFa/ZcUlFdEtsluq9QBXpsxREdcu+N+VLE
-# hReTwDwV2xo3xwgVGD94q0W29R6HXtqPnhZyacaue7e3PmriLq0CAwEAAaOCAd0w
-# ggHZMBIGCSsGAQQBgjcVAQQFAgMBAAEwIwYJKwYBBAGCNxUCBBYEFCqnUv5kxJq+
-# gpE8RjUpzxD/LwTuMB0GA1UdDgQWBBSfpxVdAF5iXYP05dJlpxtTNRnpcjBcBgNV
-# HSAEVTBTMFEGDCsGAQQBgjdMg30BATBBMD8GCCsGAQUFBwIBFjNodHRwOi8vd3d3
-# Lm1pY3Jvc29mdC5jb20vcGtpb3BzL0RvY3MvUmVwb3NpdG9yeS5odG0wEwYDVR0l
-# BAwwCgYIKwYBBQUHAwgwGQYJKwYBBAGCNxQCBAweCgBTAHUAYgBDAEEwCwYDVR0P
-# BAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHwYDVR0jBBgwFoAU1fZWy4/oolxiaNE9
-# lJBb186aGMQwVgYDVR0fBE8wTTBLoEmgR4ZFaHR0cDovL2NybC5taWNyb3NvZnQu
-# Y29tL3BraS9jcmwvcHJvZHVjdHMvTWljUm9vQ2VyQXV0XzIwMTAtMDYtMjMuY3Js
-# MFoGCCsGAQUFBwEBBE4wTDBKBggrBgEFBQcwAoY+aHR0cDovL3d3dy5taWNyb3Nv
-# ZnQuY29tL3BraS9jZXJ0cy9NaWNSb29DZXJBdXRfMjAxMC0wNi0yMy5jcnQwDQYJ
-# KoZIhvcNAQELBQADggIBAJ1VffwqreEsH2cBMSRb4Z5yS/ypb+pcFLY+TkdkeLEG
-# k5c9MTO1OdfCcTY/2mRsfNB1OW27DzHkwo/7bNGhlBgi7ulmZzpTTd2YurYeeNg2
-# LpypglYAA7AFvonoaeC6Ce5732pvvinLbtg/SHUB2RjebYIM9W0jVOR4U3UkV7nd
-# n/OOPcbzaN9l9qRWqveVtihVJ9AkvUCgvxm2EhIRXT0n4ECWOKz3+SmJw7wXsFSF
-# QrP8DJ6LGYnn8AtqgcKBGUIZUnWKNsIdw2FzLixre24/LAl4FOmRsqlb30mjdAy8
-# 7JGA0j3mSj5mO0+7hvoyGtmW9I/2kQH2zsZ0/fZMcm8Qq3UwxTSwethQ/gpY3UA8
-# x1RtnWN0SCyxTkctwRQEcb9k+SS+c23Kjgm9swFXSVRk2XPXfx5bRAGOWhmRaw2f
-# pCjcZxkoJLo4S5pu+yFUa2pFEUep8beuyOiJXk+d0tBMdrVXVAmxaQFEfnyhYWxz
-# /gq77EFmPWn9y8FBSX5+k77L+DvktxW/tM4+pTFRhLy/AsGConsXHRWJjXD+57XQ
-# KBqJC4822rpM+Zv/Cuk0+CQ1ZyvgDbjmjJnW4SLq8CdCPSWU5nR0W2rRnj7tfqAx
-# M328y+l7vzhwRNGQ8cirOoo6CGJ/2XBjU02N7oJtpQUQwXEGahC0HVUzWLOhcGby
-# oYIC0jCCAjsCAQEwgfyhgdSkgdEwgc4xCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpX
-# YXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQg
-# Q29ycG9yYXRpb24xKTAnBgNVBAsTIE1pY3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0
-# byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVTTjo0NjJGLUUzMTktM0YyMDEl
-# MCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUtU3RhbXAgU2VydmljZaIjCgEBMAcGBSsO
-# AwIaAxUANBwo4pNrfEL6DVo+tw96vGJvLp+ggYMwgYCkfjB8MQswCQYDVQQGEwJV
-# UzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UE
-# ChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGlt
-# ZS1TdGFtcCBQQ0EgMjAxMDANBgkqhkiG9w0BAQUFAAIFAOYoCwEwIhgPMjAyMjA1
-# MTMwMjM4NTdaGA8yMDIyMDUxNDAyMzg1N1owdzA9BgorBgEEAYRZCgQBMS8wLTAK
-# AgUA5igLAQIBADAKAgEAAgIf6QIB/zAHAgEAAgIR8jAKAgUA5ilcgQIBADA2Bgor
-# BgEEAYRZCgQCMSgwJjAMBgorBgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAID
-# AYagMA0GCSqGSIb3DQEBBQUAA4GBAJQv2pokzCeOv/4uqproLHX9L5aPEI/QEZRQ
-# J8QKSuiTA9RB+wssdi549CKBS8aPdtuSwn94M888pOangtAZuWHuwHtsgabJZGwp
-# aQB71Qx+8CzAHYcmcikOkxIvXKV53UB5eQQu+7YZM+8dznPMksbmZ/CGJjB94mTo
-# FDr6qoSUMYIEDTCCBAkCAQEwgZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldh
+# Y29tIDANBgkqhkiG9w0BAQEFAASCAQCJmKDiwpQne/jcY+pU7dyP49cVLBt3Nu3u
+# Gv5k3rau/vglx537judqX4Ybl4IF7EYX9+8ysF07Z8sfJ19QHYDZq/r+FkBS7YqH
+# BbOJj2pjif2p+zLZW5QoBmuTmNSwcbUBN2ugKNj0wcMETBgXNDVdpFvLWlZ/xO1p
+# ompcRwqjnd02izvpPoBQ1RMRey4fazhGa81pz3Unsgj9Efi+kbGyS3WB+oBRn3Pq
+# HffdYkhrV9jWzGHNOnpyrdnb+yqFDvmBjtJbvXsGhkHk7HewnJ1jyhgcH15RoqJu
+# j37IfTkYVON1G42LqwQAefA9d58+ae0DHLf19Wg14CfkHHxHmGtwoYIXADCCFvwG
+# CisGAQQBgjcDAwExghbsMIIW6AYJKoZIhvcNAQcCoIIW2TCCFtUCAQMxDzANBglg
+# hkgBZQMEAgEFADCCAVEGCyqGSIb3DQEJEAEEoIIBQASCATwwggE4AgEBBgorBgEE
+# AYRZCgMBMDEwDQYJYIZIAWUDBAIBBQAEILN25zR7V54Uj+8xTTykgtvZNvnKzxSe
+# 6OcM4LtbT2iGAgZigqXXLUAYEzIwMjIwNjAyMjA1NTMxLjE1NFowBIACAfSggdCk
+# gc0wgcoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQH
+# EwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJTAjBgNV
+# BAsTHE1pY3Jvc29mdCBBbWVyaWNhIE9wZXJhdGlvbnMxJjAkBgNVBAsTHVRoYWxl
+# cyBUU1MgRVNOOjhBODItRTM0Ri05RERBMSUwIwYDVQQDExxNaWNyb3NvZnQgVGlt
+# ZS1TdGFtcCBTZXJ2aWNloIIRVzCCBwwwggT0oAMCAQICEzMAAAGZyI+vrbZ9vosA
+# AQAAAZkwDQYJKoZIhvcNAQELBQAwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldh
 # c2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBD
 # b3Jwb3JhdGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIw
-# MTACEzMAAAGkB8/jj6O6b9YAAQAAAaQwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqG
-# SIb3DQEJAzENBgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgceKRV166vDi9
-# VpkiTGmu/K+kMgW3AUA7IF8C6RmWLlEwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHk
-# MIG9BCAF/OCjISZwpMBJ8MJ3WwMCF3qOa5YHFG6J4uHjaup5+DCBmDCBgKR+MHwx
-# CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
-# b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1p
-# Y3Jvc29mdCBUaW1lLVN0YW1wIFBDQSAyMDEwAhMzAAABpAfP44+jum/WAAEAAAGk
-# MCIEIC2USpGIRgwblxW/k/BGwTtsrWwSEZKtF3szY1h+NXavMA0GCSqGSIb3DQEB
-# CwUABIICAFlpTfo7sdUhyo2UVihy/fNJe5bTW3ZV1ncuVjHnj6dGlam+TNQdyZvi
-# nRB5EplbWeY7pQAkfcRoVXVs62rdqqf4d5fGL7M8lIDhmDRSUJvGo/FCE+e7yZoa
-# 0aqg5tqmqWmnAOGKFuHKBAVWortoA0BEk/O+FQvs8RE4KDKYn6Gc6lcQb9P5Re7F
-# WDnX13ZpkhzO3mvuA1Oh5DwbmEMyj/VB4w6dV5nukYaFCqScqBsLP4dbsj6YE3TM
-# +7CdjnDDPf3i0yDM5jcfpWAY0CbGlUlvyu/96coL5fBh6HoXLTrHD/+4WIfF1j6G
-# aZQvZml6HV0j4ffqyvVUQiPXyEENxl/PQ/67FVEGP297uWAwWlIFPOBDis2Jg1lH
-# qNlTCOUJRC9UCTJHUaEVLtCNBY2cQFZzt/L8o9KfPHtFNuA3qFa9phBl0MQKU6AY
-# 1IUkDP+sQlw/kNrDOSGdY9WoC5YNZbPrjkQdJqSeiTN7g0NWy1AkuGnsT5+Tgszc
-# R27RYZAzCJNmRsMT2jdfXiPs5rhdhJa0CghEV6We+wKPuQJLevscK+TO7JvM87A3
-# 1tyKY+h9gCJ2DykihSNQL4ClLYWigL4R4yKwFelt6GeFle0ISdvKd559gUbDqmlF
-# LqHIypuzmsEAsSn9xR9vVLHsoZuIBnYVg69571JIQgN19l3zh7d8
+# MTAwHhcNMjExMjAyMTkwNTE2WhcNMjMwMjI4MTkwNTE2WjCByjELMAkGA1UEBhMC
+# VVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNV
+# BAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjElMCMGA1UECxMcTWljcm9zb2Z0IEFt
+# ZXJpY2EgT3BlcmF0aW9uczEmMCQGA1UECxMdVGhhbGVzIFRTUyBFU046OEE4Mi1F
+# MzRGLTlEREExJTAjBgNVBAMTHE1pY3Jvc29mdCBUaW1lLVN0YW1wIFNlcnZpY2Uw
+# ggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC4E/lXXKMsy9rVa2a8bRb0
+# Ar/Pj4+bKiAgMgKayvCMFn3ddGof8eWFgJWp5JdKjWjrnmW1r9tHpcP2kFpjXp2U
+# drj55jt5NYi1MERcoIo+E29XuCwFAMJftGdvsWea/OTQPIFsZEWqEteXdRncyVwc
+# t5xFzBIC1JWCdmfc7R59RMIyvgWjIz8356mweowkOstN1fe53KIJ8flrYILIQWsN
+# RMOT3znAGwIb9kyL54C6jZjFxOSusGYmVQ+Gr/qZQELw1ipx9s5jNP1LSpOpfTEB
+# Fu+y9KLNBmMBARkSPpTFkGEyGSwGGgSdOi6BU6FPK+6urZ830jrRemK4JkIJ9tQh
+# lGcIhAjhcqZStn+38lRjVvrfbBI5EpI2NwlVIK2ibGW7sWeTAz/yNPNISUbQhGAJ
+# se/OgGj/1qz/Ha9mqfYZ8BHchNxn08nWkqyrjrKicQyxuD8mCatTrVSbOJYfQyZd
+# HR9a4vgyGeZEXBYQNAlIuB37QCOAgs/VeDU8M4dc/IlrTyC0uV1SS4Gk8zV+5X5e
+# Ru+XORN8FWqzI6k/9y6cWwOWMK6aUN1XqLcaF/sm9rX84eKW2lhDc3C31WLjp8UO
+# fOHZfPuyy54xfilnhhCPy4QKJ9jggoqqeeEhCEfgDYjy+PByV/e5HDB2xHdtlL93
+# wltAkI3aCxo84kVPBCa0OwIDAQABo4IBNjCCATIwHQYDVR0OBBYEFI26Vrg+nGWv
+# rvIh0dQPEonENR0QMB8GA1UdIwQYMBaAFJ+nFV0AXmJdg/Tl0mWnG1M1GelyMF8G
+# A1UdHwRYMFYwVKBSoFCGTmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2lvcHMv
+# Y3JsL01pY3Jvc29mdCUyMFRpbWUtU3RhbXAlMjBQQ0ElMjAyMDEwKDEpLmNybDBs
+# BggrBgEFBQcBAQRgMF4wXAYIKwYBBQUHMAKGUGh0dHA6Ly93d3cubWljcm9zb2Z0
+# LmNvbS9wa2lvcHMvY2VydHMvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUy
+# MDIwMTAoMSkuY3J0MAwGA1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwgw
+# DQYJKoZIhvcNAQELBQADggIBAHGzWh29ibBNro3ns8E3EOHGsLB1Gzk90SFYUKBi
+# lIu4jDbR7qbvXNd8nnl/z5D9LKgw3T81jqy5tMiWp+p4jYBBk3PRx1ySqLUfhF5Z
+# MWolRzW+cQZGXV38iSmdAUG0CpR5x1rMdPIrTczVUFsOYGqmkoUQ/dRiVL4iAXJL
+# CNTj4x3YwIQcCPt0ijJVinPIMAYzA8f99BbeiskyI0BHGAd0kGUX2I2/puYnlyS8
+# toBnANjh21xgvEuaZ2dvRqvWk/i1XIlO67au/XCeMTvXhPOIUmq80U32Tifw3SSi
+# BKTyir7moWH1i7H2q5QAnrBxuyy//ZsDfARDV/Atmj5jr6ATfRHDdUanQpeoBS+i
+# ylNU6RARu8g+TMCu/ZndZmrs9w+8galUIGg+GmlNk07fXJ58Oc+qFqgNAsNkMi+d
+# SzKkWGA4/klJFn0XichXL8+t7KOayXKGzQja6CdtCjisnyS8hbv4PKhaeMtf68wJ
+# WKKOs0tt2AJfYC5vSbH9ck8BGj2e/yQXEZEu88L5/fHK5XUk/IKXx3zaLkxXTSZ4
+# 3Ea/WKXVBzMasHZ3Pmny0moEekAXx1UhLNNYv4Vum33VirxSB6r/GKQxFSHu7yFf
+# rWQpYyyDH119TmhAedS8T1VabqdtO5ZP2E14TK82Vyxy3xEPelOo4dRIlhm7XY6k
+# 9B68MIIHcTCCBVmgAwIBAgITMwAAABXF52ueAptJmQAAAAAAFTANBgkqhkiG9w0B
+# AQsFADCBiDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNV
+# BAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEyMDAG
+# A1UEAxMpTWljcm9zb2Z0IFJvb3QgQ2VydGlmaWNhdGUgQXV0aG9yaXR5IDIwMTAw
+# HhcNMjEwOTMwMTgyMjI1WhcNMzAwOTMwMTgzMjI1WjB8MQswCQYDVQQGEwJVUzET
+# MBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMV
+# TWljcm9zb2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1T
+# dGFtcCBQQ0EgMjAxMDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAOTh
+# pkzntHIhC3miy9ckeb0O1YLT/e6cBwfSqWxOdcjKNVf2AX9sSuDivbk+F2Az/1xP
+# x2b3lVNxWuJ+Slr+uDZnhUYjDLWNE893MsAQGOhgfWpSg0S3po5GawcU88V29YZQ
+# 3MFEyHFcUTE3oAo4bo3t1w/YJlN8OWECesSq/XJprx2rrPY2vjUmZNqYO7oaezOt
+# gFt+jBAcnVL+tuhiJdxqD89d9P6OU8/W7IVWTe/dvI2k45GPsjksUZzpcGkNyjYt
+# cI4xyDUoveO0hyTD4MmPfrVUj9z6BVWYbWg7mka97aSueik3rMvrg0XnRm7KMtXA
+# hjBcTyziYrLNueKNiOSWrAFKu75xqRdbZ2De+JKRHh09/SDPc31BmkZ1zcRfNN0S
+# idb9pSB9fvzZnkXftnIv231fgLrbqn427DZM9ituqBJR6L8FA6PRc6ZNN3SUHDSC
+# D/AQ8rdHGO2n6Jl8P0zbr17C89XYcz1DTsEzOUyOArxCaC4Q6oRRRuLRvWoYWmEB
+# c8pnol7XKHYC4jMYctenIPDC+hIK12NvDMk2ZItboKaDIV1fMHSRlJTYuVD5C4lh
+# 8zYGNRiER9vcG9H9stQcxWv2XFJRXRLbJbqvUAV6bMURHXLvjflSxIUXk8A8Fdsa
+# N8cIFRg/eKtFtvUeh17aj54WcmnGrnu3tz5q4i6tAgMBAAGjggHdMIIB2TASBgkr
+# BgEEAYI3FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQqp1L+ZMSavoKRPEY1Kc8Q
+# /y8E7jAdBgNVHQ4EFgQUn6cVXQBeYl2D9OXSZacbUzUZ6XIwXAYDVR0gBFUwUzBR
+# BgwrBgEEAYI3TIN9AQEwQTA/BggrBgEFBQcCARYzaHR0cDovL3d3dy5taWNyb3Nv
+# ZnQuY29tL3BraW9wcy9Eb2NzL1JlcG9zaXRvcnkuaHRtMBMGA1UdJQQMMAoGCCsG
+# AQUFBwMIMBkGCSsGAQQBgjcUAgQMHgoAUwB1AGIAQwBBMAsGA1UdDwQEAwIBhjAP
+# BgNVHRMBAf8EBTADAQH/MB8GA1UdIwQYMBaAFNX2VsuP6KJcYmjRPZSQW9fOmhjE
+# MFYGA1UdHwRPME0wS6BJoEeGRWh0dHA6Ly9jcmwubWljcm9zb2Z0LmNvbS9wa2kv
+# Y3JsL3Byb2R1Y3RzL01pY1Jvb0NlckF1dF8yMDEwLTA2LTIzLmNybDBaBggrBgEF
+# BQcBAQROMEwwSgYIKwYBBQUHMAKGPmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9w
+# a2kvY2VydHMvTWljUm9vQ2VyQXV0XzIwMTAtMDYtMjMuY3J0MA0GCSqGSIb3DQEB
+# CwUAA4ICAQCdVX38Kq3hLB9nATEkW+Geckv8qW/qXBS2Pk5HZHixBpOXPTEztTnX
+# wnE2P9pkbHzQdTltuw8x5MKP+2zRoZQYIu7pZmc6U03dmLq2HnjYNi6cqYJWAAOw
+# Bb6J6Gngugnue99qb74py27YP0h1AdkY3m2CDPVtI1TkeFN1JFe53Z/zjj3G82jf
+# ZfakVqr3lbYoVSfQJL1AoL8ZthISEV09J+BAljis9/kpicO8F7BUhUKz/AyeixmJ
+# 5/ALaoHCgRlCGVJ1ijbCHcNhcy4sa3tuPywJeBTpkbKpW99Jo3QMvOyRgNI95ko+
+# ZjtPu4b6MhrZlvSP9pEB9s7GdP32THJvEKt1MMU0sHrYUP4KWN1APMdUbZ1jdEgs
+# sU5HLcEUBHG/ZPkkvnNtyo4JvbMBV0lUZNlz138eW0QBjloZkWsNn6Qo3GcZKCS6
+# OEuabvshVGtqRRFHqfG3rsjoiV5PndLQTHa1V1QJsWkBRH58oWFsc/4Ku+xBZj1p
+# /cvBQUl+fpO+y/g75LcVv7TOPqUxUYS8vwLBgqJ7Fx0ViY1w/ue10CgaiQuPNtq6
+# TPmb/wrpNPgkNWcr4A245oyZ1uEi6vAnQj0llOZ0dFtq0Z4+7X6gMTN9vMvpe784
+# cETRkPHIqzqKOghif9lwY1NNje6CbaUFEMFxBmoQtB1VM1izoXBm8qGCAs4wggI3
+# AgEBMIH4oYHQpIHNMIHKMQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3Rv
+# bjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0
+# aW9uMSUwIwYDVQQLExxNaWNyb3NvZnQgQW1lcmljYSBPcGVyYXRpb25zMSYwJAYD
+# VQQLEx1UaGFsZXMgVFNTIEVTTjo4QTgyLUUzNEYtOUREQTElMCMGA1UEAxMcTWlj
+# cm9zb2Z0IFRpbWUtU3RhbXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUAku/zYujn
+# qapN6BJ9MJ5jtgDrlOuggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMK
+# V2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0
+# IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0Eg
+# MjAxMDANBgkqhkiG9w0BAQUFAAIFAOZDjO0wIhgPMjAyMjA2MDMwMzI0MjlaGA8y
+# MDIyMDYwNDAzMjQyOVowdzA9BgorBgEEAYRZCgQBMS8wLTAKAgUA5kOM7QIBADAK
+# AgEAAgIJYwIB/zAHAgEAAgIRrzAKAgUA5kTebQIBADA2BgorBgEEAYRZCgQCMSgw
+# JjAMBgorBgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqGSIb3
+# DQEBBQUAA4GBAGwHbGmc9P2BPp6kcEG3/teqqsGYK3rkF0JcTrCVagLByUdNCzKS
+# jNDFOU+rQh69f0lHagRXjDyhwjcldzYVZpphhd+9/LdIQFstOaJBCFbLgRUwBA6k
+# EMNtx75BKjKt8TFbvJinZR5OFWnTFT5wesZwTFa6bMGO+syi8rYGXHVbMYIEDTCC
+# BAkCAQEwgZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAO
+# BgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEm
+# MCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGZyI+v
+# rbZ9vosAAQAAAZkwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzENBgsq
+# hkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgLl9t5fAxo486zvc/FNbUxn3rAilF
+# U4PQsXjsY7I+llMwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBmfWn58qKN
+# 7WWpBTYOrUO1BSCSnKPLC/G7wCOIc2JsfjCBmDCBgKR+MHwxCzAJBgNVBAYTAlVT
+# MRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQK
+# ExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1l
+# LVN0YW1wIFBDQSAyMDEwAhMzAAABmciPr622fb6LAAEAAAGZMCIEINAePUE3Vlgs
+# gjJQ5awJaIhU6yts48It1pStLO/M5j9OMA0GCSqGSIb3DQEBCwUABIICAKYa9S5X
+# mUVxSceGWrf/QoKIDF3HiwmgT4+1RkOYReNAAQPBe8tY/gtbpu4P792f+wWH6XiM
+# DDDkflB9XADRd5arWAlEz/jFgQvx9SWZRdsq5VTQo2HMehg9AuuLUHWjKOdeQ5It
+# jV/SAlt0ROua5ydGKLcKipHfAphf9RYTjksndFsVoWanAZSk3B2QYDBFFzLkLecA
+# uWKm064NgCexcHwqinZr5UeXQzC+zbdpdrfbTMTE6hdWh4Acrd6YQHeR5tX5cY3x
+# G/cabDHyM+DyxmNKPvjVww1E0f8Srg+ZFDhJv3OWD6DMxzKP0c7rOhaLmolAU0LK
+# aEVGMMVLbtUYrNwGqpRQfmjL7sRLRlqo29OhpdP4qBjs97KCEj70T2UkX2xJwJiY
+# E8Hscp+JK3jS5Ek94Dacj5OnJOFd8/lBAnLo1vupQCJmvAmyq/IRTQ6rGgdGoYWL
+# WKRIWko4EJI7tOMf+Tyd+UsjasWAw1BKR2bWDqlRPSPT3mm7JzCWshtu5ww7bRRE
+# N3KrVkpa+YvzJTi0OSF5AGHZrV5Db/grSw0kD6Uy7pJM0hT2stQ+jX94PT/YyPpY
+# A3glE0nkEtGm+pjqSXqkboGiWnN5bRo2n9p5dQBmmj58iuxLxEZJg7utlmlPldSQ
+# AWhC12UkZw1DpoURv8niMRBcK4XYNxBCyrqM
 # SIG # End signature block

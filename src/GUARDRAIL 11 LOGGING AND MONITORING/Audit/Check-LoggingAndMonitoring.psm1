@@ -45,42 +45,37 @@ function Check-LoggingAndMonitoring {
         $workspaceKey,
         [Parameter(Mandatory=$true)]
         [string]
-        $LogType="GuardrailsCompliance",
+        $LogType,
+        [hashtable]
+        $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
-        $ReportTime
+        $ReportTime,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $CBSSubscriptionName
     )
-    $ItemName1="SecurityMonitoring"
-    $ItemName2="HealthMonitoring"
-    $ItemName3="DefenderMonitoring"
+
+    $LogType="GuardrailsCompliance"
     #Code
+
+    #Add test for proper right format of the LAW parameters
     $Subscription=$SecurityLAWResourceId.Split("/")[2]
     $LAWRG=$SecurityLAWResourceId.Split("/")[4]
     $LAWName=$SecurityLAWResourceId.Split("/")[8]
-    $HealthLAWRG=$SecurityLAWResourceId.Split("/")[4]
-    $HealthLAWName=$SecurityLAWResourceId.Split("/")[8]
+    $HealthLAWRG=$HealthLAWResourceId.Split("/")[4]
+    $HealthLAWName=$HealthLAWResourceId.Split("/")[8]
     
     $IsCompliant=$true
-    #LAW exists and has the proper retention
-    $Comment1="The specified Log Analytics Workspace for Security monitoring has not been found."
-    $Comment2="Retention not set to 730 days."
-    $Comment3="WorkSpace not configured to ingest activity Logs."
-    $Comment4="Required solutions not present in the Log Analytics Workspace."
-    $Comment5="No linked automation account has been found."
-    $Comment6="Tenant Diagnostics settings are not pointing to the provided log analysitcs workspace."
-    $Comment7="Workspace set in tenant config but not all required log types are enabled (Audit and signin)."
-    $Comment8="The specified Log Analytics Workspace for Health monitoring has not been found."
-    $Comment9="Retention not set to at least90 days."
-    $Comment10="Required solutions not present in the Health Log Analytics Workspace."
-    $Comment11=""
-    $Comment12=""
-    $Comment13=""
+    $MitigationCommands=""
+
     Select-AzSubscription -Subscription $Subscription
     $LAW=Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG
-    if ($LAW -eq $null)
+    if ($null -eq $LAW)
     {
         $IsCompliant=$false
-        $Comments=$Comment1 # "The specified Log Analytics Workspace has not been found."
+        $Comments=$msgTable.securityLAWNotFound
+        $MitigationCommands = $msgTable.createLAW
     }
     else {
         # Test linked automation account
@@ -90,35 +85,50 @@ function Check-LoggingAndMonitoring {
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -lt 1)
         {
             $IsCompliant=$false
-            $Comments+=$Comment5 #"No linked automation account has been found."
+            $Comments+=$msgTable.lawNoAutoAcct #"No linked automation account has been found."
+            $MitigationCommands+=@"
+$($msgTable.connectAutoAcct) ($LAWName).
+https://docs.microsoft.com/en-us/azure/automation/quickstarts/create-account-portal
+https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
+`n
+"@
         }
         #Test Retention Days
         $Retention=$LAW.retentionInDays
         if ($Retention -ne 730)
         {
             $IsCompliant=$false
-            $Comments+=$Comment2 # "Retention not set to 730 days."
+            $Comments+=$msgTable.lawRetention730Days
+            $MitigationCommands += "$($msgTable.setRetention730Days) ($LAWName) -https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-archive?tabs=api-1%2Capi-2 `n"
         }
         #Verify presense of the Activity Logs as a source
         $ActivityLogDS=Get-AzOperationalInsightsDataSource -Workspace $LAW -Kind AzureActivityLog
         If ($ActivityLogDS -eq $null)
         {
             $IsCompliant=$false
-            $Comments+=$Comment3 # "WorkSpace not configured to ingest activity Logs."
+            $Comments+=$msgTable.lawNoActivityLogs
+            $MitigationCommands+="$($msgTable.addActivityLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-analyze-activity-logs-log-analytics  `n"
         }
         # Tests for required Solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
         if ($enabledSolutions -notcontains "Updates" -or $enabledSolutions -notcontains "AntiMalware")
         {
             $IsCompliant=$false
-            $Comments+=$Comment4 # "Required solutions not present in the Log Analytics Workspace."
+            $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
+            $MitigationCommands+=@"
+$($msgTable.addUpdatesAndAntiMalware) ($LAWName)"
+https://docs.microsoft.com/en-us/azure/automation/update-management/overview
+https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalwareOMS?tab=Overview
+`n
+"@
         }
         # Tenant Diagnostics configuration. Needs Graph API...
         $tenantWS=get-tenantDiagnosticsSettings
         if ($SecurityLAWResourceId -notin $tenantWS.workspaceId)
         {
             $IsCompliant=$false
-            $Comments+=$Comment6 # "Tenant Diagnostics settings are not pointing to the provided log analysitcs workspace."
+            $Comments+=$msgTable.lawNoTenantDiag # "Tenant Diagnostics settings are not pointing to the provided log analysitcs workspace."
+            $MitigationCommands+="$($msgTable.configTenantDiag) ($LAWName) https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-integrate-activity-logs-with-log-analytics#send-logs-to-azure-monitor  `n"
         }
         else {
             #Workspace is there but need to check if logs are enabled.
@@ -126,21 +136,24 @@ function Check-LoggingAndMonitoring {
             if ("AuditLogs" -notin $enabledLogs -or "SignInLogs" -notin $enabledLogs)
             {
                 $IsCompliant=$false
-                $Comments+=$Comment7 # "Workspace set in tenant config but not all required log types are enabled (Audit and signin)."
+                $Comments+=$msgTable.lawMissingLogTypes # "Workspace set in tenant config but not all required log types are enabled (Audit and signin)."
+                $MitigationCommands+="$($msgTable.addAuditAndSignInsLogs) ($LAWName) - https://docs.microsoft.com/en-us/azure/active-directory/reports-monitoring/howto-integrate-activity-logs-with-log-analytics#send-logs-to-azure-monitor `n"
             }
         }
         #Blueprint redirection
         # Sentinel, not sure how to detect this.
         if ($IsCompliant)
         {
-            $Comments="The Logs and Monitoring is compliant for Security."
+            $Comments= $msgTable.logsAndMonitoringCompliantForSecurity
+            $MitigationCommands+="N/A"
         }
         $object = [PSCustomObject]@{ 
             ComplianceStatus = $IsCompliant
             Comments = $Comments
-            ItemName = $ItemName1
+            ItemName = $msgTable.securityMonitoring
             ControlName = $ControlName
             ReportTime = $ReportTime
+            MitigationCommands=$MitigationCommands
         }
         $JSON= ConvertTo-Json -inputObject $object
 
@@ -154,6 +167,7 @@ function Check-LoggingAndMonitoring {
     #
     #Health
     #
+    $MitigationCommands=""
     $IsCompliant=$true
     $Comments=""
     $HSubscription=$SecurityLAWResourceId.Split("/")[2]
@@ -162,10 +176,11 @@ function Check-LoggingAndMonitoring {
         Select-AzSubscription -Subscription $HSubscription
     }
     $LAW=Get-AzOperationalInsightsWorkspace -Name $HealthLAWName -ResourceGroupName $HealthLAWRG
-    if ($LAW -eq $null)
+    if ($null -eq $LAW)
     {
         $IsCompliant=$false
-        $Comments+=$Comment8 # "The specified Log Analytics Workspace for Health monitoring has not been found."
+        $Comments+=$msgTable.healthLAWNotFound # "The specified Log Analytics Workspace for Health monitoring has not been found."
+        $MitigationCommands+= "$($msgTable.createHealthLAW) ($HealthLAWName)"
     }
     else {
         $LinkedServices=get-apiLinkedServicesData -subscriptionId $HSubscription `
@@ -174,34 +189,44 @@ function Check-LoggingAndMonitoring {
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -lt 1)
         {
             $IsCompliant=$false
-            $Comments+=$Comment5 #"No linked automation account has been found."
+            $Comments+=$msgTable.lawNoAutoAcct #"No linked automation account has been found."
+            $MitigationCommands+=@"
+$($msgTable.connectAutoAcct) ($HealthLAWName).
+https://docs.microsoft.com/en-us/azure/automation/quickstarts/create-account-portal
+https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
+`n
+"@
         }
         $Retention=$LAW.retentionInDays
         if ($Retention -lt 90)
         {
             $IsCompliant=$false
-            $Comments+=$Comment9 # "Retention not set to at least90 days."
+            $Comments+=$msgTable.lawRetention90Days # "Retention not set to at least90 days."
+            $MitigationCommands+= "$($msgTable.setRetention60Days) ($HealthLAWName) - https://docs.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-archive?tabs=api-1%2Capi-2 `n"
         }
         #Checks required solutions
         $enabledSolutions=(Get-AzOperationalInsightsIntelligencePack -ResourceGroupName $LAW.ResourceGroupName -WorkspaceName $LAW.Name| Where-Object {$_.Enabled -eq "True"}).Name
         if ($enabledSolutions -notcontains "AgentHealthAssessment")
         {
             $IsCompliant=$false
-            $Comments+=$Comment10 # "Required solutions not present in the Health Log Analytics Workspace."
+            $Comments+=$msgTable.lawHealthNoSolutionFound # "Required solutions not present in the Health Log Analytics Workspace."
+            $MitigationCommands+= "$($msgTable.enableAgentHealthSolution) ($HealthLAWName) - https://docs.microsoft.com/en-us/azure/azure-monitor/insights/solution-agenthealth `n"
         }
         #Tenant...No information on how to detect it.
         #Blueprint
     }
     if ($IsCompliant)
     {
-        $Comments="The environment is compliant."
+        $Comments= $msgTable.logsAndMonitoringCompliantForHealth
+        $MitigationCommands+="N/A."
     }
     $object = [PSCustomObject]@{ 
         ComplianceStatus = $IsCompliant
         Comments = $Comments
-        ItemName = $ItemName2
+        ItemName = $msgTable.healthMonitoring
         ControlName = $ControlName
-        ReportTime = $ReportTime        
+        ReportTime = $ReportTime  
+        MitigationCommands=$MitigationCommands      
     }
     $JSON= ConvertTo-Json -inputObject $object
 
@@ -210,38 +235,45 @@ function Check-LoggingAndMonitoring {
     -body $JSON `
     -logType $LogType `
     -TimeStampField Get-Date 
+   
     #
     # Defender for cloud detection.
     #
     $IsCompliant=$true
+    $MitigationCommands=""
     $Comments=""
-    $sublist=Get-AzSubscription
+    $sublist=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName} 
+    
     # This will look for specific Defender for Cloud, on a per subscription basis.
     foreach ($sub in $sublist)
     {
         Select-AzSubscription -SubscriptionObject $sub
         $ContactInfo=Get-AzSecurityContact
-        if ($ContactInfo.Email -ne $null -or $ContactInfo.Phone -eq $null)
+        if (($null -eq $ContactInfo.Email) -or ($null -eq $ContactInfo.Phone))
         {
             $IsCompliant=$false
-            $Comments="Subscription $($sub.Name) is missing Contact Information."
+            $Comments= $msgTable.noSecurityContactInfo -f $sub.Name
+            $MitigationCommands += $msgTable.setSecurityContact -f $sub.Name
         }
         if ((Get-AzSecurityPricing | Select-Object PricingTier | Where-Object {$_.PricingTier -eq 'Free'}).Count -gt 0)
         {
             $IsCompliant=$false
-            $Comments+="Not all princing plan options are set to Standard for subscription $($sub.Name)"
+            $Comments += $msgTable.notAllDfCStandard -f $sub.Name
+            $MitigationCommands += $msgTable.setDfCToStandard -f $sub.Name
         }
     }
     if ($IsCompliant)
     {
-        $Comments="The Logs and Monitoring is compliant for Security."
+        $Comments= $msgTable.logsAndMonitoringCompliantForDefender
     }
+
     $object = [PSCustomObject]@{ 
         ComplianceStatus = $IsCompliant
         Comments = $Comments
-        ItemName = $ItemName3
+        ItemName = $msgTable.defenderMonitoring
         ControlName = $ControlName
         ReportTime = $ReportTime
+        MitigationCommands=$MitigationCommands
     }
     $JSON= ConvertTo-Json -inputObject $object
 
@@ -252,11 +284,12 @@ function Check-LoggingAndMonitoring {
     -TimeStampField Get-Date 
     $IsCompliant=$true
 }
+
 # SIG # Begin signature block
-# MIInsgYJKoZIhvcNAQcCoIInozCCJ58CAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIInvQYJKoZIhvcNAQcCoIInrjCCJ6oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB/ProoKptT7Gyz
-# sveakorxsEGTAK+wtR58K9/RTZ1hVKCCDYUwggYDMIID66ADAgECAhMzAAACU+OD
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCIT1iohuodxz9r
+# ne+9RxI08r+i6GCszYamoD1uGxDZYqCCDYUwggYDMIID66ADAgECAhMzAAACU+OD
 # 3pbexW7MAAAAAAJTMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -328,141 +361,142 @@ function Check-LoggingAndMonitoring {
 # BL7fQccOKO7eZS/sl/ahXJbYANahRr1Z85elCUtIEJmAH9AAKcWxm6U/RXceNcbS
 # oqKfenoi+kiVH6v7RyOA9Z74v2u3S5fi63V4GuzqN5l5GEv/1rMjaHXmr/r8i+sL
 # gOppO6/8MO0ETI7f33VtY5E90Z1WTk+/gFcioXgRMiF670EKsT/7qMykXcGhiJtX
-# cVZOSEXAQsmbdlsKgEhr/Xmfwb1tbWrJUnMTDXpQzTGCGYMwghl/AgEBMIGVMH4x
+# cVZOSEXAQsmbdlsKgEhr/Xmfwb1tbWrJUnMTDXpQzTGCGY4wghmKAgEBMIGVMH4x
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
 # b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01p
 # Y3Jvc29mdCBDb2RlIFNpZ25pbmcgUENBIDIwMTECEzMAAAJT44Pelt7FbswAAAAA
 # AlMwDQYJYIZIAWUDBAIBBQCggbAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQw
-# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIIhi
-# +zTRWfeSnnMytHNBFgo70uWMm6c+MIEA5VYJgDSyMEQGCisGAQQBgjcCAQwxNjA0
+# HAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIBBC
+# aFWsSh/AiAgDK7n1G6stk4nNUh7ZjAtlCwYPTNi3MEQGCisGAQQBgjcCAQwxNjA0
 # oBSAEgBNAGkAYwByAG8AcwBvAGYAdKEcgBpodHRwczovL3d3dy5taWNyb3NvZnQu
-# Y29tIDANBgkqhkiG9w0BAQEFAASCAQCvDSTMeRppKSy3ZKYDWYFYjj/ElkkOreLF
-# jNRqRy9bruCXKTyNJL0lUpVndtQQi3K/kJCzvJjGaEekkBS8uxBPxUsucJqpuZcD
-# bNu4MH9ivsL//tvv//1frmnYwNjLXfFmCIMsjwJZOVaVsOc0NviyDrwWfF+tfe5o
-# PPW9NzIcipx74VKOAo8nCXpsJxu7wGxWwsfDykElJIH37cOe1lsirJIWdfTysR/U
-# /4tBqBYXH3NrNit0Ko7rAbUbfhVSyln6cIJVRPMv8+j+T1/4tuGCyewc3LCOfe6e
-# L5RZ7Z/ya0zEFXuZQH11K7m+gT9QIXMmMKKqyRHi8XDURa0Bzq2voYIXCzCCFwcG
-# CisGAQQBgjcDAwExghb3MIIW8wYJKoZIhvcNAQcCoIIW5DCCFuACAQMxDzANBglg
-# hkgBZQMEAgEFADCCAVQGCyqGSIb3DQEJEAEEoIIBQwSCAT8wggE7AgEBBgorBgEE
-# AYRZCgMBMDEwDQYJYIZIAWUDBAIBBQAEIPysHpdlWCRoPXwJmZvp9bw0X85ymsJl
-# 7KXGSz5tC3ksAgZiazXeqWMYEjIwMjIwNTEzMDUyNjUzLjExWjAEgAIB9KCB1KSB
-# 0TCBzjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcT
-# B1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEpMCcGA1UE
-# CxMgTWljcm9zb2Z0IE9wZXJhdGlvbnMgUHVlcnRvIFJpY28xJjAkBgNVBAsTHVRo
-# YWxlcyBUU1MgRVNOOjc4ODAtRTM5MC04MDE0MSUwIwYDVQQDExxNaWNyb3NvZnQg
-# VGltZS1TdGFtcCBTZXJ2aWNloIIRXzCCBxAwggT4oAMCAQICEzMAAAGoVfBhqcww
-# GFwAAQAAAagwDQYJKoZIhvcNAQELBQAwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgT
-# Cldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29m
-# dCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENB
-# IDIwMTAwHhcNMjIwMzAyMTg1MTIzWhcNMjMwNTExMTg1MTIzWjCBzjELMAkGA1UE
-# BhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAc
-# BgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEpMCcGA1UECxMgTWljcm9zb2Z0
-# IE9wZXJhdGlvbnMgUHVlcnRvIFJpY28xJjAkBgNVBAsTHVRoYWxlcyBUU1MgRVNO
-# Ojc4ODAtRTM5MC04MDE0MSUwIwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFtcCBT
-# ZXJ2aWNlMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAo9ptysAuJdfy
-# mPJelww3z0pO9yaUCIPDilT4d6NmGJtR6j8dTL4/1XFaEJfuiB54o8nrvv4t5V09
-# 0bmFO8YOBK6jfD4BybNxdnZAIZSBRF4tQpuauvTpsHTGG+1nCh6WHG0+SMkWxtMa
-# 1K35XsThUKM91ipBn+I3QCtdeaBsR9XILBL6Ha6igGEzlRxs+iC2vlWmB3NtQzj+
-# ta6mYVWM8HVqyff7C/toEIryP1BQmuhjjLWmZlJ/RK4YxZjtybZy+tt2bteV2WOp
-# F0db4JAAHgSqI6qC6Z9H5pKmjlPvkobT6ewGSOUZKxTUGLXmnis/zylmdKinvcZ6
-# b0ZY7YZEvA/XlgScqxzPGEZj5nw0RrRDAwyJWWSx09Tsnmor2DEBCM4nOohInOEj
-# BBa0QuqAmgfCSpPF6beCtjsHsM7NBOdCkpagvQdZH0qoi9oLuL1eU+/657z2P17t
-# +YHieHWG6XMQnNfpExT1MckyVs7o6s/c00QolbyOKkKfLwfV+69K4V+4Hu374or2
-# DZzY0q7kTNKzWco2q2Xgo7dTPJcta9NEM7gPk9VA51rS2qNL8BahSvEoLlk+WQsT
-# 5g+xLkb4T9UKAJqCE/IFmwc0rvAeVJ//bq6EucqnpdEAiuiIRiX/nJbSZKGO+cBE
-# +vQYiVKbQqupLAKNHlyRZPWwpoRvzDcCAwEAAaOCATYwggEyMB0GA1UdDgQWBBQ2
-# x9vj4vhS62U2H8zGMaSPSQsi1TAfBgNVHSMEGDAWgBSfpxVdAF5iXYP05dJlpxtT
-# NRnpcjBfBgNVHR8EWDBWMFSgUqBQhk5odHRwOi8vd3d3Lm1pY3Jvc29mdC5jb20v
-# cGtpb3BzL2NybC9NaWNyb3NvZnQlMjBUaW1lLVN0YW1wJTIwUENBJTIwMjAxMCgx
-# KS5jcmwwbAYIKwYBBQUHAQEEYDBeMFwGCCsGAQUFBzAChlBodHRwOi8vd3d3Lm1p
-# Y3Jvc29mdC5jb20vcGtpb3BzL2NlcnRzL01pY3Jvc29mdCUyMFRpbWUtU3RhbXAl
-# MjBQQ0ElMjAyMDEwKDEpLmNydDAMBgNVHRMBAf8EAjAAMBMGA1UdJQQMMAoGCCsG
-# AQUFBwMIMA0GCSqGSIb3DQEBCwUAA4ICAQBxO4JLZGqqZ/aY+vo5TJ2GZTH6bq+k
-# Q+zNaKglduexFufLracX1hdMq5I1YfVAV/Jz/Y3dhMSniETxi2FgqAMz8dSFRERf
-# dZPAax5i64N5LFZElYKisAcXWTBDMgqCtRzcb65XACYb8QjUQtETEDh+3HQSGt/n
-# 1ombs6eCfSVNJKIpR64YD4zLqgKL9XwRPHP55uW9AA1qW0mAZ+mm5ZdhPiOKxAoR
-# O+gmMG/nH4EDSgQW7uAZp4wORmOc7m91/od4qd4guz1m/AhaSBhCLZl6jNvGCUbl
-# jATGiLF6TGtFMNnAyiQhjFeZxyxxDTFeaH4je+juFX1kwpNr09rPmd7hxzw53DVP
-# 7rbiYHRZpb0cATWGiMHoJt+6d21X+PDGZ0qHXmmUlec3XIzs4v3bgeoCImKwdqek
-# 4QnhSb1veEVRcTa4Qkv1pi4iCSxVgirU/b2tHhfuXPe4QkfoI6SgTr5Rxq43olgW
-# CE30jwlEFYCEdfgZAeWeCx1+1YsuINkzKeWBEJnORgjbg31zH4PfrtjByWo1joJm
-# 4CDPDLXa5FgVBqxgdgrWGnPJO24j8DYHxwb4czpfWN/Z324BHAfr6EuQ+23f/k0G
-# Utek6XmJnJGUGLuINeRY1reO4Z8sAnchIPI2HvK74fjJBjJGz8xWsKRZQmz0SK8s
-# qw0nYH8iM2tK1jCCB3EwggVZoAMCAQICEzMAAAAVxedrngKbSZkAAAAAABUwDQYJ
-# KoZIhvcNAQELBQAwgYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9u
-# MRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRp
-# b24xMjAwBgNVBAMTKU1pY3Jvc29mdCBSb290IENlcnRpZmljYXRlIEF1dGhvcml0
-# eSAyMDEwMB4XDTIxMDkzMDE4MjIyNVoXDTMwMDkzMDE4MzIyNVowfDELMAkGA1UE
-# BhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAc
-# BgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0
-# IFRpbWUtU3RhbXAgUENBIDIwMTAwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIK
-# AoICAQDk4aZM57RyIQt5osvXJHm9DtWC0/3unAcH0qlsTnXIyjVX9gF/bErg4r25
-# PhdgM/9cT8dm95VTcVrifkpa/rg2Z4VGIwy1jRPPdzLAEBjoYH1qUoNEt6aORmsH
-# FPPFdvWGUNzBRMhxXFExN6AKOG6N7dcP2CZTfDlhAnrEqv1yaa8dq6z2Nr41JmTa
-# mDu6GnszrYBbfowQHJ1S/rboYiXcag/PXfT+jlPP1uyFVk3v3byNpOORj7I5LFGc
-# 6XBpDco2LXCOMcg1KL3jtIckw+DJj361VI/c+gVVmG1oO5pGve2krnopN6zL64NF
-# 50ZuyjLVwIYwXE8s4mKyzbnijYjklqwBSru+cakXW2dg3viSkR4dPf0gz3N9QZpG
-# dc3EXzTdEonW/aUgfX782Z5F37ZyL9t9X4C626p+Nuw2TPYrbqgSUei/BQOj0XOm
-# TTd0lBw0gg/wEPK3Rxjtp+iZfD9M269ewvPV2HM9Q07BMzlMjgK8QmguEOqEUUbi
-# 0b1qGFphAXPKZ6Je1yh2AuIzGHLXpyDwwvoSCtdjbwzJNmSLW6CmgyFdXzB0kZSU
-# 2LlQ+QuJYfM2BjUYhEfb3BvR/bLUHMVr9lxSUV0S2yW6r1AFemzFER1y7435UsSF
-# F5PAPBXbGjfHCBUYP3irRbb1Hode2o+eFnJpxq57t7c+auIurQIDAQABo4IB3TCC
-# AdkwEgYJKwYBBAGCNxUBBAUCAwEAATAjBgkrBgEEAYI3FQIEFgQUKqdS/mTEmr6C
-# kTxGNSnPEP8vBO4wHQYDVR0OBBYEFJ+nFV0AXmJdg/Tl0mWnG1M1GelyMFwGA1Ud
-# IARVMFMwUQYMKwYBBAGCN0yDfQEBMEEwPwYIKwYBBQUHAgEWM2h0dHA6Ly93d3cu
-# bWljcm9zb2Z0LmNvbS9wa2lvcHMvRG9jcy9SZXBvc2l0b3J5Lmh0bTATBgNVHSUE
-# DDAKBggrBgEFBQcDCDAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMAQTALBgNVHQ8E
-# BAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAfBgNVHSMEGDAWgBTV9lbLj+iiXGJo0T2U
-# kFvXzpoYxDBWBgNVHR8ETzBNMEugSaBHhkVodHRwOi8vY3JsLm1pY3Jvc29mdC5j
-# b20vcGtpL2NybC9wcm9kdWN0cy9NaWNSb29DZXJBdXRfMjAxMC0wNi0yMy5jcmww
-# WgYIKwYBBQUHAQEETjBMMEoGCCsGAQUFBzAChj5odHRwOi8vd3d3Lm1pY3Jvc29m
-# dC5jb20vcGtpL2NlcnRzL01pY1Jvb0NlckF1dF8yMDEwLTA2LTIzLmNydDANBgkq
-# hkiG9w0BAQsFAAOCAgEAnVV9/Cqt4SwfZwExJFvhnnJL/Klv6lwUtj5OR2R4sQaT
-# lz0xM7U518JxNj/aZGx80HU5bbsPMeTCj/ts0aGUGCLu6WZnOlNN3Zi6th542DYu
-# nKmCVgADsAW+iehp4LoJ7nvfam++Kctu2D9IdQHZGN5tggz1bSNU5HhTdSRXud2f
-# 8449xvNo32X2pFaq95W2KFUn0CS9QKC/GbYSEhFdPSfgQJY4rPf5KYnDvBewVIVC
-# s/wMnosZiefwC2qBwoEZQhlSdYo2wh3DYXMuLGt7bj8sCXgU6ZGyqVvfSaN0DLzs
-# kYDSPeZKPmY7T7uG+jIa2Zb0j/aRAfbOxnT99kxybxCrdTDFNLB62FD+CljdQDzH
-# VG2dY3RILLFORy3BFARxv2T5JL5zbcqOCb2zAVdJVGTZc9d/HltEAY5aGZFrDZ+k
-# KNxnGSgkujhLmm77IVRrakURR6nxt67I6IleT53S0Ex2tVdUCbFpAUR+fKFhbHP+
-# CrvsQWY9af3LwUFJfn6Tvsv4O+S3Fb+0zj6lMVGEvL8CwYKiexcdFYmNcP7ntdAo
-# GokLjzbaukz5m/8K6TT4JDVnK+ANuOaMmdbhIurwJ0I9JZTmdHRbatGePu1+oDEz
-# fbzL6Xu/OHBE0ZDxyKs6ijoIYn/ZcGNTTY3ugm2lBRDBcQZqELQdVTNYs6FwZvKh
-# ggLSMIICOwIBATCB/KGB1KSB0TCBzjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldh
-# c2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBD
-# b3Jwb3JhdGlvbjEpMCcGA1UECxMgTWljcm9zb2Z0IE9wZXJhdGlvbnMgUHVlcnRv
-# IFJpY28xJjAkBgNVBAsTHVRoYWxlcyBUU1MgRVNOOjc4ODAtRTM5MC04MDE0MSUw
-# IwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFtcCBTZXJ2aWNloiMKAQEwBwYFKw4D
-# AhoDFQBsuvzEn0EHisvhiDnxfUtnmJB3LKCBgzCBgKR+MHwxCzAJBgNVBAYTAlVT
-# MRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQK
-# ExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1l
-# LVN0YW1wIFBDQSAyMDEwMA0GCSqGSIb3DQEBBQUAAgUA5igoyTAiGA8yMDIyMDUx
-# MzA0NDYwMVoYDzIwMjIwNTE0MDQ0NjAxWjB3MD0GCisGAQQBhFkKBAExLzAtMAoC
-# BQDmKCjJAgEAMAoCAQACAhtxAgH/MAcCAQACAhSyMAoCBQDmKXpJAgEAMDYGCisG
-# AQQBhFkKBAIxKDAmMAwGCisGAQQBhFkKAwKgCjAIAgEAAgMHoSChCjAIAgEAAgMB
-# hqAwDQYJKoZIhvcNAQEFBQADgYEAzDXUCQzWheR67BilBwepHSlBgWzlOJQmNdCy
-# DAMGMgL+tcXS6ZEdi7jnSGi/ZIIa9jxj/IOEBjPqrL63TJOdaeZvZT+a5wdJbPAU
-# PVm0+4C/nxBjf43oqhy67zt2NTtoRQP+iiwBaCq/xO50rVL0Okv6Sw53snPQRcXr
-# oyVVApoxggQNMIIECQIBATCBkzB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2Fz
-# aGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENv
-# cnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0EgMjAx
-# MAITMwAAAahV8GGpzDAYXAABAAABqDANBglghkgBZQMEAgEFAKCCAUowGgYJKoZI
-# hvcNAQkDMQ0GCyqGSIb3DQEJEAEEMC8GCSqGSIb3DQEJBDEiBCBa6oDK2Ajo+Yhm
-# N8gY1rGRT19DuW9BlbWzCL9rHDZqWzCB+gYLKoZIhvcNAQkQAi8xgeowgecwgeQw
-# gb0EIHT+yx0AywfCc3CF8UFc+UWdG9aEepJf1gtTEEOXXGWmMIGYMIGApH4wfDEL
-# MAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1v
-# bmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMdTWlj
-# cm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGoVfBhqcwwGFwAAQAAAagw
-# IgQgPNOij99Zmv+Sut/Rx3MkoYBQUAOIEnZrarSuzzMggCswDQYJKoZIhvcNAQEL
-# BQAEggIAWljnlb24BOUA0l/gNzOmN15NTBl58k806s9FPr1jSvqKNKIvl8SmTpnY
-# OZJTgiUbo7CtTGVDgoLepqb1EIpfoEVDrL/D0N1ghdMpIH6/8Sa6sJ55LdwwBBnY
-# n/8EgnHuNnlH+d7AckRXWy2PQz7j+382MTVunqU3vrFVqBsRM+C5sIxP2IWGDFEb
-# m40MLler/H3DPnk40KjNgmkNMQMB8dAD4njDMga4ohE10XiZoS8VDm34f//JyHU0
-# bPcL6gxIwZVYgDaYt96gyiM/bD6OQssgVgXQH03Osorr/sQoDywZgQGtMRNBBUhh
-# Ak95+vuK3SdelCGhiZBjkKMXddO/VYGftWM0inggTgJhpWKz6vwtqHMepvOH1yOy
-# Q80mpqG1gcok+hWMFYaP4C3faEc+dcCX9YDy4VYXYBS+gosAaOlgNclAkBl+aLfx
-# dF6yMZRPXqo40XLLwf6qwHqZrQOA5duab2qxxRuOtoNqsrFrcJQRELTfvll9ayxp
-# uwjRI4BFu1ZdWfsE3IiPhVf73NhUYxxT2GiuadWcavQrfOQpkzHtANNgCM9+0Kco
-# Xcwt60ILCK9JnmAe5oX1UBTAWCkw76ZYRrlhHk8Z0kT/1A4R8m7YLd5Sh4+7tWYH
-# OAwhA48X8xl1gmLX64D/uSjCmGwsiM7JvDwv/iIGxahlrO7Y/TI=
+# Y29tIDANBgkqhkiG9w0BAQEFAASCAQCfAEaGJotSDzvNqmaZUcoQCVNzb5gCdjMN
+# 5Jzr60XD5BsuGBg/KJYWi5xcErUey5yJbTfsorMfLOfbFmaEbvny42t/YkVOw2kH
+# 08lRN9HCEvtyvHFOZ/lgR3y6TBgzZp5GSTUTEU9pqF0LCCaGRbGkBY5+/fU66YGH
+# LiJ0i50hHYtyVoAfNkpdGVaJZuYKbaSdT0EjQN0/JXR1Hl9F9SeQNAc0nb3wNmVw
+# ljtCHnDL73QFegcA52CoKtwhGv3e2+VVzZ3xkiS9EMY9Kyzyxylkk63t8K+yMis3
+# jwh9Yq/SPtmWFYsTXThKGD+24gIRZ5hvQWR/VABUGgVpKKK+FpSGoYIXFjCCFxIG
+# CisGAQQBgjcDAwExghcCMIIW/gYJKoZIhvcNAQcCoIIW7zCCFusCAQMxDzANBglg
+# hkgBZQMEAgEFADCCAVkGCyqGSIb3DQEJEAEEoIIBSASCAUQwggFAAgEBBgorBgEE
+# AYRZCgMBMDEwDQYJYIZIAWUDBAIBBQAEIKB+R0CCUDaRwLMXfSK7Raj+yUyZgxJx
+# BZdYXuUCspF4AgZihjS6ilMYEzIwMjIwNjA3MTUxMDIwLjg0OVowBIACAfSggdik
+# gdUwgdIxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQH
+# EwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xLTArBgNV
+# BAsTJE1pY3Jvc29mdCBJcmVsYW5kIE9wZXJhdGlvbnMgTGltaXRlZDEmMCQGA1UE
+# CxMdVGhhbGVzIFRTUyBFU046MkFENC00QjkyLUZBMDExJTAjBgNVBAMTHE1pY3Jv
+# c29mdCBUaW1lLVN0YW1wIFNlcnZpY2WgghFlMIIHFDCCBPygAwIBAgITMwAAAYZ4
+# 5RmJ+CRLzAABAAABhjANBgkqhkiG9w0BAQsFADB8MQswCQYDVQQGEwJVUzETMBEG
+# A1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWlj
+# cm9zb2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFt
+# cCBQQ0EgMjAxMDAeFw0yMTEwMjgxOTI3MzlaFw0yMzAxMjYxOTI3MzlaMIHSMQsw
+# CQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9u
+# ZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMS0wKwYDVQQLEyRNaWNy
+# b3NvZnQgSXJlbGFuZCBPcGVyYXRpb25zIExpbWl0ZWQxJjAkBgNVBAsTHVRoYWxl
+# cyBUU1MgRVNOOjJBRDQtNEI5Mi1GQTAxMSUwIwYDVQQDExxNaWNyb3NvZnQgVGlt
+# ZS1TdGFtcCBTZXJ2aWNlMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA
+# wI3G2Wpv6B4IjAfrgfJpndPOPYO1Yd8+vlfoIxMW3gdCDT+zIbafg14pOu0t0ekU
+# Qx60p7PadH4OjnqNIE1q6ldH9ntj1gIdl4Hq4rdEHTZ6JFdE24DSbVoqqR+R4Iw4
+# w3GPbfc2Q3kfyyFyj+DOhmCWw/FZiTVTlT4bdejyAW6r/Jn4fr3xLjbvhITatr36
+# VyyzgQ0Y4Wr73H3gUcLjYu0qiHutDDb6+p+yDBGmKFznOW8wVt7D+u2VEJoE6JlK
+# 0EpVLZusdSzhecuUwJXxb2uygAZXlsa/fHlwW9YnlBqMHJ+im9HuK5X4x8/5B5dk
+# uIoX5lWGjFMbD2A6Lu/PmUB4hK0CF5G1YaUtBrME73DAKkypk7SEm3BlJXwY/GrV
+# oXWYUGEHyfrkLkws0RoEMpoIEgebZNKqjRynRJgR4fPCKrEhwEiTTAc4DXGci4HH
+# Om64EQ1g/SDHMFqIKVSxoUbkGbdKNKHhmahuIrAy4we9s7rZJskveZYZiDmtAtBt
+# /gQojxbZ1vO9C11SthkrmkkTMLQf9cDzlVEBeu6KmHX2Sze6ggne3I4cy/5IULnH
+# Z3rM4ZpJc0s2KpGLHaVrEQy4x/mAn4yaYfgeH3MEAWkVjy/qTDh6cDCF/gyz3TaQ
+# DtvFnAK70LqtbEvBPdBpeCG/hk9l0laYzwiyyGY/HqMCAwEAAaOCATYwggEyMB0G
+# A1UdDgQWBBQZtqNFA+9mdEu/h33UhHMN6whcLjAfBgNVHSMEGDAWgBSfpxVdAF5i
+# XYP05dJlpxtTNRnpcjBfBgNVHR8EWDBWMFSgUqBQhk5odHRwOi8vd3d3Lm1pY3Jv
+# c29mdC5jb20vcGtpb3BzL2NybC9NaWNyb3NvZnQlMjBUaW1lLVN0YW1wJTIwUENB
+# JTIwMjAxMCgxKS5jcmwwbAYIKwYBBQUHAQEEYDBeMFwGCCsGAQUFBzAChlBodHRw
+# Oi8vd3d3Lm1pY3Jvc29mdC5jb20vcGtpb3BzL2NlcnRzL01pY3Jvc29mdCUyMFRp
+# bWUtU3RhbXAlMjBQQ0ElMjAyMDEwKDEpLmNydDAMBgNVHRMBAf8EAjAAMBMGA1Ud
+# JQQMMAoGCCsGAQUFBwMIMA0GCSqGSIb3DQEBCwUAA4ICAQDD7mehJY3fTHKC4hj+
+# wBWB8544uaJiMMIHnhK9ONTM7VraTYzx0U/TcLJ6gxw1tRzM5uu8kswJNlHNp7Re
+# dsAiwviVQZV9AL8IbZRLJTwNehCwk+BVcY2gh3ZGZmx8uatPZrRueyhhTTD2PvFV
+# Lrfwh2liDG/dEPNIHTKj79DlEcPIWoOCUp7p0ORMwQ95kVaibpX89pvjhPl2Fm0C
+# BO3pXXJg0bydpQ5dDDTv/qb0+WYF/vNVEU/MoMEQqlUWWuXECTqx6TayJuLJ6uU7
+# K5QyTkQ/l24IhGjDzf5AEZOrINYzkWVyNfUOpIxnKsWTBN2ijpZ/Tun5qrmo9vNI
+# DT0lobgnulae17NaEO9oiEJJH1tQ353dhuRi+A00PR781iYlzF5JU1DrEfEyNx8C
+# WgERi90LKsYghZBCDjQ3DiJjfUZLqONeHrJfcmhz5/bfm8+aAaUPpZFeP0g0Iond
+# 6XNk4YiYbWPFoofc0LwcqSALtuIAyz6f3d+UaZZsp41U4hCIoGj6hoDIuU839bo/
+# mZ/AgESwGxIXs0gZU6A+2qIUe60QdA969wWSzucKOisng9HCSZLF1dqc3QUawr0C
+# 0U41784Ko9vckAG3akwYuVGcs6hM/SqEhoe9jHwe4Xp81CrTB1l9+EIdukCbP0ky
+# zx0WZzteeiDN5rdiiQR9mBJuljCCB3EwggVZoAMCAQICEzMAAAAVxedrngKbSZkA
+# AAAAABUwDQYJKoZIhvcNAQELBQAwgYgxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpX
+# YXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQg
+# Q29ycG9yYXRpb24xMjAwBgNVBAMTKU1pY3Jvc29mdCBSb290IENlcnRpZmljYXRl
+# IEF1dGhvcml0eSAyMDEwMB4XDTIxMDkzMDE4MjIyNVoXDTMwMDkzMDE4MzIyNVow
+# fDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1Jl
+# ZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMd
+# TWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTAwggIiMA0GCSqGSIb3DQEBAQUA
+# A4ICDwAwggIKAoICAQDk4aZM57RyIQt5osvXJHm9DtWC0/3unAcH0qlsTnXIyjVX
+# 9gF/bErg4r25PhdgM/9cT8dm95VTcVrifkpa/rg2Z4VGIwy1jRPPdzLAEBjoYH1q
+# UoNEt6aORmsHFPPFdvWGUNzBRMhxXFExN6AKOG6N7dcP2CZTfDlhAnrEqv1yaa8d
+# q6z2Nr41JmTamDu6GnszrYBbfowQHJ1S/rboYiXcag/PXfT+jlPP1uyFVk3v3byN
+# pOORj7I5LFGc6XBpDco2LXCOMcg1KL3jtIckw+DJj361VI/c+gVVmG1oO5pGve2k
+# rnopN6zL64NF50ZuyjLVwIYwXE8s4mKyzbnijYjklqwBSru+cakXW2dg3viSkR4d
+# Pf0gz3N9QZpGdc3EXzTdEonW/aUgfX782Z5F37ZyL9t9X4C626p+Nuw2TPYrbqgS
+# Uei/BQOj0XOmTTd0lBw0gg/wEPK3Rxjtp+iZfD9M269ewvPV2HM9Q07BMzlMjgK8
+# QmguEOqEUUbi0b1qGFphAXPKZ6Je1yh2AuIzGHLXpyDwwvoSCtdjbwzJNmSLW6Cm
+# gyFdXzB0kZSU2LlQ+QuJYfM2BjUYhEfb3BvR/bLUHMVr9lxSUV0S2yW6r1AFemzF
+# ER1y7435UsSFF5PAPBXbGjfHCBUYP3irRbb1Hode2o+eFnJpxq57t7c+auIurQID
+# AQABo4IB3TCCAdkwEgYJKwYBBAGCNxUBBAUCAwEAATAjBgkrBgEEAYI3FQIEFgQU
+# KqdS/mTEmr6CkTxGNSnPEP8vBO4wHQYDVR0OBBYEFJ+nFV0AXmJdg/Tl0mWnG1M1
+# GelyMFwGA1UdIARVMFMwUQYMKwYBBAGCN0yDfQEBMEEwPwYIKwYBBQUHAgEWM2h0
+# dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2lvcHMvRG9jcy9SZXBvc2l0b3J5Lmh0
+# bTATBgNVHSUEDDAKBggrBgEFBQcDCDAZBgkrBgEEAYI3FAIEDB4KAFMAdQBiAEMA
+# QTALBgNVHQ8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAfBgNVHSMEGDAWgBTV9lbL
+# j+iiXGJo0T2UkFvXzpoYxDBWBgNVHR8ETzBNMEugSaBHhkVodHRwOi8vY3JsLm1p
+# Y3Jvc29mdC5jb20vcGtpL2NybC9wcm9kdWN0cy9NaWNSb29DZXJBdXRfMjAxMC0w
+# Ni0yMy5jcmwwWgYIKwYBBQUHAQEETjBMMEoGCCsGAQUFBzAChj5odHRwOi8vd3d3
+# Lm1pY3Jvc29mdC5jb20vcGtpL2NlcnRzL01pY1Jvb0NlckF1dF8yMDEwLTA2LTIz
+# LmNydDANBgkqhkiG9w0BAQsFAAOCAgEAnVV9/Cqt4SwfZwExJFvhnnJL/Klv6lwU
+# tj5OR2R4sQaTlz0xM7U518JxNj/aZGx80HU5bbsPMeTCj/ts0aGUGCLu6WZnOlNN
+# 3Zi6th542DYunKmCVgADsAW+iehp4LoJ7nvfam++Kctu2D9IdQHZGN5tggz1bSNU
+# 5HhTdSRXud2f8449xvNo32X2pFaq95W2KFUn0CS9QKC/GbYSEhFdPSfgQJY4rPf5
+# KYnDvBewVIVCs/wMnosZiefwC2qBwoEZQhlSdYo2wh3DYXMuLGt7bj8sCXgU6ZGy
+# qVvfSaN0DLzskYDSPeZKPmY7T7uG+jIa2Zb0j/aRAfbOxnT99kxybxCrdTDFNLB6
+# 2FD+CljdQDzHVG2dY3RILLFORy3BFARxv2T5JL5zbcqOCb2zAVdJVGTZc9d/HltE
+# AY5aGZFrDZ+kKNxnGSgkujhLmm77IVRrakURR6nxt67I6IleT53S0Ex2tVdUCbFp
+# AUR+fKFhbHP+CrvsQWY9af3LwUFJfn6Tvsv4O+S3Fb+0zj6lMVGEvL8CwYKiexcd
+# FYmNcP7ntdAoGokLjzbaukz5m/8K6TT4JDVnK+ANuOaMmdbhIurwJ0I9JZTmdHRb
+# atGePu1+oDEzfbzL6Xu/OHBE0ZDxyKs6ijoIYn/ZcGNTTY3ugm2lBRDBcQZqELQd
+# VTNYs6FwZvKhggLUMIICPQIBATCCAQChgdikgdUwgdIxCzAJBgNVBAYTAlVTMRMw
+# EQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVN
+# aWNyb3NvZnQgQ29ycG9yYXRpb24xLTArBgNVBAsTJE1pY3Jvc29mdCBJcmVsYW5k
+# IE9wZXJhdGlvbnMgTGltaXRlZDEmMCQGA1UECxMdVGhhbGVzIFRTUyBFU046MkFE
+# NC00QjkyLUZBMDExJTAjBgNVBAMTHE1pY3Jvc29mdCBUaW1lLVN0YW1wIFNlcnZp
+# Y2WiIwoBATAHBgUrDgMCGgMVAAGu2DRzWkKljmXySX1korHL4fMnoIGDMIGApH4w
+# fDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1Jl
+# ZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMd
+# TWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTAwDQYJKoZIhvcNAQEFBQACBQDm
+# Sb8BMCIYDzIwMjIwNjA3MjAxMTQ1WhgPMjAyMjA2MDgyMDExNDVaMHQwOgYKKwYB
+# BAGEWQoEATEsMCowCgIFAOZJvwECAQAwBwIBAAICA5swBwIBAAICEmgwCgIFAOZL
+# EIECAQAwNgYKKwYBBAGEWQoEAjEoMCYwDAYKKwYBBAGEWQoDAqAKMAgCAQACAweh
+# IKEKMAgCAQACAwGGoDANBgkqhkiG9w0BAQUFAAOBgQAsC0ug24FGBSW/+3JvHYdj
+# WTDwX6SCW/mO/z577Qp9o509yXNMlv551DPkmHleBoQa/PoNr6aNdBFnqlq9cvhK
+# PJ8xuplj/aRSuTRoYEovCIEYnuDtrr63/pJ7i5jqDp/2RAciJkatoKOmwCPXjIE7
+# bFh1eHPw2LkFhMejD5Pa6jGCBA0wggQJAgEBMIGTMHwxCzAJBgNVBAYTAlVTMRMw
+# EQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVN
+# aWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0
+# YW1wIFBDQSAyMDEwAhMzAAABhnjlGYn4JEvMAAEAAAGGMA0GCWCGSAFlAwQCAQUA
+# oIIBSjAaBgkqhkiG9w0BCQMxDQYLKoZIhvcNAQkQAQQwLwYJKoZIhvcNAQkEMSIE
+# IMkGs3JmM5kS/3NufifrBmArUJ2nIQ85HKv4ETU+IPjEMIH6BgsqhkiG9w0BCRAC
+# LzGB6jCB5zCB5DCBvQQgGpmI4LIsCFTGiYyfRAR7m7Fa2guxVNIw17mcAiq8Qn4w
+# gZgwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4G
+# A1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSYw
+# JAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0EgMjAxMAITMwAAAYZ45RmJ
+# +CRLzAABAAABhjAiBCCkzwd5j2U62lF2OjYku7BZkWNMSrqXA7CcEDrWrq8uujAN
+# BgkqhkiG9w0BAQsFAASCAgA4yrns7VI5JuUuRtDqBxhzGL09WcheNtw1xR1ciYMu
+# HirgAaORqXBDh5/JIrXooKx9b/ADSWGToRxHE2ZIfZt8JLkhZCoS68RB17FXohFK
+# 72CPgoXgjRKKW66hOMOKvwqzOVljwgnw0ekFmbpG619hqpcdb9suz/jDTHhMt8IM
+# O71pYho6lX0C8Krs/bJNNnVMZ/lh27myZAd9Swh/OfBsZoCSutdXjVUvGeeev7nt
+# oZEj78ygsTQBThil+D7JCpe+nYYv8ZHiYksyxk8NqjYtiyuX07f0H4vDYQrj4XG+
+# 8VIZ7HDa/ZLTrZ7l409J+KIveUIsd/jL4SQlk3OTte0FhCmGYmfki4uQ/2Ui2ZmG
+# YG/xuIQlpALoYt5DgmjUvQ2tVkMIxYflw93V7ai+nvO5dNlY6vi8ck8iCL+mr1jB
+# qeZhVUxE2pNCJLTZAUJFu+Boz2BfFR3tnWgz7OzmCHoZobNzYRTC3seo2ALQSqU+
+# KwlaPs4I5SdR9BWAKGFLRxXlEpi6tvGJXG6qiSO0r4lwrqDmGfBujYg7zZa6EmER
+# Iwm0sEtzbKoJFezpLvfr97IlPgB6CR5Zp295NsT5DJ2c1TfLeHz6854eOuoDYJHl
+# ozogMftK84uzUGHrbVrmVpHTNS1jtvxdgksx5jz66HTejWoGWcnUieZU9aJBWEW7
+# 5g==
 # SIG # End signature block
