@@ -561,6 +561,24 @@ resource module8 'modules' ={
       }
     }
   }
+  resource module22 'modules' ={
+    name: 'Check-ProtectionDataAtRest'
+    properties: {
+      contentLink: {
+        uri: '${CustomModulesBaseURL}/Check-ProtectionDataAtRest.zip'
+        version: '1.0.0'
+      }
+    }
+  }
+  resource module23 'modules' ={
+    name: 'Check-ProtectionDataInTransit'
+    properties: {
+      contentLink: {
+        uri: '${CustomModulesBaseURL}/Check-ProtectionDataInTransit.zip'
+        version: '1.0.0'
+      }
+    }
+  }
 resource module9 'modules' ={
     name: 'Check-SubnetComplianceStatus'
     properties: {
