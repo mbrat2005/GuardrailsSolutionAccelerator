@@ -60,7 +60,14 @@ function Check-StatusPBMM {
             $Comment=$msgTable.isCompliant 
             #No exemption exists. All good.
         }
-        $c=new-customObject -Type $objType -Id $obj.Id -Name $obj.Name -DisplayName $obj.DisplayName `
+        if ($obj.DisplayName -eq $null)
+        {
+            $DisplayName=$obj.Name
+        }
+        else {
+            $DisplayName=$obj.DisplayName
+        }
+        $c=new-customObject -Type $objType -Id $obj.Id -Name $obj.Name -DisplayName $DisplayName `
                 -CtrlName $ControlName `
                 -ComplianceStatus $ComplianceStatus `
                 -ItemName $ItemName `

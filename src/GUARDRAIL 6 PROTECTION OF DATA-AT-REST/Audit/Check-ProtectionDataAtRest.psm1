@@ -89,13 +89,20 @@ function Check-StatusDataAtRest {
                 #No exemption exists. All good.
             }
         }
-        $c=new-customObject -Type $objType -Id $obj.Id -Name $obj.Name -DisplayName $obj.DisplayName `
+        if ($obj.DisplayName -eq $null)
+        {
+            $DisplayName=$obj.Name
+        }
+        else {
+            $DisplayName=$obj.DisplayName
+        }
+        $c=new-customObject -Type $objType -Id $obj.Id -Name $obj.Name -DisplayName $DisplayName `
                 -CtrlName $ControlName `
                 -ComplianceStatus $ComplianceStatus `
                 -ItemName $ItemName `
                 -Comments $Comment`
                 -ReportTime $ReportTime
-        $tempObjectList.add($c) | Out-Null
+        $tempObjectList.add($c)| Out-Null
     }
     return $tempObjectList
 }
