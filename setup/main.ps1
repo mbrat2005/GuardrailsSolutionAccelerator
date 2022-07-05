@@ -38,7 +38,7 @@ Import-LocalizedData -BindingVariable "msgTable" -UICulture $Locale -FileName "G
 foreach ($module in $modules)
 {
     $NewScriptBlock = [scriptblock]::Create($module.Script)
-    Write-Output "Processing Module $($module.modulename)" -ForegroundColor Yellow
+    Write-Output "Processing Module $($module.modulename)" 
     $variables=$module.variables
     $secrets=$module.secrets
     $localVariables=$module.localVariables
