@@ -6,7 +6,7 @@ $LogType=Get-AutomationVariable -Name "LogType"
 $KeyVaultName=Get-AutomationVariable -Name "KeyVaultName" 
 $GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
 $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
-$ReportTime=(get-date).tostring("dd-MM-yyyy-hh:mm:ss")
+$ReportTime=(get-date).tostring("dd-MM-yyyy hh:mm:ss")
 $StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
 $Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
 
