@@ -571,10 +571,10 @@ resource module8 'modules' ={
     }
   }
   resource module23 'modules' ={
-    name: 'Check-ProtectionDataInTransit'
+    name: 'Check-ProtectionOfDataInTransit'
     properties: {
       contentLink: {
-        uri: '${CustomModulesBaseURL}/Check-ProtectionDataInTransit.zip'
+        uri: '${CustomModulesBaseURL}/Check-ProtectionOfDataInTransit.zip'
         version: '1.0.0'
       }
     }
