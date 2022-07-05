@@ -1,7 +1,7 @@
 function Check-CBSSensors {
     param (
         [string] $SubscriptionName , [string] $TenantID , [string] $ControlName, `
-        [string] $WorkSpaceID, [string] $workspaceKey, [string] $LogType, [hashtable] $msgTable,
+        [string] $WorkSpaceID, [string] $workspaceKey, [string] $LogType, [string] $ItemName,  [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime
@@ -53,6 +53,7 @@ function Check-CBSSensors {
     $object | Add-Member -MemberType NoteProperty -TypeName DateTime -Name ReportTime -Value $ReportTime
     $object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant
     $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands
+    $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
     $JsonObject = convertTo-Json -inputObject $Object 
         
     Send-OMSAPIIngestionFile -customerId $WorkSpaceID `
