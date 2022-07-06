@@ -48,11 +48,7 @@ var wbConfig1 ='''
             "type": 2,
             "isRequired": true,
             "query": "GuardrailsCompliance_CL\n| summarize by ReportTime_s",
-<<<<<<< HEAD
             "value": "05-07-2022 07:25:21",
-=======
-            "value": "05-07-2022 04:27:10",
->>>>>>> a466666d19482d42bf768a04e78e8aaef93ba3c4
             "typeSettings": {
               "additionalResourceOptions": []
             },

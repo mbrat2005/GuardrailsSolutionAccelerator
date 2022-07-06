@@ -484,11 +484,7 @@ var wbConfig1 ='''
               "query": "GuardrailsCompliance_CL\n| summarize by ControlName_s\n| count \n| extend Title=\"Total of Controls\"",
               "size": 4,
               "timeContext": {
-<<<<<<< HEAD
                 "durationMs": 86400000
-=======
-                "durationMs": 3600000
->>>>>>> a466666d19482d42bf768a04e78e8aaef93ba3c4
               },
               "queryType": 0,
               "resourceType": "microsoft.operationalinsights/workspaces",
