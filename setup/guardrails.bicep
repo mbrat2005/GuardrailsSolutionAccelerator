@@ -737,18 +737,6 @@ resource module14 'modules' ={
         version: '0.3.0'
       }
     }
-    dependsOn: [
-      module18
-    ]
-  }
-  resource module18 'modules' ={
-    name: 'Az.Accounts'
-    properties: {
-      contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.accounts.2.7.2.nupkg'
-        version: '2.7.2'
-      }
-    }
   }
   resource module19 'modules' ={
     name: 'Check-CyberSecurityServices'
