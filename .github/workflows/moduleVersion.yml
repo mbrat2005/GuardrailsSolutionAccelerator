@@ -6,6 +6,8 @@ name: Increment Module Versions
 on:
   pull_request:
     branches: [ "module-version-workflow" ]
+  push:
+    branches: [ "module-version-workflow" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -20,10 +22,11 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       - id: files
         uses: jitterbit/get-changed-files@v1
+        continue-on-error: true
         with:
           format: json
 
@@ -36,9 +39,11 @@ jobs:
           
           $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
 
-          $moduleManifestList = $files | where-object { $_ -match '\.psd1$'}
+          $moduleChangedFileList = $files | where-object { $_ -match '\.psm1$'}
 
-          ForEach ($moduleManifestPath in $moduleManifestList) {
+          ForEach ($moduleChangedFile in $moduleChangedFileList) {
+              $moduleManifestPath = Get-Item -Path ($moduleChangedFile -replace '\.psm1$','.psd1')
+              
               $moduleManifest = Get-Item $moduleManifestPath
               $content = Get-Content $moduleManifest
 
