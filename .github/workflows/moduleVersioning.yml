@@ -1,0 +1,79 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Increment Module Versions
+
+# Controls when the workflow will run
+on:
+  pull_request:
+    branches: [ "module-version-workflow" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: json
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          # Automatically increment the 'build' version numbers on a PS module file
+          
+          $files = '${{ steps.files.outputs.modified }}' | ConvertFrom-Json
+          
+          $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
+
+          $moduleManifestList = $files | where-object { $_ -match '\.psd1$'}
+
+          ForEach ($moduleManifestPath in $moduleManifestList) {
+              $moduleManifest = Get-Item $moduleManifestPath
+              $content = Get-Content $moduleManifest
+
+              If ($moduleVersionMatches = $moduleVersionRegex.matches($content)) {
+                  If ($moduleVersionMatches.count -eq 1) {
+                      $moduleVersionLine = $moduleVersionMatches[0].Groups[0].Value
+                      $currentModuleVersion = $moduleVersionMatches[0].Groups[1].Value
+
+                      If ($version = $currentModuleVersion -as [version]) {
+                          $major = $version.Major
+                          $minor = $version.Minor
+                          $build = $version.Build + 1 # add 1 to current version build number
+
+                          $newVersion = [version]::new($major,$minor,$build)
+                      }
+                      Else {
+                          Write-Error "Version string '$currentModuleVersion' cannot be converted to type [Version]. File: '$moduleManifest'"
+                      }
+
+                      $newVersionLine = $moduleVersionLine -replace $currentModuleVersion,$newVersion
+
+                      $moduleManifest | Set-Content -Value ($content -replace $moduleVersionLine,$newVersionLine)
+                  }
+                  Else {
+                      Write-Error "More than one matches for regex '$moduleVersionRegex' found in file '$moduleManifest'"
+                  }
+              }
+          }
+        shell: pwsh
+      - name: commit changes
+        run: |
+          git branch
+          git config --global user.name 'Matthew Bratschun'
+          git config --global user.email 'mbratschun@microsoft.com'
+
+          git add -A
+          git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
+          git push
