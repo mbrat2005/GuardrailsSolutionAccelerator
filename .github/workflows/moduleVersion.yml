@@ -6,6 +6,8 @@ name: Increment Module Versions
 on:
   pull_request:
     branches: [ "module-version-workflow" ]
+  push:
+    branches: [ "module-version-workflow" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
