@@ -43,10 +43,10 @@ function Check-DeprecatedUsers {
         ReportTime = $ReportTime
     }
 
-    $JasonDeprecatedUserStatus = ConvertTo-Json -inputObject $DeprecatedUserStatus
+    $JsonDeprecatedUserStatus = ConvertTo-Json -inputObject $DeprecatedUserStatus
         
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-        -body $JasonDeprecatedUserStatus   -logType $LogType -TimeStampField Get-Date  
+        -body $JsonDeprecatedUserStatus   -logType $LogType -TimeStampField Get-Date  
 }
        
 

@@ -42,10 +42,10 @@ function Check-MonitorAccountCreation {
     MitigationCommands = $MitigationCommands
   }
        
-  $Results_Jason = ConvertTo-json -inputObject $Results
+  $Results_Json = ConvertTo-json -inputObject $Results
 
   Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $Results_Jason -logType $LogType -TimeStampField Get-Date  
+    -body $Results_Json -logType $LogType -TimeStampField Get-Date  
       
 }
 
