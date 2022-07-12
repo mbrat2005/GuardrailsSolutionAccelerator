@@ -6,8 +6,6 @@ name: Increment Module Versions
 on:
   pull_request:
     branches: [ "module-version-workflow" ]
-  push:
-    branches: [ "module-version-workflow" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -83,5 +81,5 @@ jobs:
 
           git add -A
           git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
-          git push origin HEAD:$($env:GITHUB_SOURCE_REF)
+          git push origin HEAD:$($env:GITHUB_HEAD_REF)
         shell: pwsh
