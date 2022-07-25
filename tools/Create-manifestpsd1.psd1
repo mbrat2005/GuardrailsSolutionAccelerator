@@ -12,7 +12,7 @@
 RootModule = '.\Create-manifestpsd1.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0'
+ModuleVersion = '1.2.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
