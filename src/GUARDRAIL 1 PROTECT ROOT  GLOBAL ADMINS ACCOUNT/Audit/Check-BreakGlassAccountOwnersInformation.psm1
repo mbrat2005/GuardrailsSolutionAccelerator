@@ -1,143 +1,112 @@
-function new-customObject {
+<#
+.SYNOPSIS
+   the module will verify if the manager information for both Break Glass Accounts is populated
+   results are sent to the identified log analytics workspace.
+
+.DESCRIPTION
+ the module will verify if the manager information for both Break Glass Accounts is populated
+   results are sent to the identified log analytics workspace.
+.PARAMETER Name
+        FirstBreakGlassUPNOwner :- The First Break Glass Account UPN 
+        SecondBreakGlassUPNOwner :- The second Break Glass Account UPN
+        ControlName :-  GUARDRAIL 1 PROTECT ROOT  GLOBAL ADMINS ACCOUNT
+        ItemName, 
+        WorkSpaceID : Workspace ID to ingest the logs 
+        WorkSpaceKey: Workspace Key for the Workdspace 
+        LogType: GuardrailsCompliance, it will show in log Analytics search as GuardrailsCompliance_CL
+#>
+function Get-BreakGlassOwnerinformation {
     param (
-        [string] $Type,
-        [string] $Id,
-        [string] $Name,
-        [string] $DisplayName,
-        [string] $CtrlName,
-        [bool] $ComplianceStatus,
-        [string] $Comments,
-        [string] $ItemName,
-        [string] $test,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $ReportTime
-    )
-    $tempObject=[PSCustomObject]@{ 
-        Type = $Type
-        Id= $Id
-        Name = $Name
-        DisplayName = $DisplayName
-        ComplianceStatus = $ComplianceStatus
-        Comments = $Comments
-        ItemName = $ItemName
-        ControlName = $CtrlName
-        ReportTime = $ReportTime
-    }
-    return $tempObject
-}
-function Check-StatusPBMM {
-    param (
-        [System.Object] $objList,
-        [Parameter(Mandatory=$true)]
-        [string] $objType, #subscription or management Group
-        [string] $PolicyID,
-        [string] $ControlName,
-        [string] $ItemName,
+        [string] $token, 
+        [string] $FirstBreakGlassUPNOwner,
+        [string] $SecondBreakGlassUPNOwner, 
+        [string] $ControlName, 
+        [string] $ItemName, 
+        [string] $WorkSpaceID, 
+        [string] $WorkSpaceKey, 
         [string] $LogType,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime
-    )   
-    [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
-    foreach ($obj in $objList)
-    {
-        Write-Verbose "Checking $objType : $($obj.Name)"
-        if ($objType -eq "subscription") {
-            $tempId="/subscriptions/$($obj.Id)"
-        }
-        else {
-            $tempId=$obj.Id
-        }
-        $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
-        If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
-        {
-            $Comment=$msgTable.pbmmNotApplied 
-            $ComplianceStatus=$false
-        }
-        else {
-            $ComplianceStatus=$true
-            $Comment=$msgTable.isCompliant 
-            #No exemption exists. All good.
-        }
-        if ($obj.DisplayName -eq $null)
-        {
-            $DisplayName=$obj.Name
-        }
-        else {
-            $DisplayName=$obj.DisplayName
-        }
-        $c=new-customObject -Type $objType -Id $obj.Id -Name $obj.Name -DisplayName $DisplayName `
-                -CtrlName $ControlName `
-                -ComplianceStatus $ComplianceStatus `
-                -ItemName $ItemName `
-                -Comments $Comment`
-                -ReportTime $ReportTime
-        $tempObjectList.add($c)| Out-Null
-    }
-    return $tempObjectList
-}
-
-function Verify-PBMMPolicy {
-    param (
-            [string] $ControlName,
-            [string] $ItemName,
-            [string] $PolicyID, 
-            [string] $WorkSpaceID,
-            [string] $workspaceKey,
-            [string] $LogType,
-            [hashtable] $msgTable,
-            [Parameter(Mandatory=$true)]
-            [string]
-            $ReportTime,
-            [Parameter(Mandatory=$true)]
-            [string]
-            $CBSSubscriptionName
     )
-    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
+    [bool] $IsCompliant = $false
+    [string] $Comments = $null
+
+    [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
+     
+    $FirstBreakGlassOwner = [PSCustomObject]@{
+        UserPrincipalName  = $FirstBreakGlassUPNOwner
+        ComplianceStatus   = $false
+        ComplianceComments = $null
+    }
+    $SecondBreakGlassOwner = [PSCustomObject]@{
+        UserPrincipalName  = $SecondBreakGlassUPNOwner
+        ComplianceStatus   = $false
+        ComplianceComments = $null
+    }
+
+    [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
+    $BGOwners.add( $FirstBreakGlassOwner)
+    $BGOwners.add( $SecondBreakGlassOwner)
+        
     
-    #Check management groups   
-    try {
-        $objs = Get-AzManagementGroup -ErrorAction Stop
+    foreach ($BGOwner in $BGOwners) {
+        
+        $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGOwner.UserPrincipalName + "/manager")
+        try {
+            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -ErrorAction Stop
+            $BGOwner.ComplianceStatus = $true
+            $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $BGOwner.UserPrincipalName
+        }
+        catch {
+            If ($_.exception.response.statuscode.value__ -eq '404') {
+                $BGOwner.ComplianceStatus = $false
+                $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
+            }
+            Else {
+                Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+            }
+        }
     }
-    catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-        throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
+    $IsCompliant = $FirstBreakGlassOwner.ComplianceStatus -and $SecondBreakGlassOwner.ComplianceStatus
+
+    if ($IsCompliant) {
+        $Comments = $msgTable.bgBothHaveManager
     }
-    $objs
-    $type = "Management Group"  
-    $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
-    #Check Subscriptions
-    try {
-        $objs = Get-AzSubscription -ErrorAction Stop
+    else {
+        if ($FirstBreakGlassOwner.ComplianceStatus -eq $false) {
+            $Comments = $BGOwners[0].ComplianceComments
+        }
+        if ($SecondBreakGlassOwner.ComplianceStatus -eq $false) {
+            $Comments = $Comments + $BGOwners[1].ComplianceComments
+        }
+        #$Comments = "First BreakGlass Owner " + $FirstBreakGlassOwner.UserPrincipalName + " doesnt have a manager listed in the directory or " + `
+        #    "Second BreakGlass Owner " + $SecondBreakGlassOwner.UserPrincipalName + " doesnt have a manager listed in the directory ."
     }
-    catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-        throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
+    $PsObject = [PSCustomObject]@{
+        ComplianceStatus = $IsCompliant
+        ControlName      = $ControlName
+        Comments         = $Comments
+        ItemName         = $ItemName
+        ReportTime       = $ReportTime
     }
-    $objs
-    [string]$type = "subscription"
-    $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable  -ControlName $ControlName
-    
-    #Writes data
-    $FinalObjectList # | convertto-json -Depth 3
-    if ($FinalObjectList.Count -gt 0)
-    {
-        $JsonObject = $FinalObjectList | convertTo-Json -Depth 3
-        #$JsonObject
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+    $JsonObject = convertTo-Json -inputObject $PsObject 
+
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
         -sharedkey $workspaceKey `
         -body $JsonObject `
         -logType $LogType `
-        -TimeStampField Get-Date
-    }
+        -TimeStampField Get-Date                            
 }
+
+
 # SIG # Begin signature block
 # MIInpAYJKoZIhvcNAQcCoIInlTCCJ5ECAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDPt59QWKF7EEKZ
-# MgSyPEY6f+lhBeFH63w3yEKQpcFzWKCCDXYwggX0MIID3KADAgECAhMzAAACURR2
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA/+ved0y4nbN/K
+# Cv0LhRpqmteqT+WP9Tc0NfyTtT8ju6CCDXYwggX0MIID3KADAgECAhMzAAACURR2
 # zMWFg24LAAAAAAJRMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -214,19 +183,19 @@ function Verify-PBMMPolicy {
 # aWNyb3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNp
 # Z25pbmcgUENBIDIwMTECEzMAAAJRFHbMxYWDbgsAAAAAAlEwDQYJYIZIAWUDBAIB
 # BQCggbAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEO
-# MAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIOWF7aX+R7JmvTxqV8itqT8j
-# 2ZNwEUI1WVmnKPdHZOYaMEQGCisGAQQBgjcCAQwxNjA0oBSAEgBNAGkAYwByAG8A
+# MAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIMAfQ+g2mk+W3+AYbQUP94yD
+# 2uDalQlIOubKod0UzGS/MEQGCisGAQQBgjcCAQwxNjA0oBSAEgBNAGkAYwByAG8A
 # cwBvAGYAdKEcgBpodHRwczovL3d3dy5taWNyb3NvZnQuY29tIDANBgkqhkiG9w0B
-# AQEFAASCAQCV2513htGIpQPsO58Jx2DTcSpXIeF57I7kG+R20Bu7ILGVv/YeK+Dg
-# vz4Wm8qOnvh0RK4Gj7ga72XBhPtKO3sbBJXfAfKh/PhKVq+24LYvPonunbhrhLi8
-# uIyLLMb63ngtkq0HZXWTpjN6K9A0OVuwQf6haMaqEX4meu5nFmdCxnkJbiDvJSBc
-# iF65QnoCkxCRcYIpCB/Cct69KRDWtkyzMCc9xpDzNcwHcU24kJqD+zQlCQU02O9s
-# OBALZUttLorXxmnbkukrkdBu8eDufDSCLJ5JlTJPODx+QWgCvKN+ATbze+cNRQyx
-# BLZbX5Xe0MvFX9KDCuMHdH4g05lDWO/CoYIXDDCCFwgGCisGAQQBgjcDAwExghb4
+# AQEFAASCAQAnJbK24RL+1f/QGU8BVDQHqOYo/m9wT7a+R/8CEQMWApl+72LwsUOE
+# 3g7cZE72N91mAylZUWr3Ejb5mbhraGZ+9J+BmF1RgZ4NtIQo9VimAwGm/F4WMP79
+# r+t9fRjlr1PoD96ElRJFa1rCY03BnYaeyi1cqhzkUnjtBC9UR2XikMf565MNs64x
+# a7+eXcDEuP6tUoqxSHsM3CD5mdYdSbyVLho0QpT0YX/rUsVuEr5r+x9Alx/+PVpS
+# ITNps7ZskgMJ2j/AGYugTTdiPz3n1uGFnjljqLhlPnAuKO6j2QCO+aOc1qbX/XMG
+# b+ti7AhbL89i2bzOKAWazlOXCcH9eHBSoYIXDDCCFwgGCisGAQQBgjcDAwExghb4
 # MIIW9AYJKoZIhvcNAQcCoIIW5TCCFuECAQMxDzANBglghkgBZQMEAgEFADCCAVUG
 # CyqGSIb3DQEJEAEEoIIBRASCAUAwggE8AgEBBgorBgEEAYRZCgMBMDEwDQYJYIZI
-# AWUDBAIBBQAEICZ80KXWhfcllz3RobfeLhlyZnoydpqQY67zdjIj8JsjAgZi2sqL
-# 4icYEzIwMjIwNzI2MTgzNjI5LjQ1NVowBIACAfSggdSkgdEwgc4xCzAJBgNVBAYT
+# AWUDBAIBBQAEIHxFvxRsT9QVb0zBqONRck4cJ6A4OxMyuL7xqwtrsnLeAgZi2sqL
+# 4oIYEzIwMjIwNzI2MTgzNjM4Ljk1M1owBIACAfSggdSkgdEwgc4xCzAJBgNVBAYT
 # AlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYD
 # VQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1pY3Jvc29mdCBP
 # cGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVTTjow
@@ -328,22 +297,22 @@ function Verify-PBMMPolicy {
 # BAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQG
 # A1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGnNbsuwmSF
 # UCkAAQAAAacwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzENBgsqhkiG
-# 9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQg/s48ZRApaYhab8bUpH/2AFlIJlRrQ1tx
-# 9CmbtdXkNv4wgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBH8H/nCZUC4L0Y
+# 9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgyZMhrfcDlggcorUf6TqcspW1BCz8HVj4
+# TKO1sPsWHFgwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBH8H/nCZUC4L0Y
 # qbz3sH3w5kzhwJ4RqCkXXKxNPtqOGzCBmDCBgKR+MHwxCzAJBgNVBAYTAlVTMRMw
 # EQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVN
 # aWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0
 # YW1wIFBDQSAyMDEwAhMzAAABpzW7LsJkhVApAAEAAAGnMCIEIE4GHlZx4Hx5rAMD
-# tHU7wYfL93m7VwaNoqAyI2HitYTXMA0GCSqGSIb3DQEBCwUABIICAEnwFYUjfuIM
-# qMn1G9xoAHXT6kPo11FpzWlTwoHfy1Ki1kuSrzSADy6s76sz5or5vP/gEeFK3jv8
-# 1Jm0GJNi322Myv2Toe6QuCB5Fl1NDLw1Z+cIiqjSRbRcDUPgMN7ZCaSl4fz7W/JP
-# ggpuCV1ebrGoEWg0ibtxMSh5pwC1TAbN0SPEly/pYZfScviW/n8jkovVav0aP9gi
-# 69ZfXMDMRoQ1yYNDMigcrwItZKaKAraGkpayHdsYS/k2ITQttwH2CfWXBQjQALOD
-# IvjlpVjItT+9QWSZvrheC4H5PtzSGqeD+4oi2XCQkTU7NahXUOXU16j7jg3Es6VV
-# wHGCQU4FSmpaxCb5pAhF+/jpWmtHbeXgCPNKFY0pPHE3ICCT49kVwSeFcvJfzh+H
-# kIJ6Fhr350keJIs7jqOp0QSNefOJh2apuEL5UW/bnBR6LWZ+l7DsFGhpci1HBKsg
-# B1qktTSYnwNOYfrXZG1r7/baQzRzgzgNgJ7BJ89VVTf6cpTy091h2ZPp1mrbmPow
-# 3k/LNjdSrYHXBLpADrp/3w+xYXvammmVeMwPR+Ho3xv5lR4fia7PeD2updMgK7Mt
-# WxSp4plEnlcAH6QSv7c6nTbkEjUt7vXHLabvv7cUjJ+mouh9kW4awsXOGUlNyQex
-# mM08TnocsImVjVEMip337hXfoFyhih7w
+# tHU7wYfL93m7VwaNoqAyI2HitYTXMA0GCSqGSIb3DQEBCwUABIICADYfB5pmiqI0
+# tzknSktKGt83Pk4ig2RYwTP4+v/d+R6FTTSYx0nYNLFlKAIgw19DxpsW6Z2JzA1g
+# hXdtoWcNcBr1/d/BqUB7qehEbFGYqY60R1NH5liMZsZ1In3X/fdh90Y282MifxwP
+# zNvaM9N1SA4nWeBDEuqll9o2t+zfH/2Ev9yqA3pxO/o+OXQNFQUbEvBZAGVqBwd+
+# O/0+c4lHgDHL7uZI8d5x0CeIBH0R+iNO81fnBXXGBSAOYJum63b5jwuTkmWPdegy
+# EEoT18klAaEwLB0ytKEkSTL78SugNfc2lIQqWl9b6gQ9ZDXNTQvVn6EM0k9GjCRJ
+# OB/4tghsNtmqaMkcSO8Hs3YSM6Ouejqay6QIaIUeTvJmybC5rXK7k/RQNiMgG82W
+# 8sg0NW6B+Uxc0eVKhacmMK01Bdc2grMgtYpOhkIxNXyz58u/iWMB2RBKEQuRKyao
+# i8j7cgVFjA7NF0JBP/PmJvzW7nuEKmEqvmgLeFcz14iCc3jF0HKfpfdd3p4u40gS
+# 7++9PxK/oDOziPJ2iaCX26NLMUbiLLfumXGbYNFEc0mDwjP4bzrQTnTCo97sgp4P
+# aosqrXhgAl2PT58QI12CZpDwcEzqziaFeO0KceVvzOQrGuyA32R7+iCDI33hq7ZZ
+# bt6M3szI8h6BpFkj55cOvNV52b2fyAGD
 # SIG # End signature block

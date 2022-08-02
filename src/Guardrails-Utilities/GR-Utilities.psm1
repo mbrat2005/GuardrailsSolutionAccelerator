@@ -1,93 +1,196 @@
+function get-tagValue {
+    param (
+        [string] $tagKey,
+        [System.Object] $object
+    )
+    $tagString = get-tagstring($object)
+    $tagslist = $tagString.split(";")
+    foreach ($tag in $tagslist) {
+        if ($tag.split("=")[0] -eq $tagKey) {
+            return $tag.split("=")[1]
+        }
+    }
+    return ""
+}
+function get-tagstring ($object) {
+    if ($object.Tag.Count -eq 0) {
+        $tagstring = "None"
+    }
+    else {
+        $tagstring = ""
+        $tKeys = $object.tag | Select-Object -ExpandProperty keys
+        $tValues = $object.Tag | Select-Object -ExpandProperty values
+        $index = 0
+        if ($object.Tag.Count -eq 1) {
+            $tagstring = "$tKeys=$tValues"
+        }
+        else {
+            foreach ($tkey in $tkeys) {
+                $tagstring += "$tkey=$($tValues[$index]);"
+                $index++
+            }
+        }
+    }
+    return $tagstring.Trim(";")
+}
 
-function Check-ADDeletedUsers  {
-    Param (
-        [string] $Token,
-        [Parameter(Mandatory=$true)]
+function copy-toBlob {
+    param (
+        [Parameter(Mandatory = $true)]
         [string]
-        $ReportTime
-        )
-
-    [psCustomOBject] $deletedUsersArray = New-Object System.Collections.ArrayList
-    [psCustomOBject] $guestUsersArray = New-Object System.Collections.ArrayList
-    [bool] $IsCompliant= $false
-    [string] $Comment2= "This is a GUEST account and needs to be removed from your Azure Active Directory"
-
-    $apiUrl= "https://graph.microsoft.com/beta/directory/deleteditems/microsoft.graph.user"
-
+        $FilePath,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $storageaccountName,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $resourcegroup,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $containerName,
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $force
+    )
     try {
-        $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl
+        $saParams = @{
+            ResourceGroupName = $resourcegroup
+            Name              = $storageaccountName
+        }
+        $scParams = @{
+            Container = $containerName
+        }
+        $bcParams = @{
+            File = $FilePath
+            Blob = ($FilePath | Split-Path -Leaf)
+        }
+        if ($force)
+        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force }
+        else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams }
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-        Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+        Write-Error $_.Exception.Message
     }
-
-    $AllUsers = $Data.value
-      
-      forEach ($User in $AllUsers) {
-          $Customuser = [pscustomobject]@{
-          DisplayName = $User.displayName
-          Mail = $User.mail
-          DeletedDate = $User.deletedDateTime
-          Comments = $msgTable.accountNotDeleted
-          ReportTime = $ReportTime
-          ItemName = $msgTable.ADDeletedUser
-          }
-        $deletedUsersArray.add($Customuser)
+}
+function get-blobs {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $storageaccountName,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $resourcegroup
+    )
+    $psModulesContainerName = "psmodules"
+    try {
+        $saParams = @{
+            ResourceGroupName = $resourcegroup
+            Name              = $storageaccountName
         }
 
-
-    $JSONDeletedUsers = ConvertTo-Json -inputObject $deletedUsersArray
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-   -sharedkey $workspaceKey `
-   -body $JSONDeletedUsers `
-   -logType $LogType `
-   -TimeStampField Get-Date 
- 
-    $apiUrl= "https://graph.microsoft.com/beta/users/"
-    try {
-        $guestAccountData = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl
+        $scParams = @{
+            Container = $psModulesContainerName
+        }
+        return (Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Get-AzStorageBlob)
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-        Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+        Write-Error $_.Exception.Message
     }
+}
+
+function read-blob {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $FilePath,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $storageaccountName,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $resourcegroup,
+        [Parameter(Mandatory = $true)]
+        [string]
+        $containerName,
+        [Parameter(Mandatory = $false)]
+        [switch]
+        $force
+    )
+    $Context = (Get-AzStorageAccount -ResourceGroupName $resourcegroup -Name $storageaccountName).Context
+    $blobParams = @{
+        Blob        = 'modules.json'
+        Container   = $containerName
+        Destination = $FilePath
+        Context     = $Context
+    }
+    Get-AzStorageBlobContent @blobParams
     
-    $guestUsers = $guestAccountData.value
+}
 
-    forEach ($User in $guestUsers) {
-        if($User.userType -eq "Guest") {
-             $Customuser = [pscustomobject]@{
-             DisplayName = $User.displayName
-             Mail = $User.mail
-             Type = $User.userType
-             CreatedDate = $User.createdDateTime
-             Enabled = $User.accountEnabled
-             Comments = $Comment2
-             ReportTime = $ReportTime
-             ItemName = $msgTable.ADDisabledUsers
-        }
-        
-        $guestUsersArray.add($Customuser)
-        }     
-    }      
+Function Add-LogEntry {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $True, Position = 0)]
+        [ValidateSet("Critical", "Error", "Warning", "Information", "Debug")]
+        [string]
+        $severity,
 
-    $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
+        # message details (string)
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]
+        $message,
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-   -sharedkey $workspaceKey `
-   -body $JSONGuestUsers `
-   -logType $LogType `
-   -TimeStampField Get-Date 
+        # module name
+        [Parameter(Mandatory = $false)]
+        [string]
+        $moduleName = (Split-Path -Path $MyInvocation.ScriptName -Leaf),
+
+        # additional values in hashtable
+        [Parameter(Mandatory = $false)]
+        [hashtable]
+        $additionalValues = @{},
+
+        # exception log type - this is the Log Analytics table name
+        [Parameter(Mandatory = $false)]
+        [string]
+        $exceptionLogTable = "GuardrailsComplianceException",
+
+        # guardrails exception workspace GUID
+        [Parameter(Mandatory = $true)]
+        [string]
+        $workspaceGuid,
+
+        # guardrails exception workspace shared key
+        [Parameter(Mandatory = $true)]
+        [string]
+        $workspaceKey
+    )
+
+    # build log entry object, convert to json
+    $entryHash = @{
+        "message" = $message
+        "moduleName" = $moduleName
+        "severity" = $severity
+    } + $additionalValues
+    
+    $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
+
+    # log event to Log Analytics workspace by REST API via the OMSIngestionAPI community PS module
+    Send-OMSAPIIngestionFile  -customerId $workspaceGuid `
+        -sharedkey $workspaceKey `
+        -body $entryJson `
+        -logType $exceptionLogTable `
+        -TimeStampField Get-Date 
 
 }
 
+# endregion
+   
 # SIG # Begin signature block
 # MIInlQYJKoZIhvcNAQcCoIInhjCCJ4ICAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB5VZas3x5GoqAo
-# 1R0Z6GH62GsfaJrpK0Clscdr4Li7L6CCDXYwggX0MIID3KADAgECAhMzAAACURR2
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCxlwgrdJAUX+2T
+# PEIT8nfKBmqgz660bP/mXEQ5RA0FtKCCDXYwggX0MIID3KADAgECAhMzAAACURR2
 # zMWFg24LAAAAAAJRMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -164,61 +267,61 @@ function Check-ADDeletedUsers  {
 # aWNyb3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNp
 # Z25pbmcgUENBIDIwMTECEzMAAAJRFHbMxYWDbgsAAAAAAlEwDQYJYIZIAWUDBAIB
 # BQCggbAwGQYJKoZIhvcNAQkDMQwGCisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEO
-# MAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEIP4UaQshDcsK4wJSXvYtWghm
-# WW7A0bI3HNA7BDTgDpg0MEQGCisGAQQBgjcCAQwxNjA0oBSAEgBNAGkAYwByAG8A
+# MAwGCisGAQQBgjcCARUwLwYJKoZIhvcNAQkEMSIEILGRYxsKoI6Rb1ZKul1woB+p
+# MqE21e5CWEPaJ3RXvR2YMEQGCisGAQQBgjcCAQwxNjA0oBSAEgBNAGkAYwByAG8A
 # cwBvAGYAdKEcgBpodHRwczovL3d3dy5taWNyb3NvZnQuY29tIDANBgkqhkiG9w0B
-# AQEFAASCAQBCxRU4INl9CQL5bUdAkPEW49nPhKPfasmE/Ry7u1N9rxNbvKRF4wms
-# X/BgVUAyr+4U9gBsit29jOXv8okRaMlJ5VQqA7piFBGxWrWzIu24P3FIM8m6fMPt
-# idYqZ8TILtgqoB8CpycRgSsqBm5Suqgi8njgBXQrgpJrr0V/EAVrc07QK5tDN4mQ
-# AyeLaqPk/+bhDH9NaaFW32o9AzvHj4/xtFIFvb9Sf1dDpBBpdXYxQOYRYwJWfrrv
-# qDrwBM3Re0F9W4Af4ZzUW1Zh9WHZvaYDcyxk0h1kTQ8gZ7A+vCJmatcm1QaJ84W6
-# aYfVHC43UTLVxLnctfqJrOG7q0fZliDuoYIW/TCCFvkGCisGAQQBgjcDAwExghbp
+# AQEFAASCAQACDWcBNXDgGZ2UlKgCpuaudZcyWc3n249crlnhTUDyau5y0ZwXdFgz
+# 0UkYIgx6CIiJaLdqL/72ZkooRUqJoPsLHBMzG0PWHLlP2l1z3KKiicwJzH6qGzMo
+# mcdYBN/25mGQsjOlq31i7o1kfHcR0GVSKUhUTjW8gIAOOQx7cS9ZLAEMFRKCjebI
+# 6wPL39JVXPpBygQYLTKJ8HR9uKq0QYHha27wlwSbawTmYw0fwwAyl0DSQBARHjt1
+# eFgLPOhgUz1MqJ5cManY+lhEWgzO3DZQT8DGC+DQ5knYiCBXpk7rJ6wbukjZW3eP
+# KLu+nAKf+WYpu8hEzBQDWhrV93ZDCx1koYIW/TCCFvkGCisGAQQBgjcDAwExghbp
 # MIIW5QYJKoZIhvcNAQcCoIIW1jCCFtICAQMxDzANBglghkgBZQMEAgEFADCCAVEG
 # CyqGSIb3DQEJEAEEoIIBQASCATwwggE4AgEBBgorBgEEAYRZCgMBMDEwDQYJYIZI
-# AWUDBAIBBQAEIPGqKYQrzazQ1a7pMVii7QWWxoK8yDfF81qgOe6KhxsGAgZi1VvS
-# fl8YEzIwMjIwNzI2MTgzNzAxLjU3MVowBIACAfSggdCkgc0wgcoxCzAJBgNVBAYT
+# AWUDBAIBBQAEID6NNQHG41EzvrVCaVJIZlZCRKVltlY0Ztr3ihf9SEuHAgZi2A/y
+# 9QUYEzIwMjIwNzI2MTg0MDI3LjMyOFowBIACAfSggdCkgc0wgcoxCzAJBgNVBAYT
 # AlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYD
 # VQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJTAjBgNVBAsTHE1pY3Jvc29mdCBB
-# bWVyaWNhIE9wZXJhdGlvbnMxJjAkBgNVBAsTHVRoYWxlcyBUU1MgRVNOOjNFN0Et
-# RTM1OS1BMjVEMSUwIwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFtcCBTZXJ2aWNl
-# oIIRVDCCBwwwggT0oAMCAQICEzMAAAGg6buMuw6i0XoAAQAAAaAwDQYJKoZIhvcN
+# bWVyaWNhIE9wZXJhdGlvbnMxJjAkBgNVBAsTHVRoYWxlcyBUU1MgRVNOOkVBQ0Ut
+# RTMxNi1DOTFEMSUwIwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFtcCBTZXJ2aWNl
+# oIIRVDCCBwwwggT0oAMCAQICEzMAAAGawHWixCFtPoUAAQAAAZowDQYJKoZIhvcN
 # AQELBQAwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNV
 # BAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQG
 # A1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTAwHhcNMjExMjAyMTkw
-# NTIzWhcNMjMwMjI4MTkwNTIzWjCByjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldh
+# NTE3WhcNMjMwMjI4MTkwNTE3WjCByjELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldh
 # c2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBD
 # b3Jwb3JhdGlvbjElMCMGA1UECxMcTWljcm9zb2Z0IEFtZXJpY2EgT3BlcmF0aW9u
-# czEmMCQGA1UECxMdVGhhbGVzIFRTUyBFU046M0U3QS1FMzU5LUEyNUQxJTAjBgNV
+# czEmMCQGA1UECxMdVGhhbGVzIFRTUyBFU046RUFDRS1FMzE2LUM5MUQxJTAjBgNV
 # BAMTHE1pY3Jvc29mdCBUaW1lLVN0YW1wIFNlcnZpY2UwggIiMA0GCSqGSIb3DQEB
-# AQUAA4ICDwAwggIKAoICAQC/2uIOaHGdAOj2YvhhI6C8iFAq7wrl/5WpPjj0fEHC
-# i6Ivx/I02Jss/HVhkfGTMGttR5jRhhrJXydWDnOmzRU3B4G525T7pwkFNFBXumM/
-# 98l5k0U2XiaZ+bulXHe54x6uj/6v5VGFv+0Hh1dyjGUTPaREwS7x98Te5tFHEimP
-# a+AsG2mM+n9NwfQRjd1LiECbcCZFkgwbliQ/akiMr1tZmjkDbxtu2aQcXjEfDna8
-# JH+wZmfdu0X7k6dJ5WGRFwzZiLOJW4QhAEpeh2c1mmbtAfBnhSPN+E5yULfpfTT2
-# wX8RbH6XfAg6sZx8896xq0+gUD9mHy8ZtpdEeE1ZA0HgByDW2rJCbTAJAht71B7R
-# z2pPQmg5R3+vSCri8BecSB+Z8mwYL3uOS3R6beUBJ7iE4rPS9WC1w1fZR7K44ZSm
-# e2dI+O9/nhgb3MLYgm6zx3HhtLoGhGVPL+WoDkMnt93IGoO6kNBCM2X+Cs22ql2t
-# PjkIRyxwxF6RsXh/QHnhKJgBzfO+e84I3TYbI0i29zATL6yHOv5sEs1zaNMih27I
-# wfWg4Q7+40L7e68uC6yD8EUEpaD2s2T59NhSauTzCEnAp5YrSscc9MQVIi7g+5GA
-# dC8pCv+0iRa7QIvalU+9lWgkyABU/niFHWPjyGoB4x3Kzo3tXB6aC3yZ/dTRXpJn
-# aQIDAQABo4IBNjCCATIwHQYDVR0OBBYEFHK5LlDYKU6RuJFsFC9EzwthjNDoMB8G
+# AQUAA4ICDwAwggIKAoICAQDacgasKiu3ZGEU/mr6A5t9oXAgbsCJq0NnOu+54zZP
+# t9Y/trEHSTlpE2n4jua4VnadE4sf2Ng8xfUxDQPO4Vb/3UHhhdHiCnLoUIsW3wtE
+# 2OPzHFhAcUNzxuSpk667om4o/GcaPlwiIN4ZdDxSOz6ojSNT9azsKXwQFAcu4c9t
+# svXiul99sifC3s2dEEJ0/BhyHiJAwscU4N2nm1UDf4uMAfC1B7SBQZL30ssPyiUj
+# U7gIijr1IRlBAdBYmiyR0F7RJvzy+diwjm0Isj3f8bsVIq9gZkUWxxFkKZLfByle
+# Eo4BMmRMZE9+AfTprQne6mcjtVAdBLRKXvXjLSXPR6h54pttsShKaV3IP6Dp6bXR
+# f2Gb2CfdVSxty3HHAUyZXuFwguIV2OW3gF3kFQK3uL6QZvN8a6KB0hto06V98Ote
+# y1OTOvn1mRnAvVu4Wj8f1dc+9cOPdPgtFz4cd37mRRPEkAdX2YaeTgpcNExa+jCb
+# OSN++VtNScxwu4AjPoTfQjuQ+L1p8SMZfggT8khaXaWWZ9vLvO7PIwIZ4b2SK3/X
+# mWpk0AmaTha5QG0fu5uvd4YZ/xLuI/kiwHWcTykviAZOlwkrnsoYZJJ03RsIAWv6
+# UHnYjAI8G3UgCFFlAm0nguQ3rIX54pmujS83lgrm1YqbL2Lrlhmi98Mk2ktCHCXK
+# RwIDAQABo4IBNjCCATIwHQYDVR0OBBYEFF+2nlnwnNtR6aVZvQqVyK02K9FwMB8G
 # A1UdIwQYMBaAFJ+nFV0AXmJdg/Tl0mWnG1M1GelyMF8GA1UdHwRYMFYwVKBSoFCG
 # Tmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2lvcHMvY3JsL01pY3Jvc29mdCUy
 # MFRpbWUtU3RhbXAlMjBQQ0ElMjAyMDEwKDEpLmNybDBsBggrBgEFBQcBAQRgMF4w
 # XAYIKwYBBQUHMAKGUGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2lvcHMvY2Vy
 # dHMvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUyMDIwMTAoMSkuY3J0MAwG
 # A1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwgwDQYJKoZIhvcNAQELBQAD
-# ggIBADF9xgKr+N+slAmlbcEqQBlpL5PfBMqcLkS6ySeGJjG+LKX3Wov5pygrhKft
-# XZ90NYWUftIZpzdYs4ehR5RlaE3eYubWlcNlwsKkcrGSDJKawbbDGfvO4h/1L13s
-# g66hPib67mG96CAqRVF0c5MA1wiKjjl/5gfrbdNLHgtREQ8zCpbK4+66l1Fd0up9
-# mxcOEEphhJr8U3whwFwoK+QJ/kxWogGtfDiaq6RyoFWhP8uKSLVDV+MTETHZb3p2
-# OwnBWE1W6071XDKdxRkN/pAEZ15E1LJNv9iYo1l1P/RdF+IzpMLGDAf/PlVvTUw3
-# VrH9uaqbYr+rRxti+bM3ab1wv9v3xRLc+wPoniSxW2p69DN4Wo96IDFZIkLR+HcW
-# CiqHVwFXngkCUfdMe3xmvOIXYRkTK0P6wPLfC+Os7oeVReMj2TA1QMMkgZ+rhPO0
-# 7iW7N57zABvMiHJQdHRMeK3FBgR4faEvTjUAdKRQkKFV82uE7w0UMnseJfX7ELDY
-# 9T4aWx2qwEqam9l7GHX4A2Zm0nn1oaa/YxczJ7gIVERSGSOWLwEMxcFqBGPm9QSQ
-# 7ogMBn5WHwkdTTkmanBb/Z2cDpxBxd1vOjyIm4BOFlLjB4pivClO2ZksWKH7qBYl
-# oYa07U1O3C8jtbzGUdHyLCaVGBV8DfD5h8eOnyjraBG7PNNZMIIHcTCCBVmgAwIB
+# ggIBAAATu4fMRtRH20+nNzGAXFxdXEpRPTfbM0LJDeNe4QCxj0FM+wrJdu6UKrM2
+# wQuO31UDcQ4nrUJBe81N6W2RvEa8xNXjbO0qzNitwUfOVLeZp6HVGcNTtYEMAvK9
+# k//0daBFxbp04BzMaIyaHRy7y/K/zZ9ckEw7jF9VsJqlrwqkx9HqI/IBsCpJdlTt
+# KBl/+LRbD8tWvw6FDrSkv/IDiKcarPE0BU6//bFXvZ5/h7diE13dqv5DPU5Kn499
+# HvUOAcHG31gr/TJPEftqqK40dfpB+1bBPSzAef58rJxRJXNJ661GbOZ5e64EuyIQ
+# v0Vo5ZptaWZiftQ5pgmztaZCuNIIvxPHCyvIAjmSfRuX7Uyke0k29rSTruRsBVIs
+# ifG39gldsbyjOvkDN7S3pJtTwJV0ToC4VWg00kpunk72PORup31ahW99fU3jxBh2
+# fHjiefjZUa08d/nQQdLWCzadttpkZvCgH/dc8Mts2CwrcxCPZ5p9VuGcqyFhK2I6
+# PS0POnMuf70R3lrl5Y87dO8f4Kv83bkhq5g+IrY5KvLcIEER5kt5uuorpWzJmBNG
+# B+62OVNMz92YJFl/Lt+NvkGFTuGZy96TLMPdLcrNSpPGV5qHqnHlr/wUz9UAViTK
+# JArvSbvk/siU7mi29oqRxb0ahB4oYVPNuv7ccHTBGqNNGol4MIIHcTCCBVmgAwIB
 # AgITMwAAABXF52ueAptJmQAAAAAAFTANBgkqhkiG9w0BAQsFADCBiDELMAkGA1UE
 # BhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAc
 # BgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEyMDAGA1UEAxMpTWljcm9zb2Z0
@@ -262,38 +365,38 @@ function Check-ADDeletedUsers  {
 # MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVk
 # bW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSUwIwYDVQQLExxN
 # aWNyb3NvZnQgQW1lcmljYSBPcGVyYXRpb25zMSYwJAYDVQQLEx1UaGFsZXMgVFNT
-# IEVTTjozRTdBLUUzNTktQTI1RDElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUtU3Rh
-# bXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUAEwa4jWjacbOYU++95ydJ7hSCi5ig
+# IEVTTjpFQUNFLUUzMTYtQzkxRDElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUtU3Rh
+# bXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUAAbquMnUCam/m7Ox1Uv/GNs1jmu+g
 # gYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4G
 # A1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSYw
 # JAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0EgMjAxMDANBgkqhkiG9w0B
-# AQUFAAIFAOaKZeswIhgPMjAyMjA3MjYyMTA4NTlaGA8yMDIyMDcyNzIxMDg1OVow
-# dDA6BgorBgEEAYRZCgQBMSwwKjAKAgUA5opl6wIBADAHAgEAAgIBsjAHAgEAAgI+
-# BTAKAgUA5ou3awIBADA2BgorBgEEAYRZCgQCMSgwJjAMBgorBgEEAYRZCgMCoAow
-# CAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqGSIb3DQEBBQUAA4GBAFtLPWBxpxCw
-# nfZrhc4YZGMzI+tGVTHFqAWsdzbTJbu4iMo10aUwFMW5+30ofnCnhURG+erEfNok
-# pS6hT18ILBgBaCQ1Crnd5+ZuiQmfRdJytUhiXisxCfItWPrLSVfwIbbaNHpD1h2K
-# Ix1ofV9l6yMG4O6dFn51LTq7BVYZslm8MYIEDTCCBAkCAQEwgZMwfDELMAkGA1UE
+# AQUFAAIFAOaKd0wwIhgPMjAyMjA3MjYyMjIzMDhaGA8yMDIyMDcyNzIyMjMwOFow
+# dDA6BgorBgEEAYRZCgQBMSwwKjAKAgUA5op3TAIBADAHAgEAAgID9jAHAgEAAgIR
+# 1jAKAgUA5ovIzAIBADA2BgorBgEEAYRZCgQCMSgwJjAMBgorBgEEAYRZCgMCoAow
+# CAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqGSIb3DQEBBQUAA4GBABOVuLlR6+Mv
+# eTIzLThd3Av437+qvHKYhpaUHwsYDXgVckC+sxtepOFeA1o2e9MKBxvcFAkZhVwP
+# kWpWggRVeyYXdR/BEhMqfaFNR9rG1oUfZKogISGIBOERGngkyPr9vWbfxtr7JArM
+# RW+OsMhHpstz47TLVapN2IS+nKRQHHqOMYIEDTCCBAkCAQEwgZMwfDELMAkGA1UE
 # BhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAc
 # BgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0
-# IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGg6buMuw6i0XoAAQAAAaAwDQYJYIZI
+# IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGawHWixCFtPoUAAQAAAZowDQYJYIZI
 # AWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzENBgsqhkiG9w0BCRABBDAvBgkqhkiG
-# 9w0BCQQxIgQg/GqozCobDsfq91qwERTF4QioPSVMDB02eEBYPhjOInowgfoGCyqG
-# SIb3DQEJEAIvMYHqMIHnMIHkMIG9BCAvR4o8aGUEIhIt3REvsx0+svnM6Wiaga5S
-# PaK4g6+00zCBmDCBgKR+MHwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5n
+# 9w0BCQQxIgQgBEWppIdeLPiYBz7m6we6G4a7Ch5tqQzIjGhRtCAf/ZIwgfoGCyqG
+# SIb3DQEJEAIvMYHqMIHnMIHkMIG9BCABTkDjOBEUfZnligJiL539Lx+nsr/NFVTn
+# KFX030iNYDCBmDCBgKR+MHwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5n
 # dG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9y
 # YXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1wIFBDQSAyMDEwAhMz
-# AAABoOm7jLsOotF6AAEAAAGgMCIEIIkbQg7pgefYYvAhLW9B1sSM1OkhBv0+LsVH
-# kcQAxWwMMA0GCSqGSIb3DQEBCwUABIICACEplNuO/HhAi6N4js205jgYvSP8zG7G
-# wKZxnSIO20KQaQjueVnDrIoGBUDme5KeqdXQcMMbSPthd2z4AN8RP82PnHeuQpfH
-# RgjXKBu2TfYwvf44aKhN9ONygtTnNRyswItYj58nn8QB6EIp8UbZqhvZNt4DE/6B
-# 3A7fFxM3RPebY5fWxC9+2/PB0r4K/JZ0vs1kZUMFoRuITpayOCSvjrlVoBxsfDkD
-# BX1KPlu3BW9sEGsRCL09tEeDsU6Bj59Hz/BtZguDTZ33RxHojS/nkP8VJOlnDH/I
-# l3AvUX6dsWdCH0PF1gdNcn1la7TXjTGQLJSZRarUWo89+smxj2fi2eurisenP2yo
-# Okv2N7pSkGeWm3pAgJixEBFbsYfzFg+aT38CXRGOtlXHAUwchZabZCnhfNHeglE5
-# Ksfie0+W1xf3SjkDvnE6Ff4aHaiUbTDCvwhtt8rLK9eXrVtFvGQn5cdeI8r84/9v
-# 9Izv+O9JvvlPhIPMi7g56mUDbCCNHMz7HNyxwQZL+W898NfwR8w4j7oiN+vdlXlR
-# mptBTTRaYszfAZrELW8PtXUwIcor1MLC1LCvMWyO3XY4GrzrilWgIayMwd9hcG2/
-# AXLT8nBdjtl7k5oM3EVLGO2Nx/o4mWq0Nn625LwHWCSSdJfiyxN/gVs/bsKAUF9M
-# K+FymyoTrBOm
+# AAABmsB1osQhbT6FAAEAAAGaMCIEINKwQeFHvs2/ZVNp37Ux6pBBdiqB2Yg00PXR
+# ptZHts2+MA0GCSqGSIb3DQEBCwUABIICAAeI/Mx+hhANpbIPTBya6N7vgafJ8Rkx
+# 7/VwU+KEhdj6opGttOlVIFDRMoyJch7V6l8jcCV/8EdCuYjfkn5yJB4yG4v1aE3T
+# +b2dV3fL5mtQVTlu6TC2UNyaWWpRlmvJtyHYiUKzyW9nYr3B2uSHiRbLD60/YR/b
+# R7ZPmvo+CS3pPpeKD7ltBp8hahWukqLnRVtE+EBZWHjYPUAg83EpF6yigfH3o2cw
+# 4VbdsHZdYK0fluDIZBwACw4v4muYQ7EgrzmWuIOBVIrNwHBzp/lEw0P1XSAkm1HE
+# gHsq/la1ZHWXqPZamDBG+gPgUBSuyZ/J8vmUQ8URkCn13oXpxdwG2CSRPNQsXVw/
+# Qq5d84UYZsVmYivREERYAfh2SBAH6DWDsOiXyruQbrny4fM9dd8+Bq+1QKe/RAHE
+# htKDMLZCZA1ZZYcQTgb4zMhgzGlRI40ifR4j7clxJbOLz6/J5GuLZCYuo6Al+3F9
+# TOhhg8dp8w20n9PTGHjB1DsKQkoPD0e9jFUk/joHDCRZ0SrTMcB8Zaxf0RjdnDYX
+# A31MZOEkuTD6SG8fUeexs+nVkG7NaMXZm8S410nGuskCfsT4okVnxDEG/nSG/x1S
+# S4JEwrvUOwm8TthVIO0TuwOrcT5rkloyKMeM68pW2+rZUZj2VybGy6l63kVaU0g0
+# F7z3kOADICrX
 # SIG # End signature block
