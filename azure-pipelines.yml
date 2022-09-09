@@ -17,6 +17,6 @@ steps:
     gci env:
     git fetch
     echo "git diff-tree --name-only -r $($env:SYSTEM_PULLREQUEST_TARGETBRANCH) $($env:SYSTEM_PULLREQUEST_SOURCEBRANCH)"
-    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
+    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH
   displayName: 'Run a multi-line script'
 
