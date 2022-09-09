@@ -20,7 +20,7 @@ steps:
           }
     Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
 
-    echo "##vso[task.setvariable variable=filesChangedInLastPR;]"$filesChangedInLastPR
+    echo "##vso[task.setvariable variable=filesChangedInLastPR;]"($filesChangedInLastPR -join ';')
   displayName: 'Get files changed in PR'
 
 - task: EsrpCodeSigning@1
@@ -38,7 +38,7 @@ steps:
     Write-Host "Executing powershell script in '$pwd'"
     gci env:
     
-    $files = $env:filesChangedInLastPR
+    $files = $env:filesChangedInLastPR.split(';')
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
 
     $changedModuleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
