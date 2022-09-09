@@ -15,6 +15,6 @@ steps:
 
 - powershell: |
     gci env:
-    echo "git diff-tree --name-only -r ${env:System_PullRequest_TargetBranch} ${env:System_PullRequest_SourceBranch}"
+    echo "git diff-tree --name-only -r $($env:System_PullRequest_TargetBranch) $($env:System_PullRequest_SourceBranch)"
     git diff-tree --name-only -r ${env:System_PullRequest_TargetBranch} ${env:System_PullRequest_SourceBranch}
   displayName: 'Run a multi-line script'
