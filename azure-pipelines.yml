@@ -36,6 +36,7 @@ steps:
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
+    gci env:
     
     $files = $env:filesChangedInLastPR
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
