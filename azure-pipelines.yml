@@ -15,4 +15,5 @@ steps:
 
 - powershell: |
     gci env:
+    git diff-tree --no-commit-id --name-only -r ${{ System.PullRequest.TargetBranch }} ${{ System.PullRequest.SourceBranch }}
   displayName: 'Run a multi-line script'
