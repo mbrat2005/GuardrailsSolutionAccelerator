@@ -10,13 +10,71 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
 
 - powershell: |
-    gci env:
     git fetch
-    echo "git diff-tree --name-only -r $($env:SYSTEM_PULLREQUEST_TARGETBRANCH) $($env:SYSTEM_PULLREQUEST_SOURCEBRANCH)"
-    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH
-  displayName: 'Run a multi-line script'
+
+    $filesChangedInLastPR = @()
+    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH | ForEach-Object {
+            $filesChangedInLastPR += (Join-Path $pwd -childPath $_).ToLower()
+          }
+    Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
+
+    echo "##vso[task.setvariable variable=filesChangedInLastPR;]"$filesChangedInLastPR
+  displayName: 'Get files changed in PR'
+
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
+    FolderPath: '_Azure_GuardrailsSolutionAccelerator/'
+    Pattern: '*ps*'
+    signConfigType: 'inlineSignParams'
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
+  enabled: false
+
+- powershell: |
+    Write-Host "Executing powershell script in '$pwd'"
+    
+    $files = $env:filesChangedInLastPR
+    Write-Host "Total '$($files.count)' files changed in last commit"
+
+    $changedModuleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
+    Write-Host "'$($changedModuleManifestFiles.count)' module manifest files changed in last commit"
+
+    try {
+      $changedModuleManifestFilesObjs = @()
+
+      ForEach ($file in $changedModuleManifestFiles) {
+        $changedModuleManifestFilesObjs += Get-Item -Path $file -ErrorAction Stop
+      }
+    }
+    catch {
+      Write-Error "Failed to find file path '$file' with Get-Item -Path $file"
+    }
+
+    $zipsChanged = $false
+    ForEach ($moduleManifest in $changedModuleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($changedModuleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $changedModuleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' was changed, zipping module files..."
+
+          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Update
+
+          $zipsChanged = $true
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+
+    # output whether modules were changed
+    Write-Host "::set-output name=zips_changed::$($zipsChanged)"
+  displayName: 'Zip signed modles'
+  env:
+    filesChangedInLastPR: $(filesChangedInLastPR)
+
 
