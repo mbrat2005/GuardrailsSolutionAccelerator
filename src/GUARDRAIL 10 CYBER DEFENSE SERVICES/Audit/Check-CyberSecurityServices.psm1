@@ -9,7 +9,6 @@ function Check-CBSSensors {
 
     $IsCompliant = $true 
     $Object = New-Object PSObject
-
     $Object | Add-Member -MemberType NoteProperty -Name ControlName  -Value $ControlName
 
     $FirstTokenInTenantID = $TenantID.Split("-")[0]
