@@ -53,6 +53,7 @@ function Check-CBSSensors {
     $object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant
     $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands
     $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
+    
     $JsonObject = convertTo-Json -inputObject $Object 
         
     Send-OMSAPIIngestionFile -customerId $WorkSpaceID `
