@@ -38,7 +38,7 @@ steps:
     Write-Host "Executing powershell script in '$pwd'"
     
     $files = $env:filesChangedInLastPR
-    Write-Host "Total '$($files.count)' files changed in last commit"
+    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
 
     $changedModuleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
     Write-Host "'$($changedModuleManifestFiles.count)' module manifest files changed in last commit"
