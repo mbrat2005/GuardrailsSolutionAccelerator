@@ -14,6 +14,5 @@ steps:
   displayName: 'Run a one-line script'
 
 - powershell: |
-    echo Build.SourceVersion; ${{ Build.SourceVersion}}
     gci env:
   displayName: 'Run a multi-line script'
