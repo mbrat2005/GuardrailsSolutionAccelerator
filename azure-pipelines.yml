@@ -77,8 +77,17 @@ steps:
 
     # output whether modules were changed
     Write-Host "::set-output name=zips_changed::$($zipsChanged)"
-  displayName: 'Zip signed modles'
-  env:
-    filesChangedInLastPR: $(filesChangedInLastPR)
+  displayName: 'Zip signed modules'
 
+- powershell: |
+    If ([boolean]'${{ steps.module_versions.outputs.versions_changed }}' -or [boolean]'${{ steps.zip_modules.outputs.zips_changed }}' ) {
+      git branch
+      git config --global user.name 'Automated GitHub Action'
+      git config --global user.email 'no-reply@github.com'
 
+      git add -A
+      git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
+      git push
+    }
+  name: 'commit-changes'
+  displayName: 'Commit Changes'
