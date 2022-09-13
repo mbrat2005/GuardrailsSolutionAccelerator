@@ -40,7 +40,7 @@ steps:
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
-    #gci env: | FT -AutoSize
+    gci env: | FT -AutoSize
     #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
     
     $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
