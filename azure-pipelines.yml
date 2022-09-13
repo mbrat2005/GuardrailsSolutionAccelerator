@@ -20,7 +20,8 @@ steps:
           }
     Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
 
-    Write-Host "##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]"($filesChangedInLastPR -join ';')
+    $cmdSetFilesChangedVariable = "Write-Host ##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]{0}" -f ($filesChangedInLastPR -join ';')
+    Invoke-Command $cmdSetFilesChangedVariable
   displayName: 'Get files changed in PR'
 
 - task: EsrpCodeSigning@1
