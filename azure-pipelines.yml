@@ -22,6 +22,8 @@ steps:
 
     $fileListString = $filesChangedInLastPR -join ';'
     Write-Output ("##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]$fileListString")
+    Write-Output ("##vso[task.setvariable variable=filesChanged;isOutput=true]$($filesChangedInLastPR.count -gt 0)")
+
   displayName: 'Get files changed in PR'
   name: 'GetFilesChangedInPR'
 
@@ -39,7 +41,7 @@ steps:
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
     #gci env: | FT -AutoSize
-    gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
+    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
     
     $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
@@ -76,11 +78,12 @@ steps:
     }
 
     # output whether modules were changed
-    Write-Host "::set-output name=zips_changed::$($zipsChanged)"
+        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($changedModuleManifestFilesObjs.count -gt 0)")
   displayName: 'Zip signed modules'
+  name: 'ZipFiles'
 
 - powershell: |
-    If ([boolean]'${{ steps.module_versions.outputs.versions_changed }}' -or [boolean]'${{ steps.zip_modules.outputs.zips_changed }}' ) {
+    If ([boolean]$env:GETFILESCHANGEDINPR_FILESCHANGED -or [boolean]$env:ZIPFILES_FILESZIPPED ) {
       git branch
       git config --global user.name 'Automated GitHub Action'
       git config --global user.email 'no-reply@github.com'
