@@ -16,7 +16,7 @@ steps:
 
     $filesChangedInLastPR = @()
     git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH | ForEach-Object {
-            $filesChangedInLastPR += (Join-Path $pwd -childPath $_).ToLower()
+            $filesChangedInLastPR += (Join-Path $pwd -childPath $_)
           }
     Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
 
