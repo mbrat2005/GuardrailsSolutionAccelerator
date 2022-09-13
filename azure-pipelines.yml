@@ -23,6 +23,7 @@ steps:
     $fileListString = $filesChangedInLastPR -join ';'
     Write-Output ("##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]$fileListString")
   displayName: 'Get files changed in PR'
+  name: 'GetFilesChangedInPR'
 
 - task: EsrpCodeSigning@1
   inputs:
@@ -37,7 +38,7 @@ steps:
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
-    gci env:
+    gci env: | FT -AutoSize
     
     $files = $env:filesChangedInLastPR.split(';')
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
