@@ -40,7 +40,7 @@ steps:
     Write-Host "Executing powershell script in '$pwd'"
     gci env: | FT -AutoSize
     
-    $files = $env:filesChangedInLastPR.split(';')
+    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
 
     $changedModuleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
