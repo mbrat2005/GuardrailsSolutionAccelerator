@@ -55,7 +55,7 @@ steps:
       }
     }
     catch {
-      Write-Error "Failed to find file path '$file' with Get-Item -Path $file"
+      Write-Error "Failed to find file path '$file' with Get-Item -Path '$file'; Error: $_"
     }
 
     $zipsChanged = $false
