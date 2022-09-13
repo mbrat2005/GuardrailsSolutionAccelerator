@@ -84,7 +84,7 @@ steps:
 
 - powershell: |
     If ([boolean]$env:GETFILESCHANGEDINPR_FILESCHANGED -or [boolean]$env:ZIPFILES_FILESZIPPED ) {
-      git branch
+      git checkout $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
       git config --global user.name 'Automated GitHub Action'
       git config --global user.email 'no-reply@github.com'
 
