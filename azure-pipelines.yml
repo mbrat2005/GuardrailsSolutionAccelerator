@@ -91,7 +91,7 @@ steps:
       git add -A
       git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
 
-      $repoPath = "$(Build.Repository.URI)".split('@')[1]
+      $repoPath = ($env:BUILD_REPOSITORY_URI).split('@')[1]
       git push https://$env:SYSTEM_ACCESSTOKEN@$repoPath
     }
   name: 'commitChanges'
