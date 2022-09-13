@@ -92,5 +92,5 @@ steps:
       git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
       git push
     }
-  name: 'commit-changes'
+  name: 'commitChanges'
   displayName: 'Commit Changes'
