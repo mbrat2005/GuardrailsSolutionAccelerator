@@ -27,10 +27,6 @@ steps:
   displayName: 'Get files changed in PR'
   name: 'GetFilesChangedInPR'
 
-- powershell: |
-    $pwd
-    Get-ChildItem
-
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
@@ -96,19 +92,3 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'drop'
     publishLocation: 'Container'
-
-- powershell: |
-    If ([boolean]$env:GETFILESCHANGEDINPR_FILESCHANGED -or [boolean]$env:ZIPFILES_FILESZIPPED ) {
-      git checkout $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
-      git config --global user.name 'Automated GitHub Action'
-      git config --global user.email 'no-reply@github.com'
-
-      git add -A
-      git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
-
-      $repoPath = ($env:BUILD_REPOSITORY_URI).split('@')[1]
-      git push https://$env:SYSTEM_ACCESSTOKEN@$repoPath
-    }
-  name: 'commitChanges'
-  displayName: 'Commit Changes'
-  enabled: false
