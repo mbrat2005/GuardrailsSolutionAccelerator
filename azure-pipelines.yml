@@ -84,7 +84,7 @@ steps:
 
 - powershell: |
     $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
-    Compress-Archive -Path . -DestinationPath $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY/$(get-date -f 'yyyy-MM-dd-HH-mm-ss').zip
+    Compress-Archive -Path ./* -DestinationPath $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY/$(get-date -f 'yyyy-MM-dd-HH-mm-ss').zip
   name: 'zipartifact'
 
 - task: PublishBuildArtifacts@1
