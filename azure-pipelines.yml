@@ -28,7 +28,8 @@ steps:
   name: 'GetFilesChangedInPR'
 
 - powershell: |
-    gci
+    $pwd
+    Get-ChildItem
 
 - task: EsrpCodeSigning@1
   inputs:
