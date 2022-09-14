@@ -36,7 +36,7 @@ steps:
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
-  enabled: false
+  enabled: true
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
