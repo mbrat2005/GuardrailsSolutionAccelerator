@@ -1,0 +1,23 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+pr: 
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: EsrpCodeSigning@1
+  inputs:
+    ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
+    FolderPath: 'src\'
+    Pattern: '*.ps*'
+    signConfigType: 'inlineSignParams'
+    SessionTimeout: '60'
+    MaxConcurrency: '50'
+    MaxRetryAttempts: '5'
