@@ -52,8 +52,8 @@ function Get-BreakGlassAccountLicense {
         ID = $null
         LicenseDetails= $msgTable.bgLicenseNotAssigned
     }
-    $BGAccounts.add( $FirstBreakGlassAcct)
-    $BGAccounts.add( $SecondBreakGlassAcct)
+    $BGAccounts.add($FirstBreakGlassAcct)
+    $BGAccounts.add($SecondBreakGlassAcct)
         
     
     foreach ($BGAccount in $BGAccounts) {
