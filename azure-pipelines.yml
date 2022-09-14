@@ -27,6 +27,9 @@ steps:
   displayName: 'Get files changed in PR'
   name: 'GetFilesChangedInPR'
 
+- powershell: |
+    gci
+
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
