@@ -82,6 +82,12 @@ steps:
   displayName: 'Zip signed modules'
   name: 'ZipFiles'
 
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+
 - powershell: |
     If ([boolean]$env:GETFILESCHANGEDINPR_FILESCHANGED -or [boolean]$env:ZIPFILES_FILESZIPPED ) {
       git checkout $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
@@ -96,3 +102,4 @@ steps:
     }
   name: 'commitChanges'
   displayName: 'Commit Changes'
+  enabled: false
