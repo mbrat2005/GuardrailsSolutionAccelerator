@@ -86,11 +86,11 @@ function Get-BreakGlassAccountLicense {
     if ((($FirstBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($FirstBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM")) -and `
         (($SecondBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($SecondBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM"))) {
             $IsCompliant= $true
-            $Comments= $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $FirstBreakGlassAcct.LicenseDetails +
-                       $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $SecondBreakGlassAcct.LicenseDetails 
+            $Comments= $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails +
+                       $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
    }    else {
-             $Comments= $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $FirstBreakGlassAcct.LicenseDetails +" & "+
-             $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense +  $SecondBreakGlassAcct.LicenseDetails 
+             $Comments= $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails +" & "+
+             $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
    }
 
     $PsObject = [PSCustomObject]@{
