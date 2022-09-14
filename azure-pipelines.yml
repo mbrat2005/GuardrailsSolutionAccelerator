@@ -82,6 +82,11 @@ steps:
   displayName: 'Zip signed modules'
   name: 'ZipFiles'
 
+- powershell: |
+    $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
+    Compress-Archive -Path . -DestinationPath $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY/$(get-date -f 'yyyy-MM-dd-HH-mm-ss').zip
+  name: 'zipartifact'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
