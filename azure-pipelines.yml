@@ -34,7 +34,7 @@ steps:
 - task: EsrpCodeSigning@1
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
-    FolderPath: '_Azure_GuardrailsSolutionAccelerator/'
+    FolderPath: './'
     Pattern: '*ps*'
     signConfigType: 'inlineSignParams'
     SessionTimeout: '60'
