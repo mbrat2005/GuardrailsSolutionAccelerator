@@ -68,14 +68,14 @@ steps:
     $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
 
-    $changedModuleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
-    Write-Host "'$($changedModuleManifestFiles.count)' module manifest files changed in last commit"
+    $moduleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files changed in last commit"
 
     try {
-      $changedModuleManifestFilesObjs = @()
+      $moduleManifestFilesObjs = @()
 
-      ForEach ($file in $changedModuleManifestFiles) {
-        $changedModuleManifestFilesObjs += Get-Item -Path $file -ErrorAction Stop
+      ForEach ($file in $moduleManifestFiles) {
+        $moduleManifestFilesObjs += Get-Item -Path $file -ErrorAction Stop
       }
     }
     catch {
@@ -83,10 +83,10 @@ steps:
     }
 
     $zipsChanged = $false
-    ForEach ($moduleManifest in $changedModuleManifestFilesObjs) {
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
         $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
         
-        If ($changedModuleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $changedModuleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
           Write-Host "Module '$($moduleManifest.BaseName)' was changed, zipping module files..."
 
           $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
@@ -100,9 +100,42 @@ steps:
     }
 
     # output whether modules were changed
-        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($changedModuleManifestFilesObjs.count -gt 0)")
+        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
   displayName: 'Zip signed modules'
   name: 'ZipFiles'
+  enabled: false
+
+- powershell: |
+    Write-Host "Executing powershell script in '$pwd'"
+    gci env: | FT -AutoSize
+    #gci $env:BUILD_REPOSITORY_LOCALPATH`/src | FT -AutoSize
+    
+    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
+    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
+
+    $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files "
+
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
+
+          $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+          Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Update
+
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+
+    # output whether modules were changed
+        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
+  displayName: 'Zip signed modules'
+  name: 'ZipAllFiles'
+  enabled: true
 
 - powershell: |
     $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
