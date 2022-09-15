@@ -10,7 +10,6 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-
 - powershell: |
     git fetch
 
@@ -33,10 +32,33 @@ steps:
     FolderPath: './'
     Pattern: '*ps*'
     signConfigType: 'inlineSignParams'
+    inlineOperation: |
+      [{
+          "KeyCode" : "CP-230865",
+          "OperationCode" : "SigntoolSign",
+          "Parameters" : {
+              "OpusName" : "Microsoft",
+              "OpusInfo" : "http://www.microsoft.com",
+              "FileDigest" : "/fd \"SHA256\"",
+              "PageHash" : "/NPH",
+              "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+          },
+          "ToolName" : "sign",
+          "ToolVersion" : "1.0"
+      },
+      {
+          "KeyCode" : "CP-230865",
+          "OperationCode" : "SigntoolVerify",
+          "Parameters" : {},
+          "ToolName" : "sign",
+          "ToolVersion" : "1.0"
+              }]
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
   enabled: true
+
+
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
