@@ -409,7 +409,7 @@ if (!$update)
             $null = New-AzManagementGroupDeployment -ManagementGroupId $lighthouseTargetManagementGroupID `
                 -Location $region `
                 -TemplateFile ./lighthouse/lighthouse_assignRPRole.bicep `
-                -TemplateParameterObject @{lighthouseRegisterRPRoleDefinitionID = lighthouseRegisterRPRoleDefinitionID; guardrailsAutomationAccountMSI = guardrailsAutomationAccountMSI } `
+                -TemplateParameterObject @{lighthouseRegisterRPRoleDefinitionID = $lighthouseRegisterRPRoleDefinitionID; guardrailsAutomationAccountMSI = $guardrailsAutomationAccountMSI } `
                 -Confirm:$false `
                 -ErrorAction Stop
         }
