@@ -9,7 +9,7 @@ $GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDK
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 #$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
 $Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
-$lighthouseTargetManagementGroupID = Get-AzAutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
+$lighthouseTargetManagementGroupID = Get-AutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
 
 # Connects to Azure using the Automation Account's managed identity
 try {
