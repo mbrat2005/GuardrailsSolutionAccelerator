@@ -169,7 +169,7 @@ if (!$update)
     else {
         Write-Output "Selecting $subcriptionId subscription:"
         try {
-            Select-AzSubscription -Subscription $subscriptionId
+            Select-AzSubscription -Subscription $subscriptionId | Out-Null
         }
         catch {
             Write-error "Error selecting provided subscription."
@@ -271,7 +271,7 @@ if (!$update)
     Write-Verbose "Creating $resourceGroup in $region location."
 
     try {
-        New-AzResourceGroup -Name $resourceGroup -Location $region -Tags $tagstable
+        New-AzResourceGroup -Name $resourceGroup -Location $region -Tags $tagstable -ErrorAction Stop | Out-Null
     }
     catch { 
         throw "Error creating resource group. $_" 
@@ -280,10 +280,11 @@ if (!$update)
     Write-Output "Deploying solution through bicep."
     try { 
         $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-            -TemplateParameterObject $templateParameterObject -TemplateFile .\guardrails.bicep -WarningAction SilentlyContinue
+            -TemplateParameterObject $templateParameterObject -TemplateFile .\guardrails.bicep -WarningAction SilentlyContinue -ErrorAction Stop
     }
     catch {
-        Write-error "Error deploying solution to Azure. $_"
+        Write-error "Failed to deploy main Guardrails Accelerator template with error: $_"
+        Exit
     }
     $guardrailsAutomationAccountMSI = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
     #endregion
