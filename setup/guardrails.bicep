@@ -21,6 +21,7 @@ param Locale string = 'EN'
 param releaseVersion string
 param releaseDate string 
 param TenantDomainUPN string
+param lighthouseTargetManagementGroupID string
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
@@ -1139,6 +1140,14 @@ resource variable1 'variables' = {
     'properties': {
       'isEncrypted': true
       'value': '"${Locale}"'
+  }
+  }
+
+  resource variable16 'variables' = {
+    name: 'lighthouseTargetManagementGroupID'
+    'properties': {
+      'isEncrypted': true
+      'value': '"${lighthouseTargetManagementGroupID}"'
   }
   }
 }

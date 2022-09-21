@@ -9,6 +9,7 @@ $GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDK
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 #$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
 $Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
+$lighthouseTargetManagementGroupID = Get-AzAutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
 
 # Connects to Azure using the Automation Account's managed identity
 try {
@@ -36,6 +37,47 @@ Check-UpdateAvailable -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -Re
 
 # Updates Tenant info.
 Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -TenantId $tenantID
+
+# Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
+If ($lighthouseTargetManagementGroupID) {
+    $lighthouseTargetSubscriptions = Search-AzGraph -query "resourceContainers | where type == 'microsoft.resources/subscriptions'" -ManagementGroup $lighthouseTargetManagementGroupID
+
+    ## switching context for each subscription is slow, using REST API and jobs instead
+    $queryJobs = @()
+    ForEach ($subscription in $lighthouseTargetSubscriptions) {
+        $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}?api-version=2021-04-01" -f $subscription.subscriptionId,'Microsoft.ManagedServices'
+        $queryJobs += Invoke-AzRestMethod -Method GET -Uri $uri -AsJob
+    }
+    $queryJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
+
+    $registerJobs = @()
+    ForEach ($job in $queryJobs) {
+        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 10
+        If ($jobData.registrationState -notin ('Registered','Registering')) {
+            $subscriptionId = $jobData.id.split('/')[2]
+
+            Add-LogEntry 'Warning' "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
+                -additionalValues @{reportTime=$ReportTime; locale=$locale}
+
+            $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}?api-version=2021-04-01" -f $subscriptionId,'Microsoft.ManagedServices'
+            
+            $registerJobs += Invoke-AzRestMethod -Method POST -Uri $uri -AsJob
+        }
+    }
+    $registerJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
+
+    ForEach ($job in $registerJobs) {
+        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 10
+        If ($job.error) {
+            Add-LogEntry 'Error' "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
+                -additionalValues @{reportTime=$ReportTime; locale=$locale}
+        }
+        Else {
+            Add-LogEntry 'Information' "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
+            -additionalValues @{reportTime=$ReportTime; locale=$locale}
+        }
+    }
+}
 
 Add-LogEntry 'Information' "Completed execution of backend runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
     -additionalValues @{reportTime=$ReportTime; locale=$locale}

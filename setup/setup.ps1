@@ -250,6 +250,7 @@ if (!$update)
     $parameterTemplate = $parameterTemplate.Replace("%releasedate%", $tags.ReleaseDate)
     $parameterTemplate = $parameterTemplate.Replace("%Locale%", $config.Locale)
     $parameterTemplate = $parameterTemplate.Replace("%tenantDomainUPN%", $tenantDomainUPN)
+    $parameterTemplate = $parameterTemplate.Replace("%lighthouseTargetManagementGroupID%", $lighthouseTargetManagementGroupID)
     #writes the file
     $parameterTemplate | out-file .\parameters.json -Force
     #endregion
