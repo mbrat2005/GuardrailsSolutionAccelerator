@@ -54,7 +54,7 @@ If ($lighthouseTargetManagementGroupID) {
         Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode)"
     }
     Else {
-        $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json -Depth 10 | Select-Object -Expand data | Select-Object -expand subscriptionId
+        $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json | Select-Object -Expand data | Select-Object -expand subscriptionId
     }
 
     Write-Verbose "Found '$($lighthouseTargetSubscriptions.count)' under management group '$lighthouseTargetManagementGroupID'"
