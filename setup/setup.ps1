@@ -265,7 +265,12 @@ if (!$update)
     }
 
     If (![string]::IsNullOrEmpty($alternatePSModulesURL)) {
-        $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }
+        If ($alternatePSModulesURL -match 'https://github.com/.+?/raw/.*?/psmodules') {
+            $templateParameterObject += @{CustomModulesBaseURL = $alternatePSModulesURL }
+        }
+        Else {
+            Write-Error "-alternatePSModulesURL provided, but does not match pattern 'https://github.com/.+?/raw/.*?/psmodules'" -ErrorAction Stop
+        }
     }
 
     Write-Verbose "Creating $resourceGroup in $region location."
