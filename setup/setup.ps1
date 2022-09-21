@@ -126,6 +126,17 @@ if (!$update)
             Exit
         }
 
+        # check if lighthouse Custom-RegisterLighthouseResourceProvider exists at a different scope
+        Write-Verbose "Checking for existing role definitions with name 'Custom-RegisterLighthouseResourceProvider'"
+        $roleDef = Get-AzRoleDefinition -Name 'Custom-RegisterLighthouseResourceProvider'
+        $targetAssignableScope = "/providers/Microsoft.Management/managementGroups/$lighthouseTargetManagementGroupID"
+        Write-Verbose "Found '$($roleDef.count)' role definitions with name 'Custom-RegisterLighthouseResourceProvider'. Verifying assignable scopes includes '$targetAssignableScope'"
+        If ($roleDef -and $roleDef.AssignableScopes -notcontains $targetAssignableScope) {
+            Write-Error "Role definition name 'Custom-RegisterLighthouseResourceProvider' already exists and has an assignable scope of '$($roleDef.AssignableScopes)'. Assignable scopes
+            should include '$targetAssignableScope'. Delete the role definition (and any assignments) and run the script again."
+            Exit
+        }
+
         # check if a lighthouse Azure Automation MSI role assignment to register the Lighthouse resource provider already exists - assignment name always  5de3f84b-8866-4432-8811-24859ccf8146
         Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Custom-RegisterLighthouseResourceProvider'"
         $roleAssignments = Get-AzRoleAssignment -Scope $assignmentScopeMgmtmGroupId -RoleDefinitionName 'Custom-RegisterLighthouseResourceProvider'     
