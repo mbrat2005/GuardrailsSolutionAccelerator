@@ -41,7 +41,21 @@ Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTim
 # Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
 If ($lighthouseTargetManagementGroupID) {
     Write-Verbose "Variable lighthouseTargetManagementGroupID has a value: '$lighthouseTargetManagementGroupID'; continuing with checking Lighthouse provider registrations..."
-    $lighthouseTargetSubscriptions = Search-AzGraph -query "resourceContainers | where type == 'microsoft.resources/subscriptions'" -ManagementGroup $lighthouseTargetManagementGroupID
+    # Azure.Graph module not installed on Azure Automation, using REST
+    # $lighthouseTargetSubscriptions = Search-AzGraph -query "resourceContainers | where type == 'microsoft.resources/subscriptions'" -ManagementGroup $lighthouseTargetManagementGroupID
+    $uri = 'https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01'
+    $body = @{
+        query = "resourceContainers | where type == 'microsoft.resources/subscriptions' | project subscriptionId"
+        managementGroups = @($lighthouseTargetManagementGroupID)
+    } | ConvertTo-Json
+
+    $response = Invoke-AzRestMethod -Method POST -uri $uri -Payload $body
+    If ([string]$response.StatusCode -ne '200') {
+        Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode)"
+    }
+    Else {
+        $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json -Depth 10 | Select-Object -Expand data | Select-Object -expand subscriptionId
+    }
 
     Write-Verbose "Found '$($lighthouseTargetSubscriptions.count)' under management group '$lighthouseTargetManagementGroupID'"
     ## switching context for each subscription is slow, using REST API and jobs instead

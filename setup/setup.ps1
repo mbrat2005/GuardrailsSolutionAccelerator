@@ -453,7 +453,7 @@ if (!$update)
 
     #Add current user as a Keyvault administrator (for setup)
     try { $kv = Get-AzKeyVault -ResourceGroupName $keyVaultRG -VaultName $keyVaultName } catch { "Error fetching KV object. $_"; break }
-    try { New-AzRoleAssignment -ObjectId $currentUserId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId }catch { "Error assigning permissions to KV. $_"; break }
+    try { $null = New-AzRoleAssignment -ObjectId $currentUserId -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId }catch { "Error assigning permissions to KV. $_"; break }
     Write-Output "Sleeping 30 seconds to allow for permissions to be propagated."
     Start-Sleep -Seconds 30
     #region Secret Setup
@@ -469,7 +469,7 @@ if (!$update)
 
     Write-Verbose "Adding workspacekey secret to keyvault."
     try {
-        $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
+        $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKeys -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
         $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceKey" -SecretValue $secretvalue
     }
