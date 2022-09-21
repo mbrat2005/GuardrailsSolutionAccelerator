@@ -118,7 +118,7 @@ if (!$update)
 
         # check if a lighthouse defender for cloud policy MSI role assignment already exists - assignment name always 2cb8e1b1-fcf1-439e-bab7-b1b8b008c294 
         Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Owner'"
-        $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
+        $uri = 'https://management.azure.com/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments?$filter=name eq {1}&api-version=2015-07-01' -f $lighthouseTargetManagementGroupID,'2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
         $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content    
         If ($roleAssignments) {
             Write-Verbose "role assignment: $($roleAssignments | ConvertFrom-Json)"
