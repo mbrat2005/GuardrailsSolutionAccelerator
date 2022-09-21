@@ -121,6 +121,7 @@ if (!$update)
         $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294'
         $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content    
         If ($roleAssignments) {
+            Write-Verbose "role assignment: $($roleAssignments | ConvertFrom-Json)"
             Write-Error "A role assignment exists with the name '2cb8e1b1-fcf1-439e-bab7-b1b8b008c294' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
             created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the Owner role assignment listed as 'Identity Not Found'
             or use 'Remove-AzRoleAssignment -objectId $assignmentId'"
@@ -142,7 +143,8 @@ if (!$update)
         Write-Verbose "Checking for role assignments at management group '$assignmentScopeMgmtmGroupId' for role 'Custom-RegisterLighthouseResourceProvider'"
         $uri = 'https://management.azure.com/{0}?api-version=2015-07-01' -f '5de3f84b-8866-4432-8811-24859ccf8146'
         $roleAssignments = Invoke-AzRestMethod -Uri $uri -Method GET | Select-Object -Expand Content    
-        If ($roleAssignments) {    
+        If ($roleAssignments) {  
+            Write-Verbose "role assignment: $($roleAssignments | ConvertFrom-Json)"  
             Write-Error "A role assignment exists with the name '5de3f84b-8866-4432-8811-24859ccf8146' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
             created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the 'Custom-RegisterLighthouseResourceProvider' role assignment listed as 'Identity Not Found'
             or use 'Remove-AzRoleAssignment -objectId $assignmentId'"
