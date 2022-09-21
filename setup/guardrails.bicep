@@ -1266,3 +1266,5 @@ resource guardrailsStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
     }
   }
 }
+
+output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

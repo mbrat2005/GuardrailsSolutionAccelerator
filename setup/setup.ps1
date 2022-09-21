@@ -117,6 +117,15 @@ if (!$update)
             or use 'Remove-AzRoleAssignment -objectId $assignmentId'"
             Exit
         }
+
+        # check if a lighthouse Azure Automation MSI role assignment to register the Lighthouse resource provider already exists - assignment name always  5de3f84b-8866-4432-8811-24859ccf8146
+        $assignmentId = "/providers/Microsoft.Management/managementGroups/{0}/providers/Microsoft.Authorization/roleAssignments/{1}" -f $lighthouseTargetManagementGroupID,'5de3f84b-8866-4432-8811-24859ccf8146'
+        If (Get-AzRoleAssignment -ObjectId $assignmentId -ErrorAction SilentlyContinue) {
+            Write-Error "A role assignment exists with the name '5de3f84b-8866-4432-8811-24859ccf8146' at the Management group '$lighthouseTargetManagementGroupID'. This was likely
+            created by a previous Guardrails deployment and must be removed. Navigate to the Managment Group in the Portal and delete the 'Custom-RegisterLighthouseResourceProvider' role assignment listed as 'Identity Not Found'
+            or use 'Remove-AzRoleAssignment -objectId $assignmentId'"
+            Exit
+        }
     }
 
     #config item validation
@@ -269,12 +278,13 @@ if (!$update)
 
     Write-Output "Deploying solution through bicep."
     try { 
-        New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
+        $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
             -TemplateParameterObject $templateParameterObject -TemplateFile .\guardrails.bicep -WarningAction SilentlyContinue
     }
     catch {
         Write-error "Error deploying solution to Azure. $_"
     }
+    $guardrailsAutomationAccountMSI = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
     #endregion
 
     #region lighthouse configuration
@@ -336,6 +346,20 @@ if (!$update)
             )
         }
 
+        #deploy a custom role definition at the lighthouseTargetManagementGroupID, which will later be used to grant the Automation Account MSI permissions to register the Lighthouse Resource Provider
+        try {
+            $roleDefinitionDeployment = New-AzManagementGroupDeployment -ManagementGroupId $lighthouseTargetManagementGroupID `
+                -Location $region `
+                -TemplateFile ./lighthouse/lighthouse_registerRPRole.bicep `
+                -Confirm:$false `
+                -ErrorAction Stop
+        }
+        catch {
+            Write-Error "Failed to deploy lighthouse resource provider registration custom role template with error: $_"
+            break
+        }
+        $lighthouseRegisterRPRoleDefinitionID = $roleDefinitionDeployment.Outputs.roleDefinitionId.value
+
         #deploy Guardrails Defender for Cloud permission delegation - this delegation adds a role assignment to every subscription under the target management group
         try {
             $policyDeployment = New-AzManagementGroupDeployment -ManagementGroupId $lighthouseTargetManagementGroupID `
@@ -355,7 +379,7 @@ if (!$update)
             }
         }
 
-        # wait 30 seconds to ensure AAD has time to propagate MSI identity before assigning a role
+        ### wait 30 seconds to ensure AAD has time to propagate MSI identities before assigning a roles ###
         Start-Sleep -Seconds 30
 
         # deploy an 'Owner' role assignment for the MSI associated with the Policy Assignment created in the previous step
@@ -370,6 +394,20 @@ if (!$update)
         }
         catch {
             Write-Error "Failed to deploy template granting the Defender for Cloud delegation policy rights to configure role assignments with error: $_"
+            break   
+        } 
+
+        # deploy a custom role assignment, granting the Automation Account MSI permissions to register the Lighthouse resource provider on each subscription under the target management group
+        try {
+            $null = New-AzManagementGroupDeployment -ManagementGroupId $lighthouseTargetManagementGroupID `
+                -Location $region `
+                -TemplateFile ./lighthouse/lighthouse_assignRPRole.bicep `
+                -TemplateParameterObject @{lighthouseRegisterRPRoleDefinitionID = lighthouseRegisterRPRoleDefinitionID; guardrailsAutomationAccountMSI = guardrailsAutomationAccountMSI } `
+                -Confirm:$false `
+                -ErrorAction Stop
+        }
+        catch {
+            Write-Error "Failed to deploy template granting the Azure Automation account rights to register the Lighthouse resource provider with error: $_"
             break   
         } 
 
@@ -393,7 +431,7 @@ if (!$update)
     # Adds keyvault secret user permissions to the Automation account
     Write-Verbose "Adding automation account Keyvault Secret User."
     try {
-        New-AzRoleAssignment -ObjectId (Get-AzAutomationAccount -AutomationAccountName $autoMationAccountName -ResourceGroupName $resourceGroup).Identity.PrincipalId -RoleDefinitionName "Key Vault Secrets User" -Scope $kv.ResourceId
+        New-AzRoleAssignment -ObjectId $guardrailsAutomationAccountMSI -RoleDefinitionName "Key Vault Secrets User" -Scope $kv.ResourceId
     }
     catch {
         "Error assigning permissions to Automation account (for keyvault). $_"
@@ -485,10 +523,10 @@ if (!$update)
     try {
         Write-Output "Assigning reader access to the Automation Account Managed Identity for MG: $($rootmg.DisplayName)"
         $rootmg = get-azmanagementgroup | ? { $_.Id.Split("/")[4] -eq (Get-AzContext).Tenant.Id }
-        $AAId = (Get-AzAutomationAccount -ResourceGroupName $resourcegroup -Name $autoMationAccountName).Identity.PrincipalId
-        New-AzRoleAssignment -ObjectId $AAId -RoleDefinitionName Reader -Scope $rootmg.Id
-        New-AzRoleAssignment -ObjectId $AAId -RoleDefinitionName "Reader and Data Access" -Scope (Get-AzStorageAccount -ResourceGroupName $resourceGroup -Name $storageaccountName).Id
-        New-AzRoleAssignment -ObjectId $AAID -RoleDefinitionName Reader -Scope /providers/Microsoft.aadiam
+
+        New-AzRoleAssignment -ObjectId $guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope $rootmg.Id
+        New-AzRoleAssignment -ObjectId $guardrailsAutomationAccountMSI -RoleDefinitionName "Reader and Data Access" -Scope (Get-AzStorageAccount -ResourceGroupName $resourceGroup -Name $storageaccountName).Id
+        New-AzRoleAssignment -ObjectId $guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope /providers/Microsoft.aadiam
     }
     catch {
         "Error assigning root management group permissions. $_"
