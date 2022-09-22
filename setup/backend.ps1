@@ -80,8 +80,9 @@ If ($lighthouseTargetManagementGroupID) {
             Add-LogEntry 'Warning' "Subscription '$subscriptionID' was not registered for the 'Microsoft.ManagedServices' resource provider, attempting to register" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
                 -additionalValues @{reportTime=$ReportTime; locale=$locale}
 
-            $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}?api-version=2021-04-01" -f $subscriptionId,'Microsoft.ManagedServices'
+            $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}/register?api-version=2021-04-01" -f $subscriptionId,'Microsoft.ManagedServices'
             
+			Write-Output "Register job URI: $uri"
             $registerJobs += Invoke-AzRestMethod -Method POST -Uri $uri -AsJob
         }
         Else {
@@ -94,6 +95,7 @@ If ($lighthouseTargetManagementGroupID) {
 
     ForEach ($job in $registerJobs) {
         $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
+		Write-Output "JobData: $($jobData | convertto-json)"
         $subscriptionId = $jobData.id.split('/')[2]
 
         Write-Output "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
