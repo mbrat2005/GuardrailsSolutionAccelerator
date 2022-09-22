@@ -51,7 +51,7 @@ If ($lighthouseTargetManagementGroupID) {
 
     $response = Invoke-AzRestMethod -Method POST -uri $uri -Payload $body
     If ([string]$response.StatusCode -ne '200') {
-        Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode)"
+        Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode) $($response.Error.message)"
     }
     Else {
         $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json | Select-Object -Expand data | Select-Object -expand subscriptionId
@@ -70,7 +70,7 @@ If ($lighthouseTargetManagementGroupID) {
 
     $registerJobs = @()
     ForEach ($job in $queryJobs) {
-        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 10
+        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
         $subscriptionId = $jobData.id.split('/')[2]
 
         If ($jobData.registrationState -notin ('Registered','Registering')) {
@@ -91,7 +91,7 @@ If ($lighthouseTargetManagementGroupID) {
     $registerJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
 
     ForEach ($job in $registerJobs) {
-        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 10
+        $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
         $subscriptionId = $jobData.id.split('/')[2]
 
         Write-Verbose "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
