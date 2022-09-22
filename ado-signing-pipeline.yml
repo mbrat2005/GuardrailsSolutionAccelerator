@@ -35,11 +35,10 @@ steps:
     $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
     Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
 
-    $moduleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
-    Write-Host "'$($moduleManifestFiles.count)' module manifest files changed in last commit"
-    
     $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
-    $moduleChangedFileList = $files | where-object { $_ -match '\.psm1$'}
+    $moduleChangedFileList = $files | where-object { $_ -like '*.psm1'}
+    Write-Host "'$($moduleChangedFileList.count)' module manifest files changed in last commit"
+
     ForEach ($moduleChangedFile in $moduleChangedFileList) {
         $moduleManifestPath = Get-Item -Path ($moduleChangedFile -replace '\.psm1$','.psd1') -ErrorAction Stop
         
