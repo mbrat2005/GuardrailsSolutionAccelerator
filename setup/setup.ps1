@@ -131,6 +131,7 @@ if (!$update)
         Write-Verbose "Checking for existing role definitions with name 'Custom-RegisterLighthouseResourceProvider'"
         $roleDef = Get-AzRoleDefinition -Name 'Custom-RegisterLighthouseResourceProvider'
         $targetAssignableScope = "/providers/Microsoft.Management/managementGroups/$lighthouseTargetManagementGroupID"
+        
         Write-Verbose "Found '$($roleDef.count)' role definitions with name 'Custom-RegisterLighthouseResourceProvider'. Verifying assignable scopes includes '$targetAssignableScope'"
         If ($roleDef -and $roleDef.AssignableScopes -notcontains $targetAssignableScope) {
             Write-Error "Role definition name 'Custom-RegisterLighthouseResourceProvider' already exists and has an assignable scope of '$($roleDef.AssignableScopes)'. Assignable scopes
