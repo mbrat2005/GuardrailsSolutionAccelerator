@@ -209,7 +209,7 @@ steps:
       git add -A
       git commit -am "incremented changed module versions, signed, zipped: $(git log -1 --pretty=%B)"
 
-      git pull origin $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
+      git pull --strategy ort --strategy-option ours origin $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
 
       git push origin HEAD:$env:SYSTEM_PULLREQUEST_SOURCEBRANCH
     }
