@@ -190,3 +190,16 @@ steps:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: 'drop'
     publishLocation: 'Container'
+
+- powershell: |
+    If ($env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR) {
+      git branch
+      git config --global user.name 'Automated GitHub Action'
+      git config --global user.email 'no-reply@github.com'
+
+      git add -A
+      git commit -am "incremented changed module versions, signed, zipped: $(git log -1 --pretty=%B)"
+      git push
+    }
+  name: 'commitAndPushChanges'
+  displayName: 'Commit and Push Changes to PR Source Branch'
