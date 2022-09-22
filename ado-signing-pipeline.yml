@@ -199,7 +199,7 @@ steps:
 
       git add -A
       git commit -am "incremented changed module versions, signed, zipped: $(git log -1 --pretty=%B)"
-      git push origin:$env:SYSTEM_PULLREQUEST_SOURCEBRANCH
+      git push origin HEAD:$env:SYSTEM_PULLREQUEST_SOURCEBRANCH
     }
   name: 'commitAndPushChanges'
   displayName: 'Commit and Push Changes to PR Source Branch'
