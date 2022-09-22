@@ -106,7 +106,7 @@ steps:
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
-  enabled: true
+  enabled: false
 
 - powershell: |
     Remove-Item -Path ./CodeSignSummary-* -Force
@@ -205,7 +205,7 @@ steps:
       git config --global user.name 'Automated GitHub Action'
       git config --global user.email 'no-reply@github.com'
       git config pull.rebase true
-
+      git status
       git add -A
       git commit -am "incremented changed module versions, signed, zipped: $(git log -1 --pretty=%B)"
 
