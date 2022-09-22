@@ -205,6 +205,7 @@ steps:
       git config --global user.name 'Automated GitHub Action'
       git config --global user.email 'no-reply@github.com'
 
+      git pull origin $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
       git add -A
       git commit -am "incremented changed module versions, signed, zipped: $(git log -1 --pretty=%B)"
       git push origin HEAD:$env:SYSTEM_PULLREQUEST_SOURCEBRANCH
