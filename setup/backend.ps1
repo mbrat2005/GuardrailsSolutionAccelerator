@@ -52,7 +52,7 @@ If ($lighthouseTargetManagementGroupID) {
     $response = Invoke-AzRestMethod -Method POST -uri $uri -Payload $body
     If ([string]$response.StatusCode -ne '200') {
         $responseContent = $response.Content | ConvertFrom-Json
-        Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode): $($response.Error.message)"
+        Write-Error "Failed to query Azure Resource Graph for list of subscription under the target management group with error: $($response.StatusCode): $($response.Error.details.message)"
     }
     Else {
         $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json | Select-Object -Expand data | Select-Object -expand subscriptionId
