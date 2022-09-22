@@ -13,6 +13,9 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+- checkout: self
+  persistCredentials: true
+
 - powershell: |
     git fetch
 
@@ -104,6 +107,11 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
   enabled: true
+
+- powershell: |
+    Remove-Item -Path ./CodeSignSummary-* -Force
+  name: 'removeCodeSignSummary'
+  displayName: 'Remove Code Signing Summary Files'
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
