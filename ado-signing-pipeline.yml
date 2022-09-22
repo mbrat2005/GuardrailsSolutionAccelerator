@@ -204,7 +204,7 @@ steps:
       git branch
       git config --global user.name 'Automated GitHub Action'
       git config --global user.email 'no-reply@github.com'
-      git config pull.ff only
+      git config pull.merge only
       git pull origin $env:SYSTEM_PULLREQUEST_SOURCEBRANCH
       git add -A
       git commit -am "incremented changed module versions, signed, zipped: $(git log -1 --pretty=%B)"
