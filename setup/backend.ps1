@@ -40,7 +40,7 @@ Add-TenantInfo -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTim
 
 # Ensure the 'Microsoft.ManagedServices' resource provider is registered under each subscription at the delegated management group
 If ($lighthouseTargetManagementGroupID) {
-    Write-Verbose "Variable lighthouseTargetManagementGroupID has a value: '$lighthouseTargetManagementGroupID'; continuing with checking Lighthouse provider registrations..."
+    Write-Output "Variable lighthouseTargetManagementGroupID has a value: '$lighthouseTargetManagementGroupID'; continuing with checking Lighthouse provider registrations..."
     # Azure.Graph module not installed on Azure Automation, using REST
     # $lighthouseTargetSubscriptions = Search-AzGraph -query "resourceContainers | where type == 'microsoft.resources/subscriptions'" -ManagementGroup $lighthouseTargetManagementGroupID
     $uri = 'https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=2021-03-01'
@@ -58,20 +58,21 @@ If ($lighthouseTargetManagementGroupID) {
         $lighthouseTargetSubscriptions = $response.content | ConvertFrom-Json | Select-Object -Expand data | Select-Object -expand subscriptionId
     }
 
-    Write-Verbose "Found '$($lighthouseTargetSubscriptions.count)' under management group '$lighthouseTargetManagementGroupID'"
+    Write-Output "Found '$($lighthouseTargetSubscriptions.count)' subscription under management group '$lighthouseTargetManagementGroupID': $lighthouseTargetSubscriptions"
     ## switching context for each subscription is slow, using REST API and jobs instead
     $queryJobs = @()
     ForEach ($subscription in $lighthouseTargetSubscriptions) {
-        $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}?api-version=2021-04-01" -f $subscription.subscriptionId,'Microsoft.ManagedServices'
+        $uri = "https://management.azure.com/subscriptions/{0}/providers/{1}?api-version=2021-04-01" -f $subscription,'Microsoft.ManagedServices'
         $queryJobs += Invoke-AzRestMethod -Method GET -Uri $uri -AsJob
     }
 
-    Write-Verbose "Waiting for '$($queryJobs.count)' query resource provider jobs to complete (up to 15 minutes)..."
+    Write-Output "Waiting for '$($queryJobs.count)' query resource provider jobs to complete (up to 15 minutes)..."
     $queryJobs | Wait-Job -Timeout (New-TimeSpan -Minutes 15).TotalSeconds
 
     $registerJobs = @()
     ForEach ($job in $queryJobs) {
         $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
+		Write-Output "JobData: $($jobData | convertto-json)"
         $subscriptionId = $jobData.id.split('/')[2]
 
         If ($jobData.registrationState -notin ('Registered','Registering')) {
@@ -84,7 +85,7 @@ If ($lighthouseTargetManagementGroupID) {
             $registerJobs += Invoke-AzRestMethod -Method POST -Uri $uri -AsJob
         }
         Else {
-            Write-Verbose "Subscription '$subscriptionId' already has 'Microsoft.ManagedServices' RP in registerd or registering state ('$($jobData.registrationState)')..."
+            Write-Output "Subscription '$subscriptionId' already has 'Microsoft.ManagedServices' RP in registerd or registering state ('$($jobData.registrationState)')..."
         }
     }
 
@@ -95,14 +96,14 @@ If ($lighthouseTargetManagementGroupID) {
         $jobData = $job | Receive-Job | Select-Object -ExpandProperty Content | ConvertFrom-Json
         $subscriptionId = $jobData.id.split('/')[2]
 
-        Write-Verbose "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
+        Write-Output "Checking on Lighthouse RP registration job status for subscription '$subscriptionId...'"
         If ($job.error) {
             Write-Error "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)"
             Add-LogEntry 'Error' "Subscription '$subscriptionID' failed to register for the 'Microsoft.ManagedServices' resource provider. Error: $($job.error)" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
                 -additionalValues @{reportTime=$ReportTime; locale=$locale}
         }
         Else {
-            Write-Verbose "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'"
+            Write-Output "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'"
             Add-LogEntry 'Information' "Subscription '$subscriptionID' request to register 'Microsoft.ManagedServices' resource provider submitted successfully, registration status '$($jobData.registrationState)'" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName backend `
             -additionalValues @{reportTime=$ReportTime; locale=$locale}
         }
