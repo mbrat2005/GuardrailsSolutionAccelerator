@@ -40,11 +40,13 @@ steps:
     Write-Host "'$($moduleChangedFileList.count)' module manifest files changed in last commit"
 
     ForEach ($moduleChangedFile in $moduleChangedFileList) {
+        Write-Host "Updating module manifest version for '$moduleChangedFile'"
         $moduleManifestPath = Get-Item -Path ($moduleChangedFile -replace '\.psm1$','.psd1') -ErrorAction Stop
         
         $moduleManifest = Get-Item $moduleManifestPath
         $content = Get-Content $moduleManifest
         If ($moduleVersionMatches = $moduleVersionRegex.matches($content)) {
+            Write-Host "Found module version string in '$moduleChangedFile': $moduleVersionMatches"
             If ($moduleVersionMatches.count -eq 1) {
                 $moduleVersionLine = $moduleVersionMatches[0].Groups[0].Value
                 $currentModuleVersion = $moduleVersionMatches[0].Groups[1].Value
@@ -58,6 +60,8 @@ steps:
                     Write-Error "Version string '$currentModuleVersion' cannot be converted to type [Version]. File: '$moduleManifest'"
                 }
                 $newVersionLine = $moduleVersionLine -replace $currentModuleVersion,$newVersion
+
+                Write-Host "Updating module version '$moduleVersionLine' to '$newVersionLine'"
                 $moduleManifest | Set-Content -Value ($content -replace $moduleVersionLine,$newVersionLine)
             }
             Else {
