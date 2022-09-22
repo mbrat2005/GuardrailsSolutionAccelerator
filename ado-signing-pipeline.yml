@@ -13,6 +13,62 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+- powershell: |
+    git fetch
+
+    $filesChangedInLastPR = @()
+    git diff-tree --name-only -r origin/$env:SYSTEM_PULLREQUEST_TARGETBRANCH origin/$env:SYSTEM_PULLREQUEST_SOURCEBRANCH | ForEach-Object {
+            $filesChangedInLastPR += (Join-Path $pwd -childPath $_)
+          }
+    Write-Host "'$($filesChangedInLastPR.count)' files changed in last commit: `n $filesChangedInLastPR"
+
+    $fileListString = $filesChangedInLastPR -join ';'
+    Write-Output ("##vso[task.setvariable variable=filesChangedInLastPR;isOutput=true]$fileListString")
+    Write-Output ("##vso[task.setvariable variable=filesChanged;isOutput=true]$($filesChangedInLastPR.count -gt 0)")
+
+  displayName: 'Get files changed in PR'
+  name: 'GetFilesChangedInPR'
+
+- powershell: |
+    # Automatically increment the 'build' version numbers on a PS module file
+    
+    $files = $env:GETFILESCHANGEDINPR_FILESCHANGEDINLASTPR.split(';')
+    Write-Host "Total '$($files.count)' files changed in last commit. Files: `n $files"
+
+    $moduleManifestFiles = $files | Where-Object {$_ -like '*.psm1'}
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files changed in last commit"
+    
+    $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
+    $moduleChangedFileList = $files | where-object { $_ -match '\.psm1$'}
+    ForEach ($moduleChangedFile in $moduleChangedFileList) {
+        $moduleManifestPath = Get-Item -Path ($moduleChangedFile -replace '\.psm1$','.psd1') -ErrorAction Stop
+        
+        $moduleManifest = Get-Item $moduleManifestPath
+        $content = Get-Content $moduleManifest
+        If ($moduleVersionMatches = $moduleVersionRegex.matches($content)) {
+            If ($moduleVersionMatches.count -eq 1) {
+                $moduleVersionLine = $moduleVersionMatches[0].Groups[0].Value
+                $currentModuleVersion = $moduleVersionMatches[0].Groups[1].Value
+                If ($version = $currentModuleVersion -as [version]) {
+                    $major = $version.Major
+                    $minor = $version.Minor
+                    $build = $version.Build + 1 # add 1 to current version build number
+                    $newVersion = [version]::new($major,$minor,$build)
+                }
+                Else {
+                    Write-Error "Version string '$currentModuleVersion' cannot be converted to type [Version]. File: '$moduleManifest'"
+                }
+                $newVersionLine = $moduleVersionLine -replace $currentModuleVersion,$newVersion
+                $moduleManifest | Set-Content -Value ($content -replace $moduleVersionLine,$newVersionLine)
+            }
+            Else {
+                Write-Error "More than one matches for regex '$moduleVersionRegex' found in file '$moduleManifest'"
+            }
+        }
+    }
+  displayName: 'Increment Changed PS Module Versions'
+  name: 'incrementChangedModuleVersions'
+  enabled: true
 
 - task: EsrpCodeSigning@1
   inputs:
@@ -89,7 +145,7 @@ steps:
         Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($moduleManifestFilesObjs.count -gt 0)")
   displayName: 'Zip signed modules'
   name: 'ZipFiles'
-  enabled: false
+  enabled: true
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
@@ -119,7 +175,7 @@ steps:
         Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
   displayName: 'Zip signed modules'
   name: 'ZipAllFiles'
-  enabled: true
+  enabled: false
 
 - powershell: |
     $dest = "{0}/{1}.zip" -f $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY,(get-date -f 'yyyy-MM-dd-HH-mm-ss')
