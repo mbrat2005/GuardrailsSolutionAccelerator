@@ -470,7 +470,7 @@ if (!$update)
 
     Write-Verbose "Adding workspacekey secret to keyvault."
     try {
-        $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKeys -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
+        $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
         $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceKey" -SecretValue $secretvalue
     }
