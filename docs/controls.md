@@ -82,7 +82,7 @@ This module will detect the PBMM and look for specific policies not to be exempt
 - "SecureTransferToStorageAccountsShouldBeEnabled"
    
 
-## Guardrails 8 - Separation and Segmentation
+## Guardrails 8  Separation and Segmentation
 
 This module will retrieve the list of subnets in all available VNets (all VNets visible to the managed identity, according to the permissions assigned (Typically, all since permissions are assigned at the Root Management Group level))
 
@@ -103,13 +103,20 @@ If any of the above rules is not true, the subnet will be considered non complia
 
 If any of the above rules is not true, the subnet will be considered not compliant.
 
+### Network Architecture Diagram
+
+* If you have created a network diagram and sent it to the Cloud Security Posture Management Team (CSPM), make sure to upload an empty text file with the name "ConfirmNetworkDiagramExists.txt" to the container name "guardrailsstorage" in the storage account created by the setup. This file tells the solution that you have completed this task. Please do not upload the network diagram itself. Once the solution detects the file, the check mark status will be changed from (❌) to (✔️).
+
+![ConfirmNetworkDiagramExists.txt uploaded to the storage account](/docs/media/ConfirmNetworkDiagramExists.png)
+
+
 ## GUARDRAIL 9 NETWORK SECURITY SERVICES
 
 This module will retrieve the list of all VNets (all VNets visible to the managed identity, according to the permissions assigned (Typically, all since permissions are assigned at the Root Management Group level))
 
 For each VNet the following items will be evaluated.
 
-- DDos Protection set to Standard.
+- DDos Protection set to Standard (*Enabling DDos standard protection on your Azure environment will have a financial impact on your monthly billing*) 
 
 If any of the above rules is not true, the VNet will be considered not compliant.
 
