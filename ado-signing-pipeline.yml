@@ -74,7 +74,7 @@ steps:
     }
 
     $importedModules = Get-Module
-    Write-Host "Imported modules: `n ($importedModules.Path | Out-String)"
+    Write-Host "Imported modules: `n $($importedModules.Path | Out-String)"
 
     $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
     If ($missingModules) {
