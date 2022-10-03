@@ -71,8 +71,14 @@ steps:
 
     $modulesFiles = Get-ChildItem -path . -recurse -include *.psm1
     Write-Host "Count of module files: $($moduleFiles.count)"
-    ForEach ($moduleFile in $moduleFiles) {
-      Import-Module $moduleFile.Fullname -ErrorAction Stop
+    
+    try {
+      ForEach ($moduleFile in $moduleFiles) {
+        Import-Module $moduleFile.Fullname -ErrorAction Stop
+      }
+    }
+    catch {
+      throw "Failed test import module '$moduleFile' with error: $_"
     }
 
     $importedModules = Get-Module
