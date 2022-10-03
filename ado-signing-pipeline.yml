@@ -68,9 +68,9 @@ steps:
 #test module imports
 - powershell: |
     $ErrorActionPreference = 'Stop'
-    
-    $modulesFiles = Get-ChildItem -path . -recurse -include *.psm1
 
+    $modulesFiles = Get-ChildItem -path . -recurse -include *.psm1
+    Write-Host "Count of module files: $($moduleFiles.count)"
     ForEach ($moduleFile in $moduleFiles) {
       Import-Module $moduleFile.Fullname -ErrorAction Stop
     }
