@@ -73,7 +73,10 @@ steps:
       Import-Module -Path $moduleFile.Fullname -ErrorAction Stop
     }
 
-    $missingModules = $moduleFiles | Where-object {$_ -inotin (Get-Module).Path} 
+    $importedModules = Get-Module
+    Write-Host "Imported modules: `n $importedModules"
+
+    $missingModules = $moduleFiles | Where-object {$_ -inotin ($importedModules).Path} 
     If ($missingModules) {
       throw "The following modules failed import test: $missingModules"
     }
