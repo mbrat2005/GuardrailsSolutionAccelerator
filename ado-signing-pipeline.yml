@@ -53,10 +53,10 @@ steps:
       If ($signatureStatus.Status -eq 'HashMismatch') {
         throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
       }
-      ElseIf ($signatureStatus -eq 'NotSigned') {
+      ElseIf ($signatureStatus.Status -eq 'NotSigned') {
         Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
       }
-      ElseIf ($signatureStatus -eq 'Valid') {
+      ElseIf ($signatureStatus.Status -eq 'Valid') {
         Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
       }
       Else {
