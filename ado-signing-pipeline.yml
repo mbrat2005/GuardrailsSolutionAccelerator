@@ -67,10 +67,12 @@ steps:
 
 #test module imports
 - powershell: |
-    $modulesFiles = Get-ChildItem -path * -recurse -include *.psm1
+    $ErrorActionPreference = 'Stop'
+    
+    $modulesFiles = Get-ChildItem -path . -recurse -include *.psm1
 
     ForEach ($moduleFile in $moduleFiles) {
-      Import-Module -Path $moduleFile.Fullname -ErrorAction Stop
+      Import-Module $moduleFile.Fullname -ErrorAction Stop
     }
 
     $importedModules = Get-Module
