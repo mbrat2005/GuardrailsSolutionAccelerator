@@ -73,6 +73,11 @@ steps:
       Import-Module -Path $moduleFile.Fullname -ErrorAction Stop
     }
 
+    $missingModules = $moduleFiles | Where-object {$_ -inotin (Get-Module).Path} 
+    If ($missingModules) {
+      throw "The following modules failed import test: $missingModules"
+    }
+
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
     gci env: | FT -AutoSize
