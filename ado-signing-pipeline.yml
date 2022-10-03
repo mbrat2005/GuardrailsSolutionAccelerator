@@ -69,7 +69,7 @@ steps:
 - powershell: |
     $ErrorActionPreference = 'Stop'
 
-    $modulesFiles = Get-ChildItem -path ./* -recurse -include *.psm1
+    $moduleFiles = Get-ChildItem -path ./* -recurse -include *.psm1
     Write-Host "Count of module files: $($moduleFiles.count)"
     
     try {
