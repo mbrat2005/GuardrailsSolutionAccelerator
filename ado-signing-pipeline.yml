@@ -45,6 +45,21 @@ steps:
     MaxRetryAttempts: '5'
   enabled: true
 
+#look for hash mismatch
+- powershell: |
+    If ((gci -r -i *.ps* | Get-AuthenticodeSignature).Status | Select-Object -Unique) -contains 'HashMismatch') {
+      throw "Failed to sign all files, found a 'HashMismatch'"
+    }
+  name: CheckForSignFailures
+
+#test module imports
+- powershell: |
+    $modulesFiles = Get-ChildItem -path * -recurse -include *.psm1
+
+    ForEach ($moduleFile in $moduleFiles) {
+      Import-Module -Path $moduleFile.Fullname -ErrorAction Stop
+    }
+
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
     gci env: | FT -AutoSize
