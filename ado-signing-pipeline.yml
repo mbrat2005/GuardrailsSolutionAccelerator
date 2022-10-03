@@ -80,6 +80,7 @@ steps:
     If ($missingModules) {
       throw "The following modules failed import test: $missingModules"
     }
+  name: TestModuleImports
 
 - powershell: |
     Write-Host "Executing powershell script in '$pwd'"
