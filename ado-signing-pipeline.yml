@@ -47,8 +47,21 @@ steps:
 
 #look for hash mismatch
 - powershell: |
-    If ((gci -r -i *.ps* | Get-AuthenticodeSignature).Status | Select-Object -Unique) -contains 'HashMismatch') {
-      throw "Failed to sign all files, found a 'HashMismatch'"
+    $signatureStatuses = Get-ChildItem -r -i *.ps* | Get-AuthenticodeSignature
+
+    Foreach ($signatureStatus in $signatureStatuses) {
+      If ($signatureStatus.Status -eq 'HashMismatch') {
+        throw "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      ElseIf ($signatureStatus -eq 'NotSigned') {
+        Write-Warning "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      ElseIf ($signatureStatus -eq 'Valid') {
+        Write-Host "File '$($signatureStatus.Path)' has a hash status of '$($signatureStatus.status)'"
+      }
+      Else {
+        throw "File '$($signatureStatus.Path)' has an unhandled hash status of '$($signatureStatus.status)'"
+      }
     }
   name: CheckForSignFailures
 
