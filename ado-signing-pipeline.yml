@@ -177,6 +177,7 @@ steps:
     publishLocation: 'Container'
 
 - task: GitHubRelease@1
+  displayName: 'Publish release files to GitHub'
   inputs:
     gitHubConnection: 'mbrat2005'
     repositoryName: '$(Build.Repository.Name)'
