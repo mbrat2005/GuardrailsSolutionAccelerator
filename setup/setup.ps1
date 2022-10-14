@@ -678,7 +678,7 @@ else {
     $storageaccountname=(Get-AzAutomationVariable -ResourceGroupName $resourceGroup -AutomationAccountName $autoMationAccountName | Where-Object {$_.Name -eq "StorageAccountName"}).value 
     $keyVaultRG = $resourcegroup #initially, same RG.
     $logAnalyticsWorkspaceRG = $resourcegroup #initially, same RG.
-    $deployKV = 'false' 
+    $deployKV = 'false' # it is an update, so, don't change KV.
     $deployLAW = 'true'
     $bga1 = $config.FirstBreakGlassAccountUPN #Break glass account 1
     $bga2 = $config.SecondBreakGlassAccountUPN #Break glass account 2
