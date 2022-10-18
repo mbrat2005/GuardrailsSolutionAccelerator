@@ -1,0 +1,80 @@
+[{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/jose@fehse.ca'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:07\",\"request-id\":\"e0944075-9a56-4b24-9d40-3c05b9141c01\",\"client-request-id\":\"e0944075-9a56-4b24-9d40-3c05b9141c01\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:07\",\"request-id\":\"31d471c4-ce03-4b9b-8b4c-7acfcc6fae67\",\"client-request-id\":\"31d471c4-ce03-4b9b-8b4c-7acfcc6fae67\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/azureadmin@fehsecorp.onmicrosoft.com'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:08\",\"request-id\":\"3b05d8c3-1d25-4adb-94ba-40ddc7e607e3\",\"client-request-id\":\"3b05d8c3-1d25-4adb-94ba-40ddc7e607e3\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:08\",\"request-id\":\"5d9b1deb-d6fa-464d-8863-2ea7cd94bebb\",\"client-request-id\":\"5d9b1deb-d6fa-464d-8863-2ea7cd94bebb\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/jose@fehse.ca'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:31\",\"request-id\":\"d2c14bcb-5702-41b4-9fca-fd6cad065fd6\",\"client-request-id\":\"d2c14bcb-5702-41b4-9fca-fd6cad065fd6\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:31\",\"request-id\":\"2cdb2694-d6da-4147-b909-a2bf72900253\",\"client-request-id\":\"2cdb2694-d6da-4147-b909-a2bf72900253\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/azureadmin@fehsecorp.onmicrosoft.com'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:32\",\"request-id\":\"612280fc-6b2a-4e1c-b3e0-4e8443d8959d\",\"client-request-id\":\"612280fc-6b2a-4e1c-b3e0-4e8443d8959d\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Authorization_RequestDenied\",\"message\":\"Insufficient privileges to complete the operation.\",\"innerError\":{\"date\":\"2022-10-14T18:22:32\",\"request-id\":\"34ab37aa-431e-4a2f-b50e-d37451831734\",\"client-request-id\":\"34ab37aa-431e-4a2f-b50e-d37451831734\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/jos@fehse.ca'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'jos@fehse.ca' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:41:18\",\"request-id\":\"1c8d4a26-9ab2-4667-9542-4c2f501cad1b\",\"client-request-id\":\"1c8d4a26-9ab2-4667-9542-4c2f501cad1b\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'licenseDetails' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:41:19\",\"request-id\":\"6e51b47a-8ef7-4ee1-8fdc-e49b70c9d23a\",\"client-request-id\":\"6e51b47a-8ef7-4ee1-8fdc-e49b70c9d23a\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/azureadin@fehsecorp.onmicrosoft.com'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'azureadin@fehsecorp.onmicrosoft.com' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:41:19\",\"request-id\":\"a0bca697-dfa3-4d92-b01c-6adea750fa8c\",\"client-request-id\":\"a0bca697-dfa3-4d92-b01c-6adea750fa8c\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'licenseDetails' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:41:19\",\"request-id\":\"8f2129c1-9ec4-432b-af05-699419428f21\",\"client-request-id\":\"8f2129c1-9ec4-432b-af05-699419428f21\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/jos@fehse.ca'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'jos@fehse.ca' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:43:47\",\"request-id\":\"a5dfac1c-d636-48a6-9be8-65b56e6155ee\",\"client-request-id\":\"a5dfac1c-d636-48a6-9be8-65b56e6155ee\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'licenseDetails' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:43:48\",\"request-id\":\"6fdf6cf5-aa87-489f-8b57-2054ee64acb5\",\"client-request-id\":\"6fdf6cf5-aa87-489f-8b57-2054ee64acb5\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users/azureadin@fehsecorp.onmicrosoft.com'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'azureadin@fehsecorp.onmicrosoft.com' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:43:48\",\"request-id\":\"daaada51-a8ce-4938-a0b0-56c9aa81a9ed\",\"client-request-id\":\"daaada51-a8ce-4938-a0b0-56c9aa81a9ed\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}
+,{
+  "message": "Failed to call Microsoft Graph REST API at URL 'https://graph.microsoft.com/beta/users//licenseDetails'; returned error message: {\"error\":{\"code\":\"Request_ResourceNotFound\",\"message\":\"Resource 'licenseDetails' does not exist or one of its queried reference-property objects are not present.\",\"innerError\":{\"date\":\"2022-10-14T18:43:49\",\"request-id\":\"6de70ca7-4f8e-4f30-b968-c09af8d3b3f3\",\"client-request-id\":\"6de70ca7-4f8e-4f30-b968-c09af8d3b3f3\"}}}",
+  "moduleName": "Check-BreakGlassAccountIdentityProtectionLicense.psm1",
+  "severity": "Error"
+}]

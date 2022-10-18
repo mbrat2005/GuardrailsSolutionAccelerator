@@ -1,5 +1,28 @@
 Disable-AzContextAutosave
+function New-LogAnalyticsData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [array] 
+        $Data,
+        [Parameter()]
+        [string]
+        $WorkSpaceID,
+        [Parameter()]
+        [string]
+        $WorkSpaceKey,
+        [Parameter()]
+        [string]
+        $LogType
+    )
+    $JsonObject = convertTo-Json -inputObject $Data 
 
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JsonObject `
+        -logType $LogType `
+        -TimeStampField Get-Date  
+}
 #Standard variables
 $WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
 $LogType=Get-AutomationVariable -Name "LogType" 
@@ -105,7 +128,11 @@ foreach ($module in $modules)
         #Write-host $module.Script
 
         try {
-            $NewScriptBlock.Invoke()
+            $results=$NewScriptBlock.Invoke()
+            $results
+            New-LogAnalyticsData -Data $results -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
+            #New-LogAnalyticsData -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -Data $results
+            #    -additionalValues @{reportTime=$ReportTime; locale=$locale}
         }
         catch {
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '$workspaceKey','***')))

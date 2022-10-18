@@ -217,6 +217,53 @@ Function Add-LogEntry {
         -TimeStampField Get-Date 
 
 }
+
+Function Add-LogEntry2 {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $True, Position = 0)]
+        [ValidateSet("Critical", "Error", "Warning", "Information", "Debug")]
+        [string]
+        $severity,
+
+        # message details (string)
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]
+        $message,
+
+        # module name
+        [Parameter(Mandatory = $false)]
+        [string]
+        $moduleName = (Split-Path -Path $MyInvocation.ScriptName -Leaf),
+
+        # additional values in hashtable
+        [Parameter(Mandatory = $false)]
+        [hashtable]
+        $additionalValues = @{},
+
+        # exception log type - this is the Log Analytics table name
+        [Parameter(Mandatory = $false)]
+        [string]
+        $exceptionLogTable = "GuardrailsComplianceException"
+    )
+
+    # build log entry object, convert to json
+    $entryHash = @{
+        "message" = $message
+        "moduleName" = $moduleName
+        "severity" = $severity
+    } + $additionalValues
+    
+    $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
+    
+    if (Get-ChildItem "./errors.txt" -ErrorAction SilentlyContinue) {
+        (Get-Content "./errors.txt").trim("]") | Out-File "./errors.txt"
+        ",$entryJson]" | Out-File -FilePath "./errors.txt" -Encoding UTF8 -Force -Append
+    }
+    else {
+        "[$entryJson]" | Out-File -FilePath "./errors.txt" -Encoding UTF8 -Force
+    }
+}
 Function Add-TenantInfo {
     param (
         [Parameter(Mandatory=$true)]
@@ -227,7 +274,7 @@ Function Add-TenantInfo {
         $workspaceKey,
         [Parameter(Mandatory=$false)]
         [string]
-        $LogType="GR_TenantInfo",
+        $LogType="GuardrailsCompliance",
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
@@ -251,6 +298,30 @@ Function Add-TenantInfo {
     -TimeStampField Get-Date 
 }
 
+function Add-LogAnalyticsResults {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]
+        $WorkSpaceID,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $workspaceKey,
+        [Parameter(Mandatory=$false)]
+        [string]
+        $LogType="GR_Results",
+        [Parameter(Mandatory=$false)]
+        [array]
+        $Results
+   )
+
+    $JSON= ConvertTo-Json -inputObject $Results
+
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+    -sharedkey $workspaceKey `
+    -body $JSON `
+    -logType $LogType `
+    -TimeStampField Get-Date 
+}
 function Check-DocumentExistsInStorage {
     param (
         [string] $StorageAccountName,
