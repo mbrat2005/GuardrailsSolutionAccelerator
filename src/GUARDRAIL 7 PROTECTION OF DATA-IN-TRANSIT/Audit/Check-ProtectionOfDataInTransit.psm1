@@ -115,10 +115,7 @@ function Verify-ProtectionDataInTransit {
     param (
             [string] $ControlName,
             [string] $ItemName,
-            [string] $PolicyID, `
-            [string] $WorkSpaceID,
-            [string] $workspaceKey,
-            [string] $LogType,
+            [string] $PolicyID, 
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
@@ -135,7 +132,7 @@ function Verify-ProtectionDataInTransit {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     [string]$type = "Management Group"  
@@ -145,7 +142,7 @@ function Verify-ProtectionDataInTransit {
         $objs = Get-AzSubscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" 
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     [string]$type = "subscription"
@@ -155,6 +152,8 @@ function Verify-ProtectionDataInTransit {
     $FinalObjectList #| convertto-json -Depth 3
     if ($FinalObjectList.Count -gt 0)
     {
+        return $FinalObjectList
+        <#
         $JsonObject = $FinalObjectList | convertTo-Json -Depth 3
         #$JsonObject
         Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
@@ -162,6 +161,7 @@ function Verify-ProtectionDataInTransit {
         -body $JsonObject `
         -logType $LogType `
         -TimeStampField Get-Date
+        #>
     }
 }
 

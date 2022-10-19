@@ -106,7 +106,7 @@ function Verify-PBMMPolicy {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     $objs
@@ -117,7 +117,7 @@ function Verify-PBMMPolicy {
         $objs = Get-AzSubscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" 
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     $objs
@@ -128,6 +128,8 @@ function Verify-PBMMPolicy {
     $FinalObjectList # | convertto-json -Depth 3
     if ($FinalObjectList.Count -gt 0)
     {
+        return $FinalObjectList
+        <#
         $JsonObject = $FinalObjectList | convertTo-Json -Depth 3
         #$JsonObject
         Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
@@ -135,6 +137,7 @@ function Verify-PBMMPolicy {
         -body $JsonObject `
         -logType $LogType `
         -TimeStampField Get-Date
+        #>
     }
 }
 

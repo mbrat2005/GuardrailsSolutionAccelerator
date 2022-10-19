@@ -71,7 +71,7 @@ function Check-LoggingAndMonitoring {
         [string]
         $CBSSubscriptionName
     )
-
+    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     #$LogType="GuardrailsCompliance"
     #Code
 
@@ -188,13 +188,7 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
             ReportTime = $ReportTime
             MitigationCommands=$MitigationCommands
         }
-        $JSON= ConvertTo-Json -inputObject $object
-
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JSON `
-        -logType $LogType `
-        -TimeStampField Get-Date 
+        $FinalObjectList+=$object
         $IsCompliant=$true
     }
     #
@@ -271,14 +265,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         ReportTime = $ReportTime  
         MitigationCommands=$MitigationCommands      
     }
-    $JSON= ConvertTo-Json -inputObject $object
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
-   
+    $FinalObjectList+=$object
     #
     # Defender for cloud detection.
     #
@@ -323,13 +310,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         ReportTime = $ReportTime
         MitigationCommands=$MitigationCommands
     }
-    $JSON = ConvertTo-Json -inputObject $object
-
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+    $FinalObjectList+=$object
     $IsCompliant=$true
 }
 

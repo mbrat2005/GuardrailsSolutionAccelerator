@@ -18,10 +18,7 @@ function Get-UserAuthenticationMethod {
     param (
         [string] $token, 
         [string] $ControlName,
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
         [hashtable] $msgTable,
-        [string] $LogType,
         [string] $ItemName,
         [string] $itsgcode,
         [string] $FirstBreakGlassEmail,
@@ -43,7 +40,7 @@ function Get-UserAuthenticationMethod {
             $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -ErrorAction Stop
         }
         catch {
-            Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
         $authenticationmethods =  $Data.value
@@ -77,13 +74,7 @@ function Get-UserAuthenticationMethod {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
      }
-     $JsonObject = convertTo-Json -inputObject $PsObject 
-
-     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-                               -sharedkey $workspaceKey `
-                               -body $JsonObject `
-                               -logType $LogType `
-                               -TimeStampField Get-Date 
+     return $PsObject
    }
 
 # SIG # Begin signature block

@@ -26,9 +26,6 @@ function Get-ADLicenseType {
  param (
      [string] $token, 
      [string] $ControlName,
-     [string] $WorkSpaceID, 
-     [string] $workspaceKey, 
-     [string] $LogType,
      [string] $itsgcode,
      [hashtable] $msgTable,
      [string] $ItemName,
@@ -68,13 +65,8 @@ function Get-ADLicenseType {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
      }
-     $JsonObject = convertTo-Json -inputObject $PsObject 
-
-     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-                               -sharedkey $workspaceKey `
-                               -body $JsonObject `
-                               -logType $LogType `
-                               -TimeStampField Get-Date 
+     
+     return $PsObject
 
 }
 

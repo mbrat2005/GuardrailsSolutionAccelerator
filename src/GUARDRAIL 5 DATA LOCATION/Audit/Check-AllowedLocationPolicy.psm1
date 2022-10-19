@@ -182,6 +182,8 @@ function Verify-AllowedLocationPolicy {
         $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force
         $CompliantList.add($RootMG) 
     }
+    $finalList = $CompliantList + $NonCompliantList
+    <#
     if ($CompliantList.Count -gt 0) {
         $JsonObject = $CompliantList | convertTo-Json
         if ($DebugData) {
@@ -210,6 +212,8 @@ function Verify-AllowedLocationPolicy {
             -logType $LogType `
             -TimeStampField Get-Date
     }
+    #>
+    return $finalList
 }
 
 

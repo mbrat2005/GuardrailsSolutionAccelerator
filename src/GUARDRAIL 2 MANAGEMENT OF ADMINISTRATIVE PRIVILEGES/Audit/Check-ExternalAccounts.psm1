@@ -25,7 +25,7 @@
     $stopWatch.Start()
 
     # Only get the Guests accounts
-    Write-Output "Getting guest users in the tenant"
+    if ($debug) {Write-Output "Getting guest users in the tenant"}
     $guestUsers = Get-AzADUser -Filter "usertype eq 'guest'" 
 
     if ($null -eq $guestUsers) {
@@ -35,26 +35,26 @@
         $MitigationCommands = "N/A"
     }
     else {
-        Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"
+        if ($debug) {Write-Output "Found $($guestUsers.Count) Guest Users in the tenant"}
 
         $subs=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled'}
-        Write-Output "Found $($subs.Count) subscriptions"
+        if ($debug) {Write-Output "Found $($subs.Count) subscriptions"}
 
         foreach ($sub in $subs) {
             $scope="/subscriptions/$($sub.Id)"
-            Write-Output "Looking in subscription $($sub.Name)"
+            if ($debug) {Write-Output "Looking in subscription $($sub.Name)"}
 
             # Get the role assignments for this subscription
             $subRoleAssignments = Get-AzRoleAssignment -Scope $scope
 
             if (!$null -eq $subRoleAssignments) {
-                Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"
+                if ($debug) {Write-Output "Found $($subRoleAssignments.Count) Role Assignments in that subscription"}
 
                 # Find each guest users having a role assignment
                 $matchedUser = $guestUsers | Where-Object {$subRoleAssignments.ObjectId -contains $_.Id}  
 
                 if (!$null -eq $matchedUser) {
-                    Write-Output "Found $($matchedUser.Count) Guest users with role assignment"
+                    if ($debug) {Write-Output "Found $($matchedUser.Count) Guest users with role assignment"}
 
                     foreach ($user in $matchedUser) {
                         # What should we do if the same user may has multiple role assignments ?
@@ -105,7 +105,7 @@
 
         # Convert data to JSON format for input in Azure Log Analytics
         $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
-        Write-Output "Creating Log Analytics entry for $($guestUsersArray.Count) Guest Users"
+        if ($debug) {Write-Output "Creating Log Analytics entry for $($guestUsersArray.Count) Guest Users"}
 
         # Add the list of non-compliant users to Log Analytics (in a different table)
         Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
@@ -129,7 +129,7 @@
 
     
     $stopWatch.Stop()
-    Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "
+    if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}
 }
 # SIG # Begin signature block
 # MIInoQYJKoZIhvcNAQcCoIInkjCCJ44CAQExDzANBglghkgBZQMEAgEFADB5Bgor

@@ -131,6 +131,13 @@ foreach ($module in $modules)
             $results=$NewScriptBlock.Invoke()
             $results
             New-LogAnalyticsData -Data $results -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
+            if (Get-ChildItem '.\errors.txt')
+            {
+                $errors=Get-Content '.\errors.txt'
+                "Module $module.modulename failed with $($errors.count) errors."
+                New-LogAnalyticsData -Data $errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException"
+                Remove-Item '.\errors.txt'
+            }
             #New-LogAnalyticsData -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -Data $results
             #    -additionalValues @{reportTime=$ReportTime; locale=$locale}
         }

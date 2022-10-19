@@ -114,11 +114,8 @@ function Verify-ProtectionDataAtRest {
     param (
             [string] $ControlName,
             [string]$ItemName,
-            [string] $PolicyID, `
-            [string] $WorkSpaceID,
-            [string] $workspaceKey,
-            [string] $LogType,
-            [string] $itsgcode,
+            [string] $PolicyID, 
+            [string] $itsgcode, 
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
             [string]
@@ -134,8 +131,8 @@ function Verify-ProtectionDataAtRest {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of `
-            the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of `
+            the Az.Resources module; returned error message: $_"
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the  `
             Az.Resources module; returned error message: $_"
     }
@@ -146,8 +143,8 @@ function Verify-ProtectionDataAtRest {
         $objs = Get-AzSubscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of `
-            the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of `
+            the Az.Resources module; returned error message: $_" 
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the `
             Az.Resources module; returned error message: $_"
     }
@@ -158,13 +155,16 @@ function Verify-ProtectionDataAtRest {
     $ObjectList #| convertto-json -Depth 3
     if ($ObjectList.Count -gt 0)
     {
-        $JsonObject = $ObjectList | convertTo-Json -Depth 3
-        #$JsonObject
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date
+        return $ObjectList
+        <#
+            $JsonObject = $ObjectList | convertTo-Json -Depth 3
+            #$JsonObject
+            Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+            -sharedkey $workspaceKey `
+            -body $JsonObject `
+            -logType $LogType `
+            -TimeStampField Get-Date
+        #>
     }
 }
 

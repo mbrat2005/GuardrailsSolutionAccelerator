@@ -3,9 +3,6 @@ function Check-CBSSensors {
         [string] $SubscriptionName , 
         [string] $TenantID , 
         [string] $ControlName, `
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
-        [string] $LogType, 
         [string] $ItemName,  
         [string] $itsgcode,
         [hashtable] $msgTable,
@@ -26,7 +23,7 @@ function Check-CBSSensors {
     $CBSResourceNames+="cbs-" + $FirstTokenInTenantID + "-CanadaEast"
     $CBSResourceNames+="cbs-vault-" + $FirstTokenInTenantID
     $CBSResourceNames+="cbs"+$FirstTokenInTenantID
-    Write-Output $CBSResourceNames
+    if ($debug) { Write-Output $CBSResourceNames}
     $sub=Get-AzSubscription | Where-Object {$_.State -eq 'Enabled' -and $_.Name -eq $SubscriptionName}
     if ($null -ne $sub)
     {
@@ -34,10 +31,10 @@ function Check-CBSSensors {
 
         foreach ($CBSResourceName in $CBSResourceNames)
         {
-            Write-output "Searching for CBS Sensor: $CBSResourceName"
+            if ($debug) { Write-output "Searching for CBS Sensor: $CBSResourceName"}
             if ([string]::IsNullOrEmpty($(Get-AzResource -Name $CBSResourceName)))
             {
-                Write-Output "Missing $CBSResourceName"
+                if ($debug) {Write-Output "Missing $CBSResourceName"}
                 $IsCompliant = $false 
             }
         }
@@ -61,13 +58,7 @@ function Check-CBSSensors {
     $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands
     $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
     $object | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
-    $JsonObject = convertTo-Json -inputObject $Object 
-        
-    Send-OMSAPIIngestionFile -customerId $WorkSpaceID `
-       -sharedkey $workspaceKey `
-       -body $JsonObject `
-       -logType $LogType `
-       -TimeStampField Get-Date         
+    return $Object
 }
 
 # SIG # Begin signature block

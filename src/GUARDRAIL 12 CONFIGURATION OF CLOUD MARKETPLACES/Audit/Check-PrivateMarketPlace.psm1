@@ -43,12 +43,7 @@ $Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $Mi
 $Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mktPlaceCreation -Force
 $Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force
 
-$JsonObject = $Object | convertTo-Json  
-Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JsonObject `
-    -logType $LogType `
-    -TimeStampField Get-Date
+return $Object
 }
 
 

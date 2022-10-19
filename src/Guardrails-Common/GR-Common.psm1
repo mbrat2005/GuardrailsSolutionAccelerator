@@ -121,7 +121,6 @@ function get-blobs {
             ResourceGroupName = $resourcegroup
             Name              = $storageaccountName
         }
-
         $scParams = @{
             Container = $psModulesContainerName
         }
@@ -158,7 +157,6 @@ function read-blob {
         Context     = $Context
     }
     Get-AzStorageBlobContent @blobParams
-    
 }
 
 Function Add-LogEntry {
@@ -288,7 +286,7 @@ Function Add-TenantInfo {
         DepartmentTenantID = $TenantId
         ReportTime = $ReportTime
     }
-    Write-Output $tenantInfo
+    if ($debug) { Write-Output $tenantInfo}
     $JSON= ConvertTo-Json -inputObject $object
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
@@ -414,8 +412,8 @@ function Check-UpdateAvailable {
     }
     $rg=Get-AzResourceGroup -Name $ResourceGroupName 
     $currentVersion=get-rgtagValue -tagkey releaseversion -object $rg
-    Write-Output "RG Tag: $currentVersion"
-    Write-Output "Avail. Release: $ReleaseVersion"
+    if ($debug) { Write-Output "RG Tag: $currentVersion"}
+    if ($debug) { Write-Output "Avail. Release: $ReleaseVersion"}
     
     if ($currentVersion -ne $ReleaseVersion)
     {

@@ -4,9 +4,6 @@ function Check-MonitorAccountCreation {
     [string] $DepartmentNumber,
     [string] $ControlName, 
     [string] $ItemName, 
-    [string] $WorkSpaceID, 
-    [string] $workspaceKey, 
-    [string] $LogType,
     [string] $itsgcode,
     [hashtable] $msgTable,
     [Parameter(Mandatory=$true)]
@@ -43,12 +40,8 @@ function Check-MonitorAccountCreation {
     ReportTime  = $ReportTime
     MitigationCommands = $MitigationCommands
   }
-       
-  $Results_Jason = ConvertTo-json -inputObject $Results
-
-  Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $Results_Jason -logType $LogType -TimeStampField Get-Date  
-      
+  return $Results     
+    
 }
 
 # SIG # Begin signature block

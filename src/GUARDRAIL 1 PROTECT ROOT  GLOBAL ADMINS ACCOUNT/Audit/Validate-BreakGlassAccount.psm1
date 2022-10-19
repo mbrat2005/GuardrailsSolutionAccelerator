@@ -67,8 +67,8 @@ function Get-BreakGlassAccounts {
     } 
   }
   catch {
-    Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-    Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
 
   # get 2nd break glass account
@@ -81,8 +81,8 @@ function Get-BreakGlassAccounts {
     } 
   }
   catch {
-    Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-    Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
   $IsCompliant = $FirstBGAcctExist -and $SecondBGAcctExist
 
@@ -94,14 +94,7 @@ function Get-BreakGlassAccounts {
     ReportTime      = $ReportTime
     itsgcode = $itsgcode
   }
-
-  $JsonObject = convertTo-Json -inputObject $PsObject 
-
-  Send-OMSAPIIngestionFile -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JsonObject `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+  return $PsObject
 }    
 
 
