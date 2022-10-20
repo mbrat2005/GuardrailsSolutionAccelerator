@@ -21,10 +21,7 @@ function Get-BreakGlassAccounts {
     [string] $SecondBreakGlassUPN,
     [string] $token, 
     [hashtable] $msgTable,
-    [string] $LogType,
     [string] $itsgcode,
-    [string] $WorkSpaceID,
-    [string] $WorkspaceKey, 
     [string] $ControlName, 
     [string] $ItemName,
     [Parameter(Mandatory=$true)]
