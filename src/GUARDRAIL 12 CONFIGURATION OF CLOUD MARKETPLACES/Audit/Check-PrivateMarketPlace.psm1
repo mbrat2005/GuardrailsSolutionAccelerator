@@ -19,8 +19,8 @@ try {
         [String] $PrivateMarketPlace=  Get-AzMarketplacePrivateStore -ErrorAction Stop  
 }
 catch {
-    Add-LogEntry 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
-        and up to date; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+    Add-LogEntry2 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
+        and up to date; returned error message: $_"
     throw "Error: Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
         and up to date; returned error message: $_" 
 }

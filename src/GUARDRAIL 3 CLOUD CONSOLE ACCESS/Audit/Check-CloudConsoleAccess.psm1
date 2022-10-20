@@ -22,7 +22,7 @@ function Get-CloudConsoleAccess {
         $locations = (Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $locationsBaseAPIUrl -Method Get -ErrorAction Stop).value
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_" 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
     }
     # $locations
@@ -46,7 +46,7 @@ function Get-CloudConsoleAccess {
             $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
         }
         catch {
-            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_" 
             Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
         }
         if (!$validPolicies) {

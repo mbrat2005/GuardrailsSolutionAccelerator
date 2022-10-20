@@ -106,7 +106,7 @@ function Verify-PBMMPolicy {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
     $objs

@@ -18,7 +18,7 @@ function get-apiLinkedServicesData {
         $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -Method Get
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
     return $Data
@@ -33,7 +33,7 @@ function get-tenantDiagnosticsSettings {
         $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -Method Get
     }
     catch {
-        Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -89,9 +89,9 @@ function Check-LoggingAndMonitoring {
         Select-AzSubscription -Subscription $Subscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-            error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+            error message: $_"
         throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
             you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
     }
@@ -100,8 +100,8 @@ function Check-LoggingAndMonitoring {
         $LAW=Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG -ErrorAction Stop
     }
     catch {
-        Add-LogEntry 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
-            workspace exists and that permissions are sufficient; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
+            workspace exists and that permissions are sufficient; returned error message: $_"
     }
     if ($null -eq $LAW)
     {
@@ -204,9 +204,9 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
             Select-AzSubscription -Subscription $HSubscription -ErrorAction Stop
         }
         catch {
-            Add-LogEntry 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
+            Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
                 ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-                error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+                error message: $_"
             throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--ensure `
                 you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
         }
