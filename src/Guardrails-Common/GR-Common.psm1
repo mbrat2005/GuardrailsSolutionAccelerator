@@ -383,8 +383,7 @@ function Check-DocumentExistsInStorage {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $JsonObject = convertTo-Json -inputObject $PsObject 
-    Send-OMSAPIIngestionFile -customerId $WorkSpaceID  -sharedkey $workspaceKey -body $JsonObject -logType $LogType -TimeStampField Get-Date 
+    return $PsObject
 }
 
 function Check-UpdateAvailable {

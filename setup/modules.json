@@ -350,7 +350,7 @@
      "Control":"Guardrails8",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation",
+     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation",
      "variables":
      [
       {
@@ -404,7 +404,7 @@
      "Control":"Guardrails9",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+     "Script": "Get-VnetComplianceInformation -ControlName $msgTable.CtrName9 MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
      "variables":
      [
       {
@@ -425,7 +425,7 @@
      "Control":"Guardrails10",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -MsgTable $msgTable -ReportTime $ReportTime -LogType $LogType -ItemName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+     "Script": "Check-CBSSensors -SubscriptionName $vars.cbssubscriptionName -TenantID $TenantID -ControlName $msgTable.CtrName10 -MsgTable $msgTable -ReportTime $ReportTime -ItemName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
      "variables":
      [
       {
@@ -483,7 +483,7 @@
      "Control":"Guardrails12",
      "ModuleType": "Builtin",
      "Status": "Enabled",
-     "Script": "Check-PrivateMarketPlaceCreation -ControlName $msgTable.Ctrname12 -MsgTable $msgTable -WorkSpaceID $WorkSpaceID -workspaceKey $WorkspaceKey -ReportTime $ReportTime -LogType $LogType -itsgcode $vars.itsgcode",
+     "Script": "Check-PrivateMarketPlaceCreation -ControlName $msgTable.Ctrname12 -MsgTable $msgTable -ReportTime $ReportTime -LogType $LogType -itsgcode $vars.itsgcode",
      "localVariables":
      [
        {

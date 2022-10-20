@@ -131,7 +131,7 @@ foreach ($module in $modules)
             $results=$NewScriptBlock.Invoke()
             $results
             New-LogAnalyticsData -Data $results -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
-            if (Get-ChildItem '.\errors.txt')
+            if (Get-ChildItem '.\errors.txt' -ErrorAction SilentlyContinue)
             {
                 $errors=Get-Content '.\errors.txt'
                 "Module $module.modulename failed with $($errors.count) errors."

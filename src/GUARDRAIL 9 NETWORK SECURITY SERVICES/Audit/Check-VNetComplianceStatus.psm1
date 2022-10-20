@@ -6,15 +6,6 @@ function Get-VNetComplianceInformation {
         [Parameter(Mandatory=$true)]
         [string]
         $ControlName,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $workspaceKey,
-        [Parameter(Mandatory=$false)]
-        [string]
-        $LogType="GuardrailsCompliance",
         [string] $itsgcode,
         [Parameter(Mandatory=$false)]
         [string]
