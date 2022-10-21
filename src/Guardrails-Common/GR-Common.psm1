@@ -272,7 +272,7 @@ Function Add-TenantInfo {
         $workspaceKey,
         [Parameter(Mandatory=$false)]
         [string]
-        $LogType="GuardrailsCompliance",
+        $LogType="GR_TenantInfo",
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
