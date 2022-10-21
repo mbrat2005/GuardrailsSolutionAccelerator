@@ -331,7 +331,7 @@ if (!$update)
     Write-Output "Deploying solution through bicep."
     try { 
         $mainBicepDeployment = New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-            -TemplateParameterObject $templateParameterObject -TemplateFile .\guardrails.bicep -WarningAction SilentlyContinue -ErrorAction Stop
+            -TemplateParameterObject $templateParameterObject -TemplateFile .\IaC\guardrails.bicep -WarningAction SilentlyContinue -ErrorAction Stop
     }
     catch {
         Write-error "Failed to deploy main Guardrails Accelerator template with error: $_"

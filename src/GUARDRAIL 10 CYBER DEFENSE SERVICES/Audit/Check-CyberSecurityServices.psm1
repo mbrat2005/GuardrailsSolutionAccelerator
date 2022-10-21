@@ -9,7 +9,7 @@ function Check-CBSSensors {
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime
-    )
+    ) 
 
     $IsCompliant = $true 
     $Object = New-Object PSObject
