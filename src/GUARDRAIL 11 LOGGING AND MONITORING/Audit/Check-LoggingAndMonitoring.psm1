@@ -50,15 +50,6 @@ function Check-LoggingAndMonitoring {
         [Parameter(Mandatory=$true)]
         [string]
         $ControlName,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $workspaceKey,
-        [Parameter(Mandatory=$true)]
-        [string]
-        $LogType,
         [string] $itsginfosecmon,
         [string] $itsginfohealthmon,
         [string] $itsginfosecdefender,
@@ -312,6 +303,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
     }
     $FinalObjectList+=$object
     $IsCompliant=$true
+    return $FinalObjectList
 }
 
 # SIG # Begin signature block
