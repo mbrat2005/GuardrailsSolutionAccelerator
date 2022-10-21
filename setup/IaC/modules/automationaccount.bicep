@@ -352,3 +352,4 @@ resource module14 'modules' ={
   }
   }
 }
+output guardrailsAutomationAccountMSI string = guardrailsAC.identity.principalId

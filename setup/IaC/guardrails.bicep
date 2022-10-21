@@ -89,3 +89,4 @@ module storageaccount 'modules/storage.bicep' = {
   }
 }
 
+output guardrailsAutomationAccountMSI string = aa.outputs.guardrailsAutomationAccountMSI

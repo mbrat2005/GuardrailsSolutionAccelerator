@@ -261,7 +261,7 @@ if (!$update)
     $kvContent = ((Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$((Get-AzContext).Subscription.Id)/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
                 -Method Post -Payload "{""name"": ""$keyVaultName"",""type"": ""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
     if (!($kvContent) -and $deployKV) {
-        write-output "Error: keyvault name $keyVaultName is not available."
+        write-output "Error: keyvault name $keyVaultName is not available or is invalid."
         break
     }
     #endregion
@@ -759,7 +759,7 @@ else {
     Write-Output "(Re)Deploying solution through bicep."
     try { 
         New-AzResourceGroupDeployment -ResourceGroupName $resourcegroup -Name "guardraildeployment$(get-date -format "ddmmyyHHmmss")" `
-            -TemplateParameterObject $templateParameterObject -TemplateFile .\guardrails.bicep -WarningAction SilentlyContinue
+            -TemplateParameterObject $templateParameterObject -TemplateFile .\IaC\guardrails.bicep -WarningAction SilentlyContinue
     }
     catch {
         Write-error "Error deploying solution to Azure. $_"
