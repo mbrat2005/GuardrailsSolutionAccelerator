@@ -14,13 +14,15 @@ function get-apiLinkedServicesData {
     )
     $apiUrl="https://management.azure.com/subscriptions/$subscriptionId/resourcegroups/$resourceGroup/providers/Microsoft.OperationalInsights/workspaces/$LAWName/linkedServices?api-version=2020-08-01"
     try {
-        $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
+        $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
-    return $Data
+
+    $data = $response.Content | ConvertFrom-Json
+    return $data
 }
 
 function get-activitylogstatus {
@@ -34,7 +36,10 @@ function get-activitylogstatus {
     $pcount=0
     foreach ($sub in $subs) {
         $URL="https://management.azure.com/subscriptions/$($sub.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview"
-        $configuredWSs=(Invoke-AzRestMethod -Uri $URL -Method Get ).value.Properties.workspaceId
+        
+        $response = Invoke-AzRestMethod -Uri $URL -Method Get 
+        $data = $response.Content | ConvertFrom-Json
+        $configuredWSs=$data.value.Properties.workspaceId
         if ($LAWResourceId -in $configuredWSs) {
             $pcount++
         }

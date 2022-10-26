@@ -20,7 +20,8 @@ function Check-MonitorAccountCreation {
   $apiUrl = $("https://graph.microsoft.com/beta/users/" + $MonitoringAccount)
 
   try {
-    $Data = Invoke-AzRestMethod -Uri $apiUrl
+    $response = Invoke-AzRestMethod -Uri $apiUrl
+    $data = $response.Content | ConvertFrom-Json
     $IsCompliant = $true
     $MitigationCommands = "N/A"
   }

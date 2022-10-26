@@ -23,7 +23,9 @@ function Get-CloudConsoleAccess {
     $locationsBaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations"
     $CABaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
     try {
-        $locations = (Invoke-AzRestMethod -Uri $locationsBaseAPIUrl -Method Get -ErrorAction Stop).value
+        $response = Invoke-AzRestMethod -Uri $locationsBaseAPIUrl -Method Get -ErrorAction Stop
+        $data = $response.Content | ConvertFrom-Json
+        $locations = $data.value
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
