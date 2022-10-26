@@ -24,7 +24,6 @@ Product name: Microsoft 365 E5, String ID: SPE_E5
 #>
 function Get-BreakGlassAccountLicense {
     param (
-       [string] $token, 
        [string] $FirstBreakGlassUPN,
        [string] $SecondBreakGlassUPN, 
        [string] $ControlName, 
@@ -62,7 +61,7 @@ function Get-BreakGlassAccountLicense {
         $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGAccount.UserPrincipalName)
 
         try {
-            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -Method Get -ErrorAction Stop
+            $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
             Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
@@ -73,7 +72,7 @@ function Get-BreakGlassAccountLicense {
         $apiUrl = $("https://graph.microsoft.com/beta/users/" + $BGAccount.ID + "/licenseDetails")
 
         try {
-            $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -Method Get -ErrorAction Stop
+            $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
             Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey

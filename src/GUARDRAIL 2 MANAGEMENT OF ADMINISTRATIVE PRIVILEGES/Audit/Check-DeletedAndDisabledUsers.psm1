@@ -1,7 +1,6 @@
 
 function Check-ADDeletedUsers  {
     Param (
-        [string] $Token,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime,
@@ -16,7 +15,7 @@ function Check-ADDeletedUsers  {
     $apiUrl= "https://graph.microsoft.com/beta/directory/deleteditems/microsoft.graph.user"
 
     try {
-        $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl
+        $Data = Invoke-AzRestMethod -Uri $apiUrl
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
@@ -49,7 +48,7 @@ function Check-ADDeletedUsers  {
  
     $apiUrl= "https://graph.microsoft.com/beta/users/"
     try {
-        $guestAccountData = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl
+        $guestAccountData = Invoke-AzRestMethod -Uri $apiUrl
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey

@@ -24,7 +24,6 @@ Product name: Microsoft 365 E5, String ID: SPE_E5
 function Get-ADLicenseType {
     
  param (
-     [string] $token, 
      [string] $ControlName,
      [string] $WorkSpaceID, 
      [string] $workspaceKey, 
@@ -42,7 +41,7 @@ function Get-ADLicenseType {
     $apiUrl = "https://graph.microsoft.com/v1.0/subscribedSkus"
 
     try {
-        $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -Method Get -ErrorAction Stop
+        $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey

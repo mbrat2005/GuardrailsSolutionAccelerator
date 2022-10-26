@@ -12,10 +12,9 @@ function get-apiLinkedServicesData {
         [string]
         $LAWName
     )
-    $token=(Get-AzAccessToken).Token
     $apiUrl="https://management.azure.com/subscriptions/$subscriptionId/resourcegroups/$resourceGroup/providers/Microsoft.OperationalInsights/workspaces/$LAWName/linkedServices?api-version=2020-08-01"
     try {
-        $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -Method Get
+        $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
@@ -32,11 +31,10 @@ function get-activitylogstatus {
     )
     $subs=get-azsubscription
     $totalsubs=$subs.Count
-    $GraphAccessToken = (Get-AzAccessToken).Token
     $pcount=0
     foreach ($sub in $subs) {
         $URL="https://management.azure.com/subscriptions/$($sub.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview"
-        $configuredWSs=(Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $URL -Method Get ).value.Properties.workspaceId
+        $configuredWSs=(Invoke-AzRestMethod -Uri $URL -Method Get ).value.Properties.workspaceId
         if ($LAWResourceId -in $configuredWSs) {
             $pcount++
         }
@@ -51,13 +49,12 @@ function get-activitylogstatus {
     }
 }
 function get-tenantDiagnosticsSettings {
-    #AadGraph, AnalysisServices, Arm, Attestation, Batch, DataLake, KeyVault, MSGraph, OperationalInsights, ResourceManager, Storage, Synapse
-    $token=(Get-AzAccessToken -ResourceTypeName Arm).Token
+
 
     #$apiUrl="https://graph.microsoft.com/beta/auditLogs/directoryAudits"
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
     try {
-        $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)"} -Uri $apiUrl -Method Get
+        $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
         Add-LogEntry 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey

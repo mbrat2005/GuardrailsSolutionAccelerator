@@ -19,7 +19,6 @@ function Get-BreakGlassAccounts {
   param (
     [string] $FirstBreakGlassUPN, 
     [string] $SecondBreakGlassUPN,
-    [string] $token, 
     [hashtable] $msgTable,
     [string] $LogType,
     [string] $itsgcode,
@@ -60,7 +59,7 @@ function Get-BreakGlassAccounts {
   # get 1st break glass account
   try {
     $apiURL = $FirstBreakGlassAcct.apiUrl
-    $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -Method Get
+    $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
    
     if ($Data.userType -eq "Member") {
       $FirstBGAcctExist = $true
@@ -74,7 +73,7 @@ function Get-BreakGlassAccounts {
   # get 2nd break glass account
   try {
     $apiURL = $SecondBreakGlassAcct.apiURL
-    $Data = Invoke-RestMethod -Headers @{Authorization = "Bearer $($token)" } -Uri $apiUrl -Method Get
+    $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     
     if ($Data.userType -eq "Member") {
       $SecondBGAcctExist = $true
