@@ -19,7 +19,7 @@ function Get-CloudConsoleAccess {
         [string] $ReportTime
     )
     $IsCompliant = $false
-    Write-Debug "Token: $GraphAccessToken"
+
     $locationsBaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations"
     $CABaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
     try {
