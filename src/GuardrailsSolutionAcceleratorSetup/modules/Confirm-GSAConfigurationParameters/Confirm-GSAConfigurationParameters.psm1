@@ -30,7 +30,7 @@ Function Confirm-GSASubscriptionSelection {
             if ($selection -gt 0 -and $selection -le ($i - 1)) { 
                 $null = Select-AzSubscription -SubscriptionObject $subs[$selection - 1]
                 
-                $config['subscriptionId'] = $subs[$selection - 1].Id
+                $config['runtime']['subscriptionId'] = $subs[$selection - 1].Id
             }
             else {
                 Write-output "Invalid selection. ($selection)"
@@ -60,7 +60,8 @@ Function Confirm-GSASubscriptionSelection {
     else {
         Write-Host "Selecting subscription: '$($config.subscriptionId)'"
         try {
-            $null = Select-AzSubscription -Subscription $config.subscriptionId
+            $context = Select-AzSubscription -Subscription $config.subscriptionId
+            $config['runtime']['subscriptionId'] = $context.Subscription.Id
         }
         catch {
             Write-error "Error selecting provided subscription."
