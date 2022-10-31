@@ -52,7 +52,7 @@ Function Confirm-GSAPrerequisites {
 
         ## keyvault
         Write-Verbose "Verifying the Key Vault name '$($config['runtime']['keyVaultName'])' is available"
-        $kvContent = ((Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$((Get-AzContext).Subscription.Id)/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
+        $kvContent = ((Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$($config['runtime']['subscriptionId'])/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
                     -Method Post -Payload "{""name"": ""$config['runtime']['keyVaultName']"",""type"": ""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
         if (!($kvContent) -and $deployKV) {
             write-output "Error: keyvault name '$($config['runtime']['keyVaultName'])' is not available. Specify another prefix in config.json or a different unique resource name suffix"
@@ -94,7 +94,7 @@ Function Confirm-GSAPrerequisites {
             Write-Verbose "Checking for lighthouse registration definitions for managing tenant '$lighthouseServiceProviderTenantID'..."
 
             $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationdefinitions?api-version=2022-01-01-preview&$filter=managedByTenantId eq {1}' -f `
-                $config.subscriptionId, "'$lighthouseServiceProviderTenantID'"
+                $config['runtime']['subscriptionId'], "'$lighthouseServiceProviderTenantID'"
             $response = Invoke-AzRestMethod -Method GET -Uri $uri
 
             If ($response.StatusCode -notin '200', '404') {
@@ -118,7 +118,7 @@ Function Confirm-GSAPrerequisites {
                 #remove lighthouse assignments
                 Write-Verbose "Checking for Lighthouse assignments for managing tenant '$lighthouseServiceProviderTenantID' and definition ID '$($guardrailReaderDefinitions.id)'..."
                 $uri = 'https://management.azure.com/subscriptions/{0}/providers/Microsoft.ManagedServices/registrationAssignments?api-version=2022-01-01-preview&$filter=registrationDefinitionId eq {1}' -f `
-                    $config.subscriptionId, "'$($guardrailReaderDefinitions.id)'"
+                    $config['runtime']['subscriptionId'], "'$($guardrailReaderDefinitions.id)'"
                 $response = Invoke-AzRestMethod -Method GET -Uri $uri -Verbose
 
                 If ($response.StatusCode -notin '200', '404') {
