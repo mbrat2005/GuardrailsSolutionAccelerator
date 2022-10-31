@@ -276,7 +276,7 @@ steps:
 
         $c | remove-gsacentralizedReportingCustomerComponents -Force
         $c | Remove-GSACentralizedDefenderCustomerComponents -Force
-        $c | Remove-GSACoreResources -Force
+        $c | Remove-GSACoreResources -Force -Wait
       }
       Else {
         Write-Host "Skipping cleanup because `$env:skipCleanup is true"
