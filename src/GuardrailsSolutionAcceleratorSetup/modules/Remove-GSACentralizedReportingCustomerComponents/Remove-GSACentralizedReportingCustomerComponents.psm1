@@ -125,8 +125,10 @@ Function Remove-GSACentralizedReportingCustomerComponents {
                 $response = Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
 
                 if ($response.StatusCode -eq 409) {
-                    Write-Error "The lighthouse assignment(s) associated with the registration definition '$($definition.Name)' have not finished deleting. Please wait a few minutes and try again."
-                    break
+                    Write-Warning "The lighthouse assignment(s) associated with the registration definition '$($definition.Name)' have not finished deleting. The script will try again after 60 seconds..."
+                    Start-Sleep -Seconds 60
+                    
+                    $response = Invoke-AzRestMethod -Method DELETE -Uri $uri -Verbose
                 }
                 if ($response.statusCode -notin 200,202,204) {
                     Write-Error "An error occurred while deleting Lighthouse registration definition $($definition.Name). Status code: '$($response.statusCode)' Error: $($response.Content)"
