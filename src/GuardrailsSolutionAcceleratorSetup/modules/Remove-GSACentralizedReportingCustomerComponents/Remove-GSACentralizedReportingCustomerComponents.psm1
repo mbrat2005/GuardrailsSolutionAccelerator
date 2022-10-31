@@ -60,8 +60,10 @@ Function Remove-GSACentralizedReportingCustomerComponents {
     Confirm-GSASubscriptionSelection -confirmSingleSubscription:(!$force.IsPresent) -config $config
     $config.subscriptionId = (Get-AzContext).Subscription.id
 
-    Write-Warning "This action will delete Lighthouse definitions and assignments associated with the managing tenant ID '$lighthouseServiceProviderTenantID' in subscription '$($config.subscriptionId)'. `n`nIf you are not certain you want to perform this action, press CTRL+C to cancel; otherwise, press ENTER to continue."
-    Read-Host
+    If (!$force.IsPresent) {
+        Write-Warning "This action will delete Lighthouse definitions and assignments associated with the managing tenant ID '$lighthouseServiceProviderTenantID' in subscription '$($config.subscriptionId)'. `n`nIf you are not certain you want to perform this action, press CTRL+C to cancel; otherwise, press ENTER to continue."
+        Read-Host
+    }
 
     # get lighthouse definitions for the managing tenant
     Write-Verbose "Checking for lighthouse registration definitions for managing tenant '$lighthouseServiceProviderTenantID'..."
