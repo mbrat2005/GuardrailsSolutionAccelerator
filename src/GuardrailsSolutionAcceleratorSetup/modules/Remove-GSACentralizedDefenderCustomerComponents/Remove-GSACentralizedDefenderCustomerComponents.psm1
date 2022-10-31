@@ -59,7 +59,7 @@ Function Remove-GSACentralizedDefenderCustomerComponents {
         $lighthouseTargetManagementGroupID = $config.lighthouseTargetManagementGroupID
     }
 
-    If (!$force.IsPresent) {}
+    If (!$force.IsPresent) {
         Write-Warning "This action will delete the role definitions and assignments associated with granting managing tenant access to Defender for Cloud in this tenant at management group '$lighthouseTargetManagementGroupID'. `n`nIf you are not certain you want to perform this action, press CTRL+C to cancel; otherwise, press ENTER to continue."
         Read-Host
     }
