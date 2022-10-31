@@ -222,6 +222,43 @@ steps:
   name: 'TestSolutionDeploy'
 
 - task: AzurePowerShell@5
+  name: 'CheckForJobErrors'
+  displayName: 'Check for AA Job Errors'
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      ipmo src/GuardrailsSolutionAcceleratorSetup
+
+      $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
+      $config = $c.configString | ConvertFrom-Json
+      
+      $timeout = New-TimeSpan -Minutes 5
+      $timer = [System.Diagnostics.Stopwatch]::StartNew()
+      do {
+        $job = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
+          Sort-Object StartTIme -Descending |
+          Select-Object -First 1
+      }
+      until (($job.Status -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
+
+      If ($job.Status -eq 'Failed') {
+        throw "main runbook failed to execute"
+      }
+
+      $jobOutput = Get-AzAutomationJobOutput -Id $job.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName
+
+      ForEach ($outputRecord in $jobOutput) {
+        If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+          Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($true)")
+          throw "Module execution error found in deployment"
+        }
+      }
+
+- task: AzurePowerShell@5
   condition: always()
   inputs:
     azureSubscription: 'Matthew Visual Studio (mb_co)'
