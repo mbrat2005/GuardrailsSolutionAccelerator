@@ -218,6 +218,7 @@ steps:
       }
       finally {
         If (!$?) {throw "Failed test deploy of solution with error: $($error[0]) $_"}
+        Pop-Location
       }
   name: 'TestSolutionDeploy'
 
@@ -231,7 +232,7 @@ steps:
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-      ipmo src/GuardrailsSolutionAcceleratorSetup
+      ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
       $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
       $config = $c.configString | ConvertFrom-Json
