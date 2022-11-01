@@ -125,13 +125,8 @@ function Check-LoggingAndMonitoring {
             you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
     }
 
-    try {
-        $LAW=Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG -ErrorAction Stop
-    }
-    catch {
-        Add-LogEntry 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
-            workspace exists and that permissions are sufficient; returned error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
-    }
+    $LAW = Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG -ErrorAction SilentlyContinue
+
     if ($null -eq $LAW)
     {
         $IsCompliant=$false
