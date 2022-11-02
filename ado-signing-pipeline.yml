@@ -11,12 +11,33 @@ pr:
 pool:
   vmImage: windows-latest
 
+parameters:
+- name: skipCleanup
+  displayName: 'Skip cleanup of test deployment'
+  type: boolean
+  default: 'false'
+- name: skipTestDeploy
+  displayName: 'Skip test deployment'
+  type: boolean
+  default: 'false'
+- name: skipSigning
+  displayName: 'Skip signing of modules'
+  type: boolean
+  default: 'false'
+
 variables: 
   - group: 'GuardrailsTestDeployments'
+  - name: skipCleanup
+    value: ${{ parameters.skipCleanup }}
+  - name: skipTestDeploy
+    value: ${{ parameters.skipTestDeploy }}
+  - name: skipSigning
+    value: ${{ parameters.skipSigning }}
 
 steps:
 
 - task: EsrpCodeSigning@1
+  condition: eq(variables.skipSigning, 'false')
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
     FolderPath: './'
@@ -67,6 +88,7 @@ steps:
       }
     }
   name: CheckForSignFailures
+  condition: eq(variables.skipSigning, 'false')
 
 #test module imports
 - powershell: |
@@ -169,6 +191,25 @@ steps:
   enabled: true
 
 - task: AzurePowerShell@5
+  inputs: 
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).Context
+
+      $zippedModules = Get-ChildItem -Path ./psmodules/* -Include *.zip -File
+      ForEach ($moduleZip in $zippedModules) {
+
+        Set-AzStorageBlobContent -Context $storageContext -Container psmodules -File $moduleZip.FullName -Blob $moduleZip.Name -Force -ErrorAction Stop
+      }
+  name: stageZippedModules
+  displayName: 'Stage zipped/signed modules in Storage Account'
+
+- task: AzurePowerShell@5
+  condition: and(succeeded(), eq(variables.skipTestDeploy, 'false'))
   inputs:
     azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
@@ -177,15 +218,14 @@ steps:
     pwsh: true
     Inline: |
       $configFilePath = Join-Path -Path $env:AGENT_TEMPDIRECTORY -ChildPath 'config.json'
-
       $configContent = @'
       {
-          "keyVaultName": "guardrails",
-          "resourcegroup": "Guardrails",
+          "keyVaultName": "gsapipe",
+          "resourcegroup": "gsapipe",
           "region": "CanadaCentral",
-          "storageaccountName": "guardrail",
-          "logAnalyticsworkspaceName": "guardrails",
-          "autoMationAccountName": "guardrails",
+          "storageaccountName": "gsapipe",
+          "logAnalyticsworkspaceName": "gsapipe",
+          "autoMationAccountName": "gsapipe",
           "FirstBreakGlassAccountUPN": "breakglass1@$(testTenantDomain)",
           "SecondBreakGlassAccountUPN": "breakglass2@$(testTenantDomain)",
           "PBMMPolicyID": "4c4a5f27-de81-430b-b4e5-9cbd50595a87",
@@ -204,7 +244,11 @@ steps:
       Set-Content -Path $configFilePath -Value $configContent
 
       $userId = '$(testUserId)@$(testTenantDomain)'
-      $alternatePSModulesURL = "{0}/raw/{1}/psmodules" -f $env:BUILD_REPOSITORY_URI,$env:BUILD_SOURCEBRANCHNAME
+
+      $storageContext = (Get-AzStorageAccount -ResourceGroupName $(pipelineModulesStagingRGName) -Name $(pipelineModulesStagingStorageAccountName)).context
+      $modulesStagingURI = New-AzStorageContainerSASToken -Context $storageContext -Name psmodules -ExpiryTime (Get-Date).AddHours(1) -Permission r -FullUri
+
+      $alternatePSModulesURL = $modulesStagingURI
       Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
 
       Push-Location -Path setup
@@ -225,6 +269,7 @@ steps:
 - task: AzurePowerShell@5
   name: 'CheckForJobErrors'
   displayName: 'Check for AA Job Errors'
+  condition: eq(variables.skipTestDeploy, 'false')
   inputs:
     azureSubscription: 'Matthew Visual Studio (mb_co)'
     ScriptType: 'InlineScript'
@@ -234,29 +279,39 @@ steps:
     Inline: |
       ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-      $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
+      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
       $config = $c.configString | ConvertFrom-Json
       
+      Write-Output "Waiting for 'main' runbook job to complete (up to 5 mins)"
       $timeout = New-TimeSpan -Minutes 5
       $timer = [System.Diagnostics.Stopwatch]::StartNew()
       do {
         $job = Get-AzAutomationJob -RunbookName 'main' -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName | 
           Sort-Object StartTIme -Descending |
           Select-Object -First 1
+        
+        Start-Sleep 1
       }
       until (($job.Status -in 'Completed','Failed') -or ($timer.Elapsed -ge $timeout))
 
       If ($job.Status -eq 'Failed') {
         throw "main runbook failed to execute"
       }
+      If ($job.Status -eq 'Completed') {
+        Write-Output "'main' runbook completed successfully, checking for errors in output. "
+      }
 
-      $jobOutput = Get-AzAutomationJobOutput -Id $job.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName
+      $jobOutput = Get-AzAutomationJobOutput -Id $job.JobId -ResourceGroupName $config.runtime.resourceGroup -AutomationAccountName $config.runtime.automationAccountName -Stream 'Error'
 
+      $errorsFound = $false
       ForEach ($outputRecord in $jobOutput) {
         If ($outputRecord.Summary -like 'Failed invoke the module execution script for module*') {
+          $errorsFound = $true
           Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($true)")
-          throw "Module execution error found in deployment"
         }
+      }
+      If (!$errorsFound) {
+        Write-Output ("##vso[task.setvariable variable=skipCleanup;isOutput=true]$($false)")
       }
 
 - task: AzurePowerShell@5
@@ -271,6 +326,18 @@ steps:
       If (-NOT($env:SKIPCLEANUP)) {
         ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
+- task: AzurePowerShell@5
+  condition: and(succeededOrFailed(), eq(variables.skipCleanup, 'false'))
+  inputs:
+    azureSubscription: 'Matthew Visual Studio (mb_co)'
+    ScriptType: 'InlineScript'
+    FailOnStandardError: true
+    azurePowerShellVersion: 'LatestVersion'
+    pwsh: true
+    Inline: |
+      If ($env:SKIPCLEANUP -ne 'False') {
+        ipmo ./src/GuardrailsSolutionAcceleratorSetup
+
         $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
         $config = $c.configString | ConvertFrom-Json
 
@@ -279,7 +346,7 @@ steps:
         $c | Remove-GSACoreResources -Force -Wait
       }
       Else {
-        Write-Host "Skipping cleanup because `$env:skipCleanup is true"
+        Write-Host "Skipping cleanup because `$env:skipCleanup is '$($env:SKIPCLEANUP)'"
       }
   name: 'CleanUpTest'
 
