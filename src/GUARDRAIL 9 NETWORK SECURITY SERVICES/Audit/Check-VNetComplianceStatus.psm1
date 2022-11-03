@@ -54,12 +54,12 @@ foreach ($sub in $subs)
                 {
                     $ComplianceStatus = $true 
                     $Comments="$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
-                    $MitigationCommands="N/A"
+                    #$MitigationCommands="N/A"
                 }
                 else {
                     $ComplianceStatus = $false
                     $Comments= $msgTable.ddosNotEnabled
-                    $MitigationCommands=@"
+                    <#$MitigationCommands=@"
                     # https://docs.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview
                     # Selects Subscription
                     Select-azsubscription $($sub.SubscriptionId)
@@ -71,7 +71,7 @@ foreach ($sub in $subs)
                     `$vnet.DdosProtectionPlan.Id=`$plan.id
                     #Apply configuration
                     Set-azvirtualNetwork -VirtualNetwork `$vnet
-"@
+"@#>
                 }
                 # Create PSOBject with Information.
                 $VNetObject = [PSCustomObject]@{ 
@@ -82,10 +82,12 @@ foreach ($sub in $subs)
                     ItemName = $msgTable.vnetDDosConfig
                     itsgcode = $itsgcode
                     ControlName = $ControlName
-                    MitigationCommands=$MitigationCommands
+                    #MitigationCommands=$MitigationCommands
                     ReportTime = $ReportTime
                 }
+                
                 $VNetList.add($VNetObject) | Out-Null                
+
             }
             else {
                 Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
@@ -99,6 +101,6 @@ if ($debuginfo){
     }
 
    # Convert data to JSON format for input in Azure Log Analytics
-    
+   return $VNetList    
 }
-return $VNetList
+

@@ -62,7 +62,7 @@ function Get-SubnetComplianceInformation {
                             #checks NSGs
                             $ComplianceStatus=$false
                             $Comments = $msgTable.noNSG
-                            $MitigationCommands=@"
+                            <#$MitigationCommands=@"
 # https://docs.microsoft.com/en-us/powershell/module/az.network/set-azvirtualnetworksubnetconfig?view=azps-8.0.0#2-add-a-network-security-group-to-a-subnet
 #Creates NSG Resource for subnet $($subnet.Name)
 Select-azsubscription $($sub.SubscriptionId)
@@ -71,7 +71,7 @@ Select-azsubscription $($sub.SubscriptionId)
 `$subnet=(Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet.Name)).Subnets | Where-Object Name -eq $($subnet.Name)
 `$subnet.NetworkSecurityGroup = `$nsg
 Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet.Name) | set-azvirtual-network
-"@
+"@#>
                             if ($null -ne $subnet.NetworkSecurityGroup)
                             {
                                 Write-Debug "Found $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) NSG"
@@ -84,12 +84,12 @@ Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet
                                     {
                                         $ComplianceStatus=$true
                                         $Comments = $msgTable.subnetCompliant
-                                        $MitigationCommands="N/A"
+                                        #$MitigationCommands="N/A"
                                     }
                                     else {
                                         $ComplianceStatus=$false
                                         $Comments = $msgTable.nsgConfigDenyAll
-                                        $MitigationCommands=@"
+                                        <#$MitigationCommands=@"
 Select-azsubscription $($sub.SubscriptionId)
 `$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
 `$RuleParams = @{
@@ -105,14 +105,14 @@ Select-azsubscription $($sub.SubscriptionId)
     'Access'                   = 'Deny'
     }
 Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
-"@
+"@#>
                                     }
                                 }
                                 else {
                                     #NSG is present but has no custom rules at all.
                                     $ComplianceStatus=$false
                                     $Comments = $msgTable.nsgCustomRule
-                                    $MitigationCommands=@"
+    <#                                $MitigationCommands=@"
 Select-azsubscription $($sub.SubscriptionId)
 `$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
 `$RuleParams = @{
@@ -128,7 +128,7 @@ Select-azsubscription $($sub.SubscriptionId)
     'Access'                   = 'Deny'
     }
 Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
-"@
+"@#>
                                 }
                             }
                             $SubnetObject = [PSCustomObject]@{ 
@@ -139,7 +139,7 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                 ItemName = $msgTable.networkSegmentation
                                 ControlName = $ControlName
                                 itsgcode = $itsgcodesegmentation
-                                MitigationCommands=$MitigationCommands
+                                #MitigationCommands=$MitigationCommands
                                 ReportTime = $ReportTime
                             }
                             $SubnetList.add($SubnetObject) | Out-Null
@@ -152,15 +152,14 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                 $routeTable=Get-AzRouteTable -ResourceGroupName $subnet.RouteTable.Id.Split("/")[4] -name $UDR
                                 $ComplianceStatus=$false # I still don´t know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
                                 $Comments = $msgTable.routeNVA
-                                $MitigationCommands = $msgTable.routeNVAMitigation
-                                $MitigationCommands="N/A"
+                                #$MitigationCommands = $msgTable.routeNVAMitigation
                                 foreach ($route in $routeTable.Routes)
                                 {
                                     if ($route.NextHopType -eq "VirtualAppliance" -and $route.AddressPrefix -eq "0.0.0.0/0") # Found the required UDR
                                     {
                                         $ComplianceStatus=$true
                                         $Comments= $msgTable.subnetCompliant
-                                        $MitigationCommands="N/A"
+                                        #$MitigationCommands="N/A"
                                     }
                                 }
                             }
@@ -168,7 +167,7 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                         else { #subnet excluded
                             $ComplianceStatus=$true
                             $Comments=$msgTable.subnetExcluded
-                            $MitigationCommands="N/A"                            
+                            #$MitigationCommands="N/A"                            
                         }
                         $SubnetObject = [PSCustomObject]@{ 
                             SubscriptionName  = $sub.Name 
@@ -179,7 +178,7 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                             itsgcode = $itsgcodeseparation
                             ControlName = $ControlName
                             ReportTime = $ReportTime
-                            MitigationCommands=$MitigationCommands
+                            #MitigationCommands=$MitigationCommands
                         }
                         $SubnetList.add($SubnetObject) | Out-Null
                     }
