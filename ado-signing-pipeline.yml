@@ -27,7 +27,7 @@ parameters:
 - name: preClean
   displayName: 'Pre-clean the test environment of existing deployments'
   type: boolean
-  default: 'false'
+  default: 'true'
 
 variables: 
   - group: 'GuardrailsTestDeployments'
