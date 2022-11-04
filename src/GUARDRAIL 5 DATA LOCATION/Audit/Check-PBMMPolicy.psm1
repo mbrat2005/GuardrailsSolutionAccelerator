@@ -7,7 +7,6 @@ function Check-StatusPBMM {
         [string] $ControlName,
         [string] $ItemName,
         [string] $itsgcode,
-        [string] $LogType,
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]

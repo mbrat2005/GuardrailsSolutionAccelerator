@@ -68,14 +68,14 @@ Import-Module $PSScriptRoot\..\src\GuardrailsSolutionAcceleratorSetup
 
 If (!$update.IsPresent) {
     If (!$configureLighthouseAccessDelegation.IsPresent) {
-        Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -verbose:$useVerbose -Yes:$yes.isPresent
+        Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -verbose:$useVerbose -Yes:$yes.isPresent  -alternatePSModulesURL $alternatePSModulesURL
     }
     Else {
         Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes:$yes.isPresent -verbose:$useVerbose
     }
 }
 Else {
-    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -updateComponents All -Yes:$yes.isPresent -verbose:$useVerbose
+    Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -updateComponents All -Yes:$yes.isPresent -verbose:$useVerbose -alternatePSModulesURL $alternatePSModulesURL
 }
 
 # SIG # Begin signature block

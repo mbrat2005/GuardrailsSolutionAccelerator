@@ -204,7 +204,7 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                 ReportTime = $ReportTime
             }
             $SubnetList.add($SubnetObject) | Out-Null
-        }
+        }p
     }
     if ($debug) {
         Write-Output "Listing $($SubnetList.Count) List members."
