@@ -388,7 +388,7 @@ steps:
     Inline: |
         ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-        $c = Get-GSAExportedConfig -KeyVaultName guardrails-5c060f8e -y
+        $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
         $config = $c.configString | ConvertFrom-Json
 
         $c | remove-gsacentralizedReportingCustomerComponents -Force
