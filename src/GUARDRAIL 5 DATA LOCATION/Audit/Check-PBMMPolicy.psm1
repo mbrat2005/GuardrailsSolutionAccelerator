@@ -83,7 +83,7 @@ function Verify-PBMMPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "Management Group"
-        $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+        $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
         Add-LogEntry 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
@@ -104,7 +104,7 @@ function Verify-PBMMPolicy {
     try {
         $ErrorActionPreference = 'Stop'
         $type = "subscription"
-        $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -LogType $LogType -msgTable $msgTable -ControlName $ControlName
+        $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
         Add-LogEntry 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
