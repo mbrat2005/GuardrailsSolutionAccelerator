@@ -12,14 +12,14 @@ function Get-CloudConsoleAccess {
         [Parameter(Mandatory=$true)]
         [string] $ReportTime
     )
-    #[PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
-    [String] $GraphAccessToken = (Get-AzAccessToken -ResourceTypeName MSGraph).Token
     $IsCompliant = $false
-    Write-Debug "Token: $GraphAccessToken"
+
     $locationsBaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations"
     $CABaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
     try {
-        $locations = (Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $locationsBaseAPIUrl -Method Get -ErrorAction Stop).value
+        $response = Invoke-AzRestMethod -Uri $locationsBaseAPIUrl -Method Get -ErrorAction Stop
+        $data = $response.Content | ConvertFrom-Json
+        $locations = $data.value
     }
     catch {
         Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_" 
@@ -41,7 +41,7 @@ function Get-CloudConsoleAccess {
         # If there is no policy or the policy doesn't use one of the locations above, not compliant.
 
         try {
-            $caps = (Invoke-RestMethod -Headers @{Authorization = "Bearer $($GraphAccessToken)" } -Uri $CABaseAPIUrl -Method Get -ErrorAction Stop).value
+            $caps = (Invoke-AzRestMethod -Uri $CABaseAPIUrl -Method Get -ErrorAction Stop).value
 
             $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
         }

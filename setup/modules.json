@@ -61,7 +61,7 @@
     "Control":"Guardrails1",
     "ModuleName": "Get-BreakGlassAccounts",
     "Status": "Enabled",
-    "Script": "Get-BreakGlassAccounts -token $GraphAccessToken  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Get-BreakGlassAccounts -token $GraphAccessToken  -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgCreation -FirstBreakGlassUPN $vars.FirstBreakGlassUPN -SecondBreakGlassUPN $vars.SecondBreakGlassUPN -MsgTable $msgTable -LogType $LogType -WorkSpaceID  $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "secrets":
     [
       {
@@ -180,7 +180,7 @@
     "Control":"Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Script": "Check-DeprecatedUsers -Token $GraphAccessToken -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables":
     [
      
@@ -195,7 +195,7 @@
      "Control":"Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-     "Script": "Check-ExternalUsers -Token $GraphAccessToken -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+     "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
      "localVariables":
      [
       
