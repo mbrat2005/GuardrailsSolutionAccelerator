@@ -86,7 +86,7 @@ function Verify-PBMMPolicy {
         $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_"
         throw "Failed to execute the 'Check-StatusPBMM' function. Error message: $_"
     }
     finally {
@@ -107,7 +107,7 @@ function Verify-PBMMPolicy {
         $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
-        Add-LogEntry 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" -workspaceGuid $WorkSpaceID -workspaceKey $WorkSpaceKey
+        Add-LogEntry2 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" 
         throw "Failed to execute the 'Check-StatusPBMM' function. Error message: $_"
     }
     
