@@ -103,6 +103,5 @@ function Get-BreakGlassAccountLicense {
         itsgcode         = $itsgcode
     }
     return $PsObject
-  
-    }
 }
+
