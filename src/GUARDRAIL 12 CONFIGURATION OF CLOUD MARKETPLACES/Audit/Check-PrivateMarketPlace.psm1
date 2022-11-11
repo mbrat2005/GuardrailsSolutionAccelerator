@@ -10,13 +10,17 @@ param (
     
 $IsCompliant=$false 
 $Object = New-Object PSObject
+[PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
 try {
         [String] $PrivateMarketPlace=  Get-AzMarketplacePrivateStore -ErrorAction Stop  
 }
 catch {
-    Add-LogEntry2 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
+    $ErrorList.Add("Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
+    and up to date; returned error message: $_")
+    <#Add-LogEntry2 'Error' "Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
         and up to date; returned error message: $_"
+        #>
     throw "Error: Failed to execute the 'Get-AzMarketplacePrivateStore'--ensure that the Az.Marketplace module is installed `
         and up to date; returned error message: $_" 
 }
@@ -38,7 +42,12 @@ $Object| Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $Mi
 $Object| Add-Member -MemberType NoteProperty -Name ItemName -Value $msgTable.mktPlaceCreation -Force | Out-Null
 $Object| Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode -Force | Out-Null
 
-return $Object
+$moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $Object
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+return $moduleOutput
 }
 
 

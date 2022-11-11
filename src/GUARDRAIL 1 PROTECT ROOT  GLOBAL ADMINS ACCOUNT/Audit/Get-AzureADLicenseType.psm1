@@ -32,16 +32,18 @@ function Get-ADLicenseType {
     [string]
     $ReportTime
 )
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ADLicenseType  = "N/A"
     $IsCompliant = $false
     $apiUrl = "https://graph.microsoft.com/v1.0/subscribedSkus"
+    $Comments= $msgTable.AADLicenseTypeNotFound
 
     try {
         $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+        $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
+        #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -56,6 +58,7 @@ function Get-ADLicenseType {
            ($servicePlan.servicePlanName -eq "SPE_E5")){
             $IsCompliant = $true
             $ADLicenseType  = $servicePlan.servicePlanName
+            $Comments= $msgTable.AADLicenseTypeFound
         }
     }
 
@@ -66,10 +69,14 @@ function Get-ADLicenseType {
         ItemName= $ItemName
         ReportTime = $ReportTime
         itsgcode = $itsgcode
+        Comments = $Comments
      }
-     
-     return $PsObject
-
+     $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput    
 }
 
 # SIG # Begin signature block

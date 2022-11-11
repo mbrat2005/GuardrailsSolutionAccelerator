@@ -38,6 +38,7 @@ function Get-BreakGlassAccountLicense {
     [string] $Comments= $null
 
     [PSCustomObject] $BGAccounts = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
      
     $FirstBreakGlassAcct= [PSCustomObject]@{
         UserPrincipalName     = $FirstBreakGlassUPN
@@ -61,8 +62,8 @@ function Get-BreakGlassAccountLicense {
         }
         catch {
             If ($response.statusCode -eq 404) {continue}
-
-            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
+            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
         $data = $response.Content | ConvertFrom-Json
@@ -75,7 +76,8 @@ function Get-BreakGlassAccountLicense {
         }
         catch {
             If ($response.statusCode -eq 404) {continue}
-            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
+            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
 
@@ -102,6 +104,11 @@ function Get-BreakGlassAccountLicense {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    return $PsObject
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
 }
 

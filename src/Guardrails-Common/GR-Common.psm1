@@ -343,15 +343,7 @@ function Check-DocumentExistsInStorage {
     [string] $Comments = $null
 
     try {
-        Connect-AzAccount -Identity -Subscription  $SubscriptionID -ErrorAction Stop
-    }
-    catch {
-        Add-LogEntry 'Error' "Failed to run 'Connect-AzAccount' with error: $_" -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
-        throw "Error: Failed to run 'Connect-AzAccount' with error: $_"
-    }
-
-    try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop | out-null
     }
     catch {
         Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `

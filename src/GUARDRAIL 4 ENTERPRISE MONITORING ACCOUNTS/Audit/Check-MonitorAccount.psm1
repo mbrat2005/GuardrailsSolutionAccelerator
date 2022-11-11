@@ -11,6 +11,7 @@ function Check-MonitorAccountCreation {
 
   [bool] $IsCompliant = $false
   [string] $Comments = $null
+  [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
 
   [string] $MonitoringAccount = "SSC-CBS-Reporting@" + $DepartmentNumber + "gc.onmicrosoft.com"
 
@@ -27,7 +28,7 @@ function Check-MonitorAccountCreation {
     $Comments = $msgTable.checkUserExistsError -f $StatusCode
     $MitigationCommands = $msgTable.checkUserExists
 
-    Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
+    $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
     Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
        
@@ -40,7 +41,13 @@ function Check-MonitorAccountCreation {
     ReportTime  = $ReportTime
     MitigationCommands = $MitigationCommands
   }
-  return $Results     
+  $moduleOutput= [PSCustomObject]@{ 
+    ComplianceResults = $Results 
+    Errors=$ErrorList
+    AdditionalResults = $AdditionalResults
+  }
+  return $moduleOutput  
+  
     
 }
 

@@ -23,6 +23,9 @@ function Get-SubnetComplianceInformation {
     #module for Tags handling
     #import-module '..\..\GUARDRAIL COMMON\Get-Tags.psm1'
     [PSCustomObject] $SubnetList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $AdditionalResults= $null
+    
     $reservedSubnetNames=@("GatewaySubnet","AzureFirewallSubnet","AzureBastionSubnet","AzureFirewallManagementSubnet","RouteServerSubnet")
     $allexcluded=$ExcludedSubnets+$reservedSubnetNames
 
@@ -30,7 +33,8 @@ function Get-SubnetComplianceInformation {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" 
+        $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_")
+        #Add-LogEntry2 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" 
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
 
@@ -41,7 +45,7 @@ function Get-SubnetComplianceInformation {
     foreach ($sub in $subs)
     {
         Write-Verbose "Selecting subscription: $($sub.Name)"
-        Select-AzSubscription -SubscriptionObject $sub
+        Select-AzSubscription -SubscriptionObject $sub | Out-Null
         
         $VNets=Get-AzVirtualNetwork
         Write-Debug "Found $($VNets.count) VNets."
@@ -210,7 +214,12 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
         Write-Output "Listing $($SubnetList.Count) List members."
         $SubnetList |  select-object SubnetName, ComplianceStatus, Comments
     }
-    return $SubnetList
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $SubnetList
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
 }
 
 # SIG # Begin signature block

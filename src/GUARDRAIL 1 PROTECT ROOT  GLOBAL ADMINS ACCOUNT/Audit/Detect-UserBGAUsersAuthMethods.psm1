@@ -29,7 +29,7 @@ function Get-UserAuthenticationMethod {
 
    $IsCompliant = $true
    $Comments=$null
-   
+   [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $BGAccountList = @($FirstBreakGlassEmail,$SecondBreakGlassEmail )
     
     foreach($BGAcct in $BGAccountList){
@@ -39,7 +39,8 @@ function Get-UserAuthenticationMethod {
             $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get -ErrorAction Stop
         }
         catch {
-            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
+            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
 
@@ -75,7 +76,12 @@ function Get-UserAuthenticationMethod {
         ReportTime = $ReportTime
         itsgcode = $itsgcode
      }
-     return $PsObject
+     $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput    
    }
 
 # SIG # Begin signature block

@@ -13,7 +13,7 @@ function Get-CloudConsoleAccess {
         [string] $ReportTime
     )
     $IsCompliant = $false
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $locationsBaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations"
     $CABaseAPIUrl = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
     try {
@@ -22,7 +22,7 @@ function Get-CloudConsoleAccess {
         $locations = $data.value
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_" 
+        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
     }
     # $locations
@@ -46,7 +46,7 @@ function Get-CloudConsoleAccess {
             $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
         }
         catch {
-            Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_" 
+            $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
             Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
         }
         if (!$validPolicies) {
@@ -73,7 +73,12 @@ function Get-CloudConsoleAccess {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    return $PsObject
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput   
 }
 
 # SIG # Begin signature block

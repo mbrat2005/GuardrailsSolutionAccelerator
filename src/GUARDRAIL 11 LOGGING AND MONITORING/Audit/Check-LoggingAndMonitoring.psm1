@@ -17,7 +17,7 @@ function get-apiLinkedServicesData {
         $response = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
+        #Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -62,7 +62,7 @@ function get-tenantDiagnosticsSettings {
         $Data = Invoke-AzRestMethod -Uri $apiUrl -Method Get
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
+        #Add-LogEntry2 'Error' "Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
@@ -118,6 +118,7 @@ function Check-LoggingAndMonitoring {
         $CBSSubscriptionName
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     #$LogType="GuardrailsCompliance"
     #Code
 
@@ -132,12 +133,15 @@ function Check-LoggingAndMonitoring {
     $MitigationCommands=""
 
     try{
-        Select-AzSubscription -Subscription $Subscription -ErrorAction Stop
+        Select-AzSubscription -Subscription $Subscription -ErrorAction Stop | Out-Null
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
             ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-            error message: $_"
+            error message: $_")
+        #Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--`
+        #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+        #    error message: $_"
         throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($subscription)'--ensure `
             you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
     }
@@ -146,8 +150,10 @@ function Check-LoggingAndMonitoring {
         $LAW=Get-AzOperationalInsightsWorkspace -Name $LAWName -ResourceGroupName $LAWRG -ErrorAction Stop
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
-            workspace exists and that permissions are sufficient; returned error message: $_"
+        $ErrorList.Add("Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
+        workspace exists and that permissions are sufficient; returned error message: $_")
+        #Add-LogEntry2 'Error' "Failed to retrieve Log Analytics workspace '$LAWName' from resource group '$LAWRG'--verify that the `
+        #    workspace exists and that permissions are sufficient; returned error message: $_"
     }
     if ($null -eq $LAW)
     {
@@ -201,12 +207,12 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         {
             $IsCompliant=$false
             $Comments+=$msgTable.lawSolutionNotFound # "Required solutions not present in the Log Analytics Workspace."
-            $MitigationCommands+=@"
+<#            $MitigationCommands+=@"
 $($msgTable.addUpdatesAndAntiMalware) ($LAWName)"
 https://docs.microsoft.com/en-us/azure/automation/update-management/overview
 https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalwareOMS?tab=Overview
 `n
-"@
+"@#>
         }
         # Tenant Diagnostics configuration. Needs Graph API...
         $tenantWS=get-tenantDiagnosticsSettings
@@ -255,12 +261,15 @@ https://azuremarketplace.microsoft.com/en-us/marketplace/apps/Microsoft.AntiMalw
     if ($Subscription -ne $HSubscription)
     {
         try{
-            Select-AzSubscription -Subscription $HSubscription -ErrorAction Stop
+            Select-AzSubscription -Subscription $HSubscription -ErrorAction Stop | Out-Null
         }
         catch {
-            Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
-                ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
-                error message: $_"
+            $ErrorList.Add("Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
+            ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+            error message: $_")
+            #Add-LogEntry2 'Error' "Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--`
+            #    ensure you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned `
+            #    error message: $_"
             throw "Error: Failed to execute the 'Select-AzSubscription' command with subscription ID '$($HSubscription)'--ensure `
                 you have permissions to the subscription, the ID is correct, and that it exists in this tenant; returned error message: $_"
         }
@@ -331,7 +340,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
     # This will look for specific Defender for Cloud, on a per subscription basis.
     foreach ($sub in $sublist)
     {
-        Select-AzSubscription -SubscriptionObject $sub
+        Select-AzSubscription -SubscriptionObject $sub | Out-Null
         $ContactInfo=Get-AzSecurityContact
         if (($null -eq $ContactInfo.Email) -or ($null -eq $ContactInfo.Phone))
         {
@@ -365,8 +374,13 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
         MitigationCommands=$MitigationCommands
     }
     $FinalObjectList+=$object
-    $IsCompliant=$true
-    return $FinalObjectList
+    $IsCompliant=$true #?
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $FinalObjectList 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
 }
 
 # SIG # Begin signature block

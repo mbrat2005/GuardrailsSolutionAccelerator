@@ -40,11 +40,11 @@ function Check-CBSSensors {
         }
         if ($IsCompliant)
         {
-            $object | Add-Member -MemberType NoteProperty -Name Comments -Value "$($msgTable.cbssCompliant) $SubscriptionName)"
+            $object | Add-Member -MemberType NoteProperty -Name Comments -Value "$($msgTable.cbssCompliant) $SubscriptionName)"| Out-Null
             $MitigationCommands = "N/A."
         }
         else {
-            $Object | Add-Member -MemberType NoteProperty -Name Comments -Value $Comment2            
+            $Object | Add-Member -MemberType NoteProperty -Name Comments -Value $Comment2 | Out-Null   
             $MitigationCommands = "Contact CBS to deploy sensors."
         }
     }
@@ -53,12 +53,17 @@ function Check-CBSSensors {
         $Object | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.cbsSubDoesntExist
         $MitigationCommands = "$($msgTable.cbssMitigation)" -f $SubscriptionName
     }
-    $object | Add-Member -MemberType NoteProperty  -Name ReportTime -Value $ReportTime
-    $object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant
-    $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands
-    $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName
-    $object | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode
-    return $Object
+    $object | Add-Member -MemberType NoteProperty  -Name ReportTime -Value $ReportTime | Out-Null
+    $object | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $IsCompliant| Out-Null
+    $object | Add-Member -MemberType NoteProperty -Name MitigationCommands -Value $MitigationCommands| Out-Null
+    $object | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName| Out-Null
+    $object | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode| Out-Null
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $Object 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput
 }
 
 # SIG # Begin signature block

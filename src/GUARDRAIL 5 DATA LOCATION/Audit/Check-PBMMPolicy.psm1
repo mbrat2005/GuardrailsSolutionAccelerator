@@ -70,13 +70,13 @@ function Verify-PBMMPolicy {
         [Parameter(Mandatory=$true)][string]$CBSSubscriptionName
     )
     [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
-    
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     #Check management groups   
     try {
         $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
+        $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
@@ -86,7 +86,7 @@ function Verify-PBMMPolicy {
         $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_"
+        $Errorlist.Add("Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_")
         throw "Failed to execute the 'Check-StatusPBMM' function. Error message: $_"
     }
     finally {
@@ -97,7 +97,7 @@ function Verify-PBMMPolicy {
         $objs = Get-AzSubscription -ErrorAction Stop
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" 
+        $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
 
@@ -107,25 +107,15 @@ function Verify-PBMMPolicy {
         $FinalObjectList+=Check-StatusPBMM -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
-        Add-LogEntry2 'Error' "Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" 
+        $Errorlist.Add("Failed to execute the 'Check-StatusPBMM' function. ReportTime: '$ReportTime' Error message: $_" )
         throw "Failed to execute the 'Check-StatusPBMM' function. Error message: $_"
     }
-    
-    #Writes data
-    $FinalObjectList # | convertto-json -Depth 3
-    if ($FinalObjectList.Count -gt 0)
-    {
-        return $FinalObjectList
-        <#
-        $JsonObject = $FinalObjectList | convertTo-Json -Depth 3
-        #$JsonObject
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date
-        #>
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $FinalObjectList 
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
     }
+    return $moduleOutput
 }
 
 # SIG # Begin signature block

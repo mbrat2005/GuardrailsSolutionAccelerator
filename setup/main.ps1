@@ -100,7 +100,7 @@ foreach ($module in $modules)
         $secrets=$module.secrets
         $localVariables=$module.localVariables
         $vars = [PSCustomObject]@{}          
-        if ($variables -ne $null)
+        if ($null -ne $variables)
         {
             foreach ($v in $variables)
             {
@@ -108,7 +108,7 @@ foreach ($module in $modules)
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
             }      
         }
-        if ($secrets -ne $null)
+        if ($null -ne $secrets)
         {
             foreach ($v in $secrets)
             {
@@ -116,7 +116,7 @@ foreach ($module in $modules)
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
             }
         }
-        if ($localVariables -ne $null)
+        if ($null -ne $localVariables)
         {
             foreach ($v in $localVariables)
             {
@@ -128,17 +128,17 @@ foreach ($module in $modules)
 
         try {
             $results=$NewScriptBlock.Invoke()
-            $results
-            New-LogAnalyticsData -Data $results -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
-            if (Get-ChildItem '.\errors.txt' -ErrorAction SilentlyContinue)
-            {
-                $errors=Get-Content '.\errors.txt'
-                "Module $module.modulename failed with $($errors.count) errors."
-                New-LogAnalyticsData -Data $errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException"
-                Remove-Item '.\errors.txt'
+            #$results.ComplianceResults
+            New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
+            if ($null -ne $results.Errors) {
+                "Module $module.modulename failed with $($results.Errors.count) errors."
+                New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException"
             }
-            #New-LogAnalyticsData -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -Data $results
-            #    -additionalValues @{reportTime=$ReportTime; locale=$locale}
+            if ($null -ne $results.AdditionalResults) { # There is more data!
+                "Module $module.modulename returned $($results.AdditionalResults.count) additional results."
+                New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
+                -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType
+            }
         }
         catch {
             $sanitizedScriptblock = $($ExecutionContext.InvokeCommand.ExpandString(($module.script -ireplace '\$workspaceKey','***')))

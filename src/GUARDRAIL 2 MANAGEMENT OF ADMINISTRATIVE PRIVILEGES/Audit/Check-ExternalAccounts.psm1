@@ -5,12 +5,8 @@
     
     function Check-ExternalUsers  {
         Param ( 
-            [string] $token, 
             [string] $ControlName, 
             [string] $ItemName, 
-            [string] $WorkSpaceID, 
-            [string] $workspaceKey, 
-            [string] $LogType,
             [string] $itsgcode,
             [hashtable] $msgTable,
             [Parameter(Mandatory=$true)]
@@ -19,6 +15,7 @@
             )
     
     [psCustomObject] $guestUsersArray = New-Object System.Collections.ArrayList
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant= $false
     
     $stopWatch = New-Object -TypeName System.Diagnostics.Stopwatch 
@@ -113,12 +110,12 @@
     }
 
     # Convert data to JSON format for input in Azure Log Analytics
-    $JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
-    Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
+    #$JSONGuestUsers = ConvertTo-Json -inputObject $guestUsersArray
+    #Write-Output "Creating or updating Log Analytics table 'GR2ExternalUsers' and adding '$($guestUsers.Count)' guest user entries"
 
     # Add the list of non-compliant users to Log Analytics (in a different table)
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
-    -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date
+    <#Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey `
+    -body $JSONGuestUsers -logType "GR2ExternalUsers" -TimeStampField Get-Date#>
 
     $GuestUserStatus = [PSCustomObject]@{
         ComplianceStatus= $IsCompliant
@@ -129,12 +126,23 @@
         ReportTime = $ReportTime
         MitigationCommands = $MitigationCommands
     }
+    $AdditionalResults = [PSCustomObject]@{
+        records = $guestUsersArray
+        logType = "GR2ExternalUsers"
+    }
 
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $GuestUserStatus
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput 
+    <#
     $logAnalyticsEntry = ConvertTo-Json -inputObject $GuestUserStatus
         
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID -sharedkey $workspaceKey -body $logAnalyticsEntry `
                                 -logType $LogType -TimeStampField Get-Date                 
-
+    #>
     
     $stopWatch.Stop()
     if ($debug) {Write-Output "CheckExternalAccounts ran for: $($StopWatch.Elapsed.ToString()) "}

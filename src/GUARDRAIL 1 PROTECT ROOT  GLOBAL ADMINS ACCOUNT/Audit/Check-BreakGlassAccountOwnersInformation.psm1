@@ -44,9 +44,9 @@ function Get-BreakGlassOwnerinformation {
     }
 
     [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
-    $BGOwners.add( $FirstBreakGlassOwner)
-    $BGOwners.add( $SecondBreakGlassOwner)
-        
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    $BGOwners.add( $FirstBreakGlassOwner) | Out-Null
+    $BGOwners.add( $SecondBreakGlassOwner) | Out-Null
     
     foreach ($BGOwner in $BGOwners) {
         
@@ -62,7 +62,8 @@ function Get-BreakGlassOwnerinformation {
                 $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
             }
             Else {
-                Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
+                #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
                 Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             }
         }
@@ -90,7 +91,12 @@ function Get-BreakGlassOwnerinformation {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    return $PsObject                       
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+    return $moduleOutput               
 }
 
 
