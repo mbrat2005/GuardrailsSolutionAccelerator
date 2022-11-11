@@ -180,7 +180,7 @@
     "Control":"Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Script": "Check-DeprecatedUsers  -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DeprecatedUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeDeprecatedAccount -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables":
     [
      
@@ -195,7 +195,7 @@
      "Control":"Guardrails2",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-     "Script": "Check-ExternalUsers  -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -LogType $LogType -WorkSpaceID $WorkSpaceID -WorkspaceKey $WorkspaceKey -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+     "Script": "Check-ExternalUsers -ControlName $msgTable.CtrName2 -ItemName $msgTable.removeGuestAccounts -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
      "localVariables":
      [
       
@@ -375,7 +375,7 @@
     "Control":"Guardrails8",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables":
     [
       {

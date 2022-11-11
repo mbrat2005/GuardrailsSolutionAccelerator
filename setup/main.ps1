@@ -131,11 +131,11 @@ foreach ($module in $modules)
             #$results.ComplianceResults
             New-LogAnalyticsData -Data $results.ComplianceResults -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType $LogType
             if ($null -ne $results.Errors) {
-                "Module $module.modulename failed with $($results.Errors.count) errors."
+                "Module $($module.modulename) failed with $($results.Errors.count) errors."
                 New-LogAnalyticsData -Data $results.errors -WorkSpaceID $WorkSpaceID -WorkSpaceKey $WorkspaceKey -LogType "GuardrailsComplianceException"
             }
             if ($null -ne $results.AdditionalResults) { # There is more data!
-                "Module $module.modulename returned $($results.AdditionalResults.count) additional results."
+                "Module $($module.modulename) returned $($results.AdditionalResults.count) additional results."
                 New-LogAnalyticsData -Data $results.AdditionalResults.records -WorkSpaceID $WorkSpaceID `
                 -WorkSpaceKey $WorkspaceKey -LogType $results.AdditionalResults.logType
             }

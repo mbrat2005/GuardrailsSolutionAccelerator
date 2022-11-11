@@ -330,25 +330,31 @@ function Check-DocumentExistsInStorage {
         [string] $ControlName, 
         [string]$ItemName,
         [hashtable] $msgTable, 
-        [string] $WorkSpaceID, 
-        [string] $workspaceKey, 
-        [string] $LogType,
         [string]$itsgcode,
         [Parameter(Mandatory=$true)]
         [string]
         $ReportTime
     )
-
+    [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-
     try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop | out-null
+        Select-AzSubscription -Subscription $SubscriptionID | out-null
     }
     catch {
-        Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
-            -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
+        $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
+        #Add-LogEntry 'Error' 
+        throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
+    }
+    try {
+        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
+    }
+    catch {
+        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
+        #Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
+        #    subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
+        #    -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
         Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
@@ -375,7 +381,13 @@ function Check-DocumentExistsInStorage {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    return $PsObject
+    $moduleOutput= [PSCustomObject]@{ 
+        ComplianceResults = $PsObject
+        Errors=$ErrorList
+        AdditionalResults = $AdditionalResults
+    }
+return $moduleOutput
+
 }
 
 function Check-UpdateAvailable {
