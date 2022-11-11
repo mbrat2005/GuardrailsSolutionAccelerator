@@ -17,10 +17,11 @@ The components which can be updated are:
     **Download the latest release from GitHub**
     Download the latest release with `wget` or `Invoke-WebRequest -outFile`, specifying the release version in the URL (v1.0.6 in examples below)
 
-    Example:
+    Examples:
     `wget https://codeload.github.com/Azure/GuardrailsSolutionAccelerator/zip/refs/tags/v1.0.6`
+
     `Invoke-WebRequest -Uri https://codeload.github.com/Azure/GuardrailsSolutionAccelerator/zip/refs/tags/v1.0.6 -OutFile GR1.0.6.zip`
-    
+
     Extract the downloaded release:
     `Expand-Archive -Path <path_to_downloaded_zip>`
 
