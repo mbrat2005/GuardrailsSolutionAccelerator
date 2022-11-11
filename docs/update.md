@@ -12,22 +12,31 @@ The components which can be updated are:
 
 ## Update Process
 
-1. Ensure you have the latest version of the Guardrails Solution Accelerator though one of the following processes:
+1. Ensure you have the latest version of the Guardrails Solution Accelerator though one of the following processes. In most cases, downloading the latest release is the recommended approach. Use the `git` option if you want to deploy updates published between releases or pre-release updates.
 
+    **Download the latest release from GitHub**
+    Download the latest release with `wget` or `Invoke-WebRequest -outFile`, specifying the release version in the URL (v1.0.6 in examples below)
+
+    Example:
+    `wget https://codeload.github.com/Azure/GuardrailsSolutionAccelerator/zip/refs/tags/v1.0.6`
+    `Invoke-WebRequest -Uri https://codeload.github.com/Azure/GuardrailsSolutionAccelerator/zip/refs/tags/v1.0.6 -OutFile GR1.0.6.zip`
+    
+    Extract the downloaded release:
+    `Expand-Archive -Path <path_to_downloaded_zip>`
+
+    **Use Git**
     If you already have a clone of the GuardrailsSolutionAccelerator, navigate to that directory in PowerShell and use `git` to make sure you have the most recent changes:
 
     ```git
     cd GuardrailsSolutionAccelerator
     git fetch
     git checkout v1.0.6
-    
     ```
 
     Otherwise, if you do not have a clone of the repo, use the `git` in a PowerShell console to pull a copy down to your system or Cloud Shell:
 
     ```git
     git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git GuardrailsSolutionAccelerator
-    
     ```
 
 2. Import the GuardrailsSolutionAcceleratorPowershell module from your clone of the repo:
