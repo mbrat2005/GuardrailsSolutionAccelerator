@@ -466,6 +466,30 @@ function get-itsgdata {
    -logType $LogType `
    -TimeStampField Get-Date
 }
+function New-LogAnalyticsData {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [array] 
+        $Data,
+        [Parameter()]
+        [string]
+        $WorkSpaceID,
+        [Parameter()]
+        [string]
+        $WorkSpaceKey,
+        [Parameter()]
+        [string]
+        $LogType
+    )
+    $JsonObject = convertTo-Json -inputObject $Data -Depth 3
+
+    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
+        -sharedkey $workspaceKey `
+        -body $JsonObject `
+        -logType $LogType `
+        -TimeStampField Get-Date  
+}
 # endregion
 
 # SIG # Begin signature block

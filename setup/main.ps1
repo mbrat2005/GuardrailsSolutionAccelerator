@@ -1,28 +1,5 @@
 Disable-AzContextAutosave
-function New-LogAnalyticsData {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory=$true)]
-        [array] 
-        $Data,
-        [Parameter()]
-        [string]
-        $WorkSpaceID,
-        [Parameter()]
-        [string]
-        $WorkSpaceKey,
-        [Parameter()]
-        [string]
-        $LogType
-    )
-    $JsonObject = convertTo-Json -inputObject $Data 
 
-    Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-        -sharedkey $workspaceKey `
-        -body $JsonObject `
-        -logType $LogType `
-        -TimeStampField Get-Date  
-}
 #Standard variables
 $WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
 $LogType=Get-AutomationVariable -Name "LogType" 
