@@ -54,8 +54,6 @@ function get-activitylogstatus {
     }
 }
 function get-tenantDiagnosticsSettings {
-
-
     #$apiUrl="https://graph.microsoft.com/beta/auditLogs/directoryAudits"
     $apiUrl = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings?api-version=2017-04-01-preview"
     try {
