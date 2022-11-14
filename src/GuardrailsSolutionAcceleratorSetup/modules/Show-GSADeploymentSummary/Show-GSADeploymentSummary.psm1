@@ -57,7 +57,7 @@ Centralized Customer Defender for Cloud Support will make the following changes 
         }
         'updateDeployment' {
             $deployType = 'Update component'
-            $components = $deployParams.updateComponents
+            $components = $deployParams.componentsToUpdate
         }
     }
 

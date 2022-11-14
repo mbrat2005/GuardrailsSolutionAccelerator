@@ -230,6 +230,9 @@ Function Confirm-GSAConfigurationParameters {
     If ([string]::IsNullOrEmpty($config.uniqueNameSuffix)) {
         $uniqueNameSuffix = "-" + $tenantId.Split("-")[0]
     }
+    Else {
+        $uniqueNameSuffix = $config.uniqueNameSuffix
+    }
 
     ## generate resource names
     #TO-DO: switch to keyVaulNamePrefix, etc and existingKeyVauleName in config.json
