@@ -63,7 +63,6 @@ function Get-BreakGlassAccountLicense {
         catch {
             If ($response.statusCode -eq 404) {continue}
             $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
         $data = $response.Content | ConvertFrom-Json
@@ -77,7 +76,6 @@ function Get-BreakGlassAccountLicense {
         catch {
             If ($response.statusCode -eq 404) {continue}
             $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-            #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
         }
 

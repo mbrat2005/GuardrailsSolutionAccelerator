@@ -63,7 +63,6 @@ function Get-BreakGlassOwnerinformation {
             }
             Else {
                 $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" )
-                #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_" 
                 Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
             }
         }

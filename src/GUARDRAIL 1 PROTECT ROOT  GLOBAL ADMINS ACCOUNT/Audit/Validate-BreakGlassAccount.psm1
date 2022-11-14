@@ -67,7 +67,6 @@ function Get-BreakGlassAccounts {
   }
   catch {
     $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-    #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
     Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
 
@@ -84,7 +83,6 @@ function Get-BreakGlassAccounts {
   }
   catch {
     $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_")
-    #Add-LogEntry2 'Error' "Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
     Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$apiURL'; returned error message: $_"
   }
   $IsCompliant = $FirstBGAcctExist -and $SecondBGAcctExist
