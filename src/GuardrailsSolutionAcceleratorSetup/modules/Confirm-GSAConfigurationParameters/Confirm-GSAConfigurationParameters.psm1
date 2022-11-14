@@ -228,10 +228,10 @@ Function Confirm-GSAConfigurationParameters {
 
     ## unique resource name suffix, default to last segment of tenant ID
     If ([string]::IsNullOrEmpty($config.uniqueNameSuffix)) {
-        $uniqueNameSuffix = "-" + $tenantId.Split("-")[0]
+        $uniqueNameSuffix = '-' + $tenantId.Split("-")[0]
     }
     Else {
-        $uniqueNameSuffix = $config.uniqueNameSuffix
+        $uniqueNameSuffix = '-' + $config.uniqueNameSuffix
     }
 
     ## generate resource names

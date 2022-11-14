@@ -330,7 +330,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
 
             # deploy the bicep template with the specified parameters
             If ($updateBicep) {
-                Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}).Join(','))'..."
+                Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}) -join ',')'..."
                 Update-GSACoreResources -config $config -paramObject $paramObject -componentsToUpdate $componentsToUpdate -Verbose:$useVerbose
             }
             
