@@ -331,11 +331,11 @@ Function Deploy-GuardrailsSolutionAccelerator {
             # deploy the bicep template with the specified parameters
             If ($updateBicep) {
                 Write-Verbose "Deploying core Bicep template with update parameters '$($paramObject.Keys.Where({$_ -like 'update*'}) -join ',')'..."
-                Update-GSACoreResources -config $config -paramObject $paramObject -componentsToUpdate $componentsToUpdate -Verbose:$useVerbose
+                Update-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
             }
             
             # update runbook definitions in AA
-            If ($componentsToUpdate -contains 'AutomationAccountRunbooks' -or $componentsToUpdate -contains 'All') {
+            If ($componentsToUpdate -contains 'AutomationAccountRunbooks') {
                 Update-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
             }
 
