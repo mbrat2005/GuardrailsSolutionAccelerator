@@ -452,6 +452,27 @@ function New-LogAnalyticsData {
         -logType $LogType `
         -TimeStampField Get-Date  
 }
+
+function Invoke-GraphQuery {
+    param(
+        # URL path
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^(?!https://graph.microsoft.com/(v1|beta)/')]
+        [string]
+        $urlPath
+    )
+
+    $uri = "https://graph.microsoft.com/v1/$urlPath"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $uri -Method GET -ErrorAction Stop
+    }
+    catch {
+        Write-Error "An error occured while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
+    }
+    
+    $response
+}
 # endregion
 
 # SIG # Begin signature block
