@@ -471,7 +471,10 @@ function Invoke-GraphQuery {
         Write-Error "An error occured while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
     }
     
-    $response
+    @{
+        Content = $response.Content | ConvertFrom-Json
+        StatusCode = $response.StatusCode
+    }
 }
 # endregion
 
