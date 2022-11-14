@@ -25,6 +25,10 @@ Function Update-GSACoreResources {
     $ErrorActionPreference = 'Stop'
 
     Write-Verbose "Initating update deployment of core GSA resources..."
+    
+    Write-Verbose "Updating GSA Resource Group tags because -updateComponents 'All' specified..."
+    $resourceGroupId = "/subscriptions/$($config['runtime']['subscriptionId'])/resourceGroups/$($config['runtime']['resourceGroup'])"
+    Update-AzTag -ResourceId $resourceGroupId -Tag $config['runtime']['tagsTable'] -Operation Merge | Out-Null
 
     # deploy primary bicep template
     Write-Verbose "Updating GSA core resource via bicep template..."
