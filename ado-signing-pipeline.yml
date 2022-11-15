@@ -46,7 +46,7 @@ steps:
 - task: UseDotNet@2
   displayName: 'Install .NET 2.1.30 for ESRP task'
   inputs:
-    packageType: sdk
+    packageType: runtime
     version: 2.1.30
     installationPath: $(Agent.ToolsDirectory)/dotnet
   
