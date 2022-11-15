@@ -11,6 +11,7 @@ pr:
 pool:
   vmImage: windows-latest
 
+
 parameters:
 - name: skipCleanup
   displayName: 'Skip cleanup of test deployment'
@@ -42,6 +43,13 @@ variables:
 
 steps:
 
+- task: UseDotNet@2
+  displayName: 'Install .NET 2.1.0 for ESRP task'
+  inputs:
+    packageType: sdk
+    version: 2.1.0
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+  
 - task: EsrpCodeSigning@1
   condition: eq(variables.skipSigning, 'false')
   inputs:
