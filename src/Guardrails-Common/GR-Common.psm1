@@ -465,7 +465,7 @@ function Invoke-GraphQuery {
     try {
         $uri = "https://graph.microsoft.com/v1.0/$urlPath" -as [uri]
 
-        $response = Invoke-RestMethod -Uri $uri -Method GET -ErrorAction Stop
+        $response = Invoke-AzRestMethod -Uri $uri -Method GET -ErrorAction Stop
     }
     catch {
         Write-Error "An error occured constructing the URI or while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
