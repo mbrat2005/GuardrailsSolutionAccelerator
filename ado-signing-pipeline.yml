@@ -48,7 +48,6 @@ steps:
   inputs:
     packageType: runtime
     version: 2.1.30
-    installationPath: $(Agent.ToolsDirectory)/dotnet
   
 - task: EsrpCodeSigning@1
   condition: eq(variables.skipSigning, 'false')
