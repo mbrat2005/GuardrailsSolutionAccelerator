@@ -18,7 +18,7 @@ function Check-MonitorAccountCreation {
   $urlPath = $("/users/" + $MonitoringAccount)
 
   try {
-    $response = Invoke-GraphQuery -Uri $urlPath -ErrorAction Stop
+    $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
   }
   catch {
     $Comments = $msgTable.checkUserExistsError -f $response.StatusCode

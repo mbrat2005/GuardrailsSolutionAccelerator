@@ -387,7 +387,7 @@ steps:
     azurePowerShellVersion: 'LatestVersion'
     pwsh: true
     Inline: |
-        If ($env:BUILD_SOURCEVERSIONMESSAGE -notlike '*[skip_clean]*') {
+        If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -notlike '*[skip_clean]*') {
           ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
           $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
