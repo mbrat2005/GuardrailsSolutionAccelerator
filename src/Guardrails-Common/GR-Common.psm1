@@ -462,13 +462,13 @@ function Invoke-GraphQuery {
         $urlPath
     )
 
-    $uri = "https://graph.microsoft.com/v1/$urlPath"
-    
     try {
+        $uri = "https://graph.microsoft.com/v1.0/$urlPath" -as [uri]
+
         $response = Invoke-RestMethod -Uri $uri -Method GET -ErrorAction Stop
     }
     catch {
-        Write-Error "An error occured while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
+        Write-Error "An error occured constructing the URI or while calling Graph query for URI GET '$uri': $($_.Exception.Message)"
     }
     
     @{
