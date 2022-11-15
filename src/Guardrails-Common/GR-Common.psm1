@@ -455,9 +455,9 @@ function New-LogAnalyticsData {
 
 function Invoke-GraphQuery {
     param(
-        # URL path
+        # URL path (ex: /users)
         [Parameter(Mandatory = $true)]
-        [ValidatePattern('^(?!https://graph.microsoft.com/(v1|beta)/')]
+        [ValidatePattern('^(?!https://graph.microsoft.com/(v1|beta)/)')]
         [string]
         $urlPath
     )
