@@ -43,7 +43,7 @@ function Get-CloudConsoleAccess {
         try {
 
             $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
-            
+
             $caps = $response.Content.value
             $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
         }
