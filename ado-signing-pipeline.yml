@@ -50,12 +50,12 @@ steps:
     version: 2.1.x
 
 - task: UseDotNet@2
-  displayName: 'Install .NET 2.1 for ESRP task'
+  displayName: 'Install .NET 2.1 for ESRP task runtime'
   inputs:
     packageType: runtime
     version: 2.1.x
   
-- task: EsrpCodeSigning@1
+- task: EsrpCodeSigning@2
   condition: eq(variables.skipSigning, 'false')
   inputs:
     ConnectedServiceName: 'ESRP Guardrails Accelerator Signing'
