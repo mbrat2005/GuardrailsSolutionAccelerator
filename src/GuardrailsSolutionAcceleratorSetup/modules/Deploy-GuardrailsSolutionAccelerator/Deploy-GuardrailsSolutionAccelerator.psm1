@@ -252,7 +252,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         If ($alternatePSModulesURL) {
             $params = @{alternatePSModulesURL = $alternatePSModulesURL }
         }
-        $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
+        $paramObject = New-GSACoreResourceDeploymentParamObject -alternatePSModulesURL $alternatePSModulesURL -config $config @params -Verbose:$useVerbose
 
         If (!$update.IsPresent) {
             Write-Host "Deploying Guardrails Solution Accelerator components ($($newComponents -join ','))..." -ForegroundColor Green
