@@ -33,7 +33,7 @@ Function Deploy-GSACentralizedDefenderCustomerComponents {
 
     #deploy a custom role definition at the lighthouseTargetManagementGroupID, which will later be used to grant the Automation Account MSI permissions to register the Lighthouse Resource Provider
     try {
-        $roleDefinitionDeployment = New-AzManagementGroupDeployment -ManagementGroupId $config.lighthouseTargetManagementGroupID `
+        $roleDefinitionDeployment = New-AzManagementGroupDeployment -ManagementGroupId $config.runtime.lighthouseTargetManagementGroupID `
             -Location $config.region `
             -TemplateFile $lighthouseBicepPath/lighthouse_registerRPRole.bicep `
             -Confirm:$false `
@@ -47,7 +47,7 @@ Function Deploy-GSACentralizedDefenderCustomerComponents {
 
     #deploy Guardrails Defender for Cloud permission delegation - this delegation adds a role assignment to every subscription under the target management group
     try {
-        $policyDeployment = New-AzManagementGroupDeployment -ManagementGroupId $config.lighthouseTargetManagementGroupID `
+        $policyDeployment = New-AzManagementGroupDeployment -ManagementGroupId $config.runtime.lighthouseTargetManagementGroupID `
             -Location $config.region `
             -TemplateFile $lighthouseBicepPath/lighthouseDfCPolicy.bicep `
             -TemplateParameterObject $bicepParams `
@@ -81,7 +81,7 @@ Function Deploy-GSACentralizedDefenderCustomerComponents {
     # deploy an 'Owner' role assignment for the MSI associated with the Policy Assignment created in the previous step
     # Owner rights are required so that the MSI can then assign the requested 'Security Reader' role on each subscription under the target management group
     try {
-        $null = New-AzManagementGroupDeployment -ManagementGroupId $config.lighthouseTargetManagementGroupID `
+        $null = New-AzManagementGroupDeployment -ManagementGroupId $config.runtime.lighthouseTargetManagementGroupID `
             -Location $config.region `
             -TemplateFile $lighthouseBicepPath/lighthouseDfCPolicyRoleAssignment.bicep `
             -TemplateParameterObject @{policyAssignmentMSIPrincipalID = $policyDeployment.Outputs.policyAssignmentMSIRoleAssignmentID.value } `
@@ -95,7 +95,7 @@ Function Deploy-GSACentralizedDefenderCustomerComponents {
 
     # deploy a custom role assignment, granting the Automation Account MSI permissions to register the Lighthouse resource provider on each subscription under the target management group
     try {
-        $null = New-AzManagementGroupDeployment -ManagementGroupId $config.lighthouseTargetManagementGroupID `
+        $null = New-AzManagementGroupDeployment -ManagementGroupId $config.runtime.lighthouseTargetManagementGroupID `
             -Location $config.region `
             -TemplateFile $lighthouseBicepPath/lighthouse_assignRPRole.bicep `
             -TemplateParameterObject @{lighthouseRegisterRPRoleDefinitionID = $lighthouseRegisterRPRoleDefinitionID; guardrailsAutomationAccountMSI = $config.guardrailsAutomationAccountMSI } `
