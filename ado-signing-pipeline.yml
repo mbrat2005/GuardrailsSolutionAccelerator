@@ -323,7 +323,7 @@ steps:
       try {
           $ErrorActionPreference = 'Stop'
           ipmo ./src/GuardrailsSolutionAcceleratorSetup
-          Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes:$yes.isPresent @optionalParams -verbose:$useVerbose
+          Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes @optionalParams -verbose
       }
       catch {
           throw "Failed test deploy of solution with error: $_"
