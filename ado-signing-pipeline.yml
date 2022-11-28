@@ -315,11 +315,10 @@ steps:
       $alternatePSModulesURL = $modulesStagingURI
       Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
 
-      Push-Location -Path setup
-
       try {
           $ErrorActionPreference = 'Stop'
-          ./setup.ps1 -configFilePath $configFilePath -configureLighthouseAccessDelegation -alternatePSModulesURL $alternatePSModulesURL -Yes -Verbose
+          ipmo ./src/GuardrailsSolutionAcceleratorSetup
+          Deploy-GuardrailsSolutionAccelerator -configFilePath $configFilePath -newComponents CoreComponents, CentralizedCustomerDefenderForCloudSupport, CentralizedCustomerReportingSupport -Yes:$yes.isPresent @optionalParams -verbose:$useVerbose
       }
       catch {
           throw "Failed test deploy of solution with error: $_"
