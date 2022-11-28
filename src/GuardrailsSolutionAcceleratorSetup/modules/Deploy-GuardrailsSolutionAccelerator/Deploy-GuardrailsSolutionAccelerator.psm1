@@ -91,8 +91,11 @@ Function Deploy-GuardrailsSolutionAccelerator {
     .DESCRIPTION
         This function will deploy or update the Guardrails Solution Accelerator, depending on the specified parameters. It can also be used to verify deployment parameters and prerequisites. 
 
-        For either new deployments or update deployments, a configuration file must be provided using the -configFilePath parameter. This file is a JSON file specifying the deployment configuration
+        For new deployments, a configuration file must be provided using the -configFilePath parameter. This file is a JSON file specifying the deployment configuration
         and resource naming conventions. See this page for details: https://github.com/Azure/GuardrailsSolutionAccelerator/blob/main/docs/setup.md.
+
+        For update deployments to an existing environment, either the -ConfigFilePath should be used, or the Get-GSAExportedConfiguration function can be used to retrieve the current 
+        deployment's configuration from the specified KeyVault. 
 
         In order to enable centralized reporting and/or Defender for Cloud access by a managing tenant, specify CentralizedCustomerDefenderForCloudSupport or CentralizedCustomerReportingSupport. This
         can be done separately from a deployment of the core components. 
@@ -106,23 +109,23 @@ Function Deploy-GuardrailsSolutionAccelerator {
     .LINK
         https://github.com/Azure/GuardrailsSolutionAccelerator
     .EXAMPLE 
-        Deploy new GSA instance, with core components only:
+        # Deploy new GSA instance, with core components only:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json"
     .EXAMPLE
-        Deploy new GSA instance, with core components and Defender for Cloud access delegated to a managing tenant:
+        # Deploy new GSA instance, with core components and Defender for Cloud access delegated to a managing tenant:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -newComponents CoreComponents,CentralizedCustomerDefenderForCloudSupport
     .EXAMPLE
-        Validate the contents of a configuration file, but do not deploy anything:
+        # Validate the contents of a configuration file, but do not deploy anything:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -validateConfigFile
     .EXAMPLE
-        Validate that the prerequisites are met for the specified deployment configuration:
+        # Validate that the prerequisites are met for the specified deployment configuration:
         Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -validatePrerequisites -newComponents CoreComponents,CentralizedCustomerDefenderForCloudSupport,CentralizedCustomerReportingSupport
     .EXAMPLE
-        Update an existing GSA instance (PowerShell modules, workbooks, and runbooks):
-        Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -update
+        # Update an existing GSA instance (PowerShell modules, workbooks, and runbooks):
+        Get-GSAExportedConfig -KeyVaultName guardrails-12345 | Deploy-GuardrailsSolutionAccelerator -update
     .EXAMPLE
-        Add the CentralizedCustomerDefenderForCloudSupport component to an existing deployment, retrieving the configuration from the existing deployment's Key Vault
-        get-gsaExportedConfig -KeyVaultName guardrails-12345 -y | deploy-GuardrailsSolutionAccelerator -newComponents CentralizedCustomerDefenderForCloudSupport
+        # Add the CentralizedCustomerDefenderForCloudSupport component to an existing deployment, retrieving the configuration from the existing deployment's Key Vault
+        Get-GSAExportedConfig -KeyVaultName guardrails-12345 | deploy-GuardrailsSolutionAccelerator -newComponents CentralizedCustomerDefenderForCloudSupport
     #>
 
     [CmdletBinding(DefaultParameterSetName = 'newDeployment-configFilePath')]

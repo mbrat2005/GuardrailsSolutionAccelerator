@@ -1,4 +1,23 @@
 Function Get-GSAExportedConfig {
+    <#
+    .SYNOPSIS
+        Retrieves an exported Guardrails Solution Accelerator configuration from the specified Key Vault.
+    .DESCRIPTION
+        During the deployment of the Guardrails Solution Accelerator, the configuration originally specified in the JSON file referenced by
+        the -configFilePath parameter is exported to the deployed Key Vault in the GSA resource group. This function retrieves the latest exported configuration from
+        the Key Vault specified by the -keyVaultName parameter. 
+
+        This function is intended to be used in a PowerShell pipeline to pass the retrieved configuration to other functions. See examples below. 
+    .NOTES
+        This function retrieves potentially sensitive information from the specified Key Vault. It is recommended that output is not saved to a file or logged. 
+
+    .EXAMPLE 
+        # Update an existing GSA instance (PowerShell modules, workbooks, and runbooks):
+        Get-GSAExportedConfig -KeyVaultName guardrails-12345 | Deploy-GuardrailsSolutionAccelerator -update
+    .EXAMPLE
+        # Add the CentralizedCustomerDefenderForCloudSupport component to an existing deployment, retrieving the configuration from the existing deployment's Key Vault
+        Get-GSAExportedConfig -KeyVaultName guardrails-12345 | deploy-GuardrailsSolutionAccelerator -newComponents CentralizedCustomerDefenderForCloudSupport
+#>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
