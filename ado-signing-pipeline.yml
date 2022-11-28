@@ -315,6 +315,11 @@ steps:
       $alternatePSModulesURL = $modulesStagingURI
       Write-Output "alternatePSModulesURL is '$alternatePSModulesURL'"
 
+      $optionalParams = @{}
+      if ($alternatePSModulesURL) {
+          $optionalParams['alternatePSModulesURL'] = $alternatePSModulesURL
+      }
+
       try {
           $ErrorActionPreference = 'Stop'
           ipmo ./src/GuardrailsSolutionAcceleratorSetup
