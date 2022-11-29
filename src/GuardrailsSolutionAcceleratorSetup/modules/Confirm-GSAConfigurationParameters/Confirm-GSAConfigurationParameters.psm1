@@ -246,7 +246,6 @@ Function Confirm-GSAConfigurationParameters {
     $config['runtime']['tenantId'] = $tenantId
     $config['runtime']['tenantDomainUPN'] = $tenantDomainUPN
     $config['runtime']['tenantRootManagementGroupId'] = '/providers/Microsoft.Management/managementGroups/{0}' -f $tenantId
-    $config['runtime']['lighthouseTargetManagementGroupID'] = '/providers/Microsoft.Management/managementGroups/{0}' -f $lighthouseTargetManagementGroupID
     $config['runtime']['userId'] = $userId
     $config['runtime']['tagsTable'] = $tagsTable
     $config['runtime']['deployLAW'] = $true
