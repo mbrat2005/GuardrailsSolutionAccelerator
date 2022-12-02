@@ -315,7 +315,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             }
 
             # update Guardrail powershell modules in AA
-            ElseIf ($componentsToUpdate -contains 'GuardrailPowerShellModules') {
+            If ($componentsToUpdate -contains 'GuardrailPowerShellModules') {
                 $paramObject += @{updatePSModules = $true }
 
                 $updateBicep = $true
