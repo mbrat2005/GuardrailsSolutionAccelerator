@@ -64,7 +64,7 @@ function Get-UserAuthenticationMethod {
         }
 
         # This is the compliance status of the current user
-        $isCompliant = $isCompliant -and !$mfaEnabled
+        $isCompliant = $mfaEnabled
     }
 
     $PsObject = [PSCustomObject]@{
