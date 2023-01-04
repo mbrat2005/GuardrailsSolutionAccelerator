@@ -248,7 +248,8 @@ steps:
           "lighthousePrincipalDisplayName": "SSC CSPM TEAM",
           "lighthousePrincipalId": "$(lighthousePrincipalId)",
           "lighthouseTargetManagementGroupID": "mb_co",
-          "subscriptionId": "$(testSubscriptionId)"
+          "subscriptionId": "$(testSubscriptionId)",
+          "uniqueNameSuffix": "$(uniqueNameSuffix)"
         }
       '@
       Set-Content -Path $configFilePath -Value $configContent
@@ -395,7 +396,7 @@ steps:
         If ($env:BUILD_SOURCEVERSIONMESSAGE.ToString() -notlike '*[skip_clean]*') {
           ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
+          $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
           $config = $c.configString | ConvertFrom-Json
 
           $c | remove-gsacentralizedReportingCustomerComponents -Force
