@@ -63,7 +63,7 @@ function get-tenantDiagnosticsSettings {
         Write-Error "Error: Failed to call Azure Resource Manager REST API at URL '$apiURL'; returned error message: $_"
     }
 
-    $data = $response.Content | ConvertFrom-Json -Depth 20
+    $data = $response.Content | ConvertFrom-Json
     return $data.value.properties
 }
 function get-activitylogstatus {
