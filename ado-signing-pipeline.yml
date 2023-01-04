@@ -350,7 +350,7 @@ steps:
     Inline: |
       ipmo ./src/GuardrailsSolutionAcceleratorSetup
 
-      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-5c060f8e -y
+      $c = Get-GSAExportedConfig -KeyVaultName gsapipe-$(uniqueNameSuffix) -y
       $config = $c.configString | ConvertFrom-Json
       
       Write-Output "Waiting for 'main' runbook job to complete (up to 5 mins)"
