@@ -342,24 +342,24 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
             $MitigationCommands += $msgTable.setSecurityContact -f $sub.Name
         }
         else {
-            Write-Host "Security contact info found for $($sub.Name)"
+            Write-Information "At least 1 Defender plan is 'Standard' tier for $($sub.Name)" -InformationAction Continue
         }
         
         # We need to exlude 
         # - CloudPosture since this plan is always shows as Free
         # - KubernetesService and ContainerRegistry because two plans are deprecated in favor of the Container plan.
 
-        # check that any Defender pricing tier is not set to Free
+        # check that ALL Defender pricing tier is not set to Free
         $defenderPlans = Get-AzSecurityPricing -ErrorAction Stop | Where-Object {$_.Name -notin 'CloudPosture', 'KubernetesService', 'ContainerRegistry'}
 
-        if ($dfcPlans.PricingTier -notcontains 'Standard')
+        if ($defenderPlans.PricingTier -contains 'Free')
         {
             $IsCompliant=$false
             $Comments += $msgTable.notAllDfCStandard -f $sub.Name
             $MitigationCommands += $msgTable.setDfCToStandard -f $sub.Name
         }
         else {
-            Write-Host "At least 1 Defender plan is 'Standard' tier for $($sub.Name)"
+            Write-Information "At least 1 Defender plan is 'Standard' tier for $($sub.Name)" -InformationAction Continue
         }
     }
     if ($IsCompliant)
