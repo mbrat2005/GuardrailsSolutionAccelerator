@@ -82,19 +82,37 @@ function Get-BreakGlassAccountLicense {
 
             $data = $response.Content
             if (($data.value).Length -gt 0 ) {
-                $BGAccount.LicenseDetails = ($Data.value).skuPartNumber
+                $BGAccount.LicenseDetails = $data.value.skuPartNumber
             }
         }
     }
-    if ((($FirstBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($FirstBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM")) -and `
-        (($SecondBreakGlassAcct.LicenseDetails -match "EMSPREMIUM") -or ($SecondBreakGlassAcct.LicenseDetails -match "ENTERPRISEPREMIUM"))) {
+
+    $validLicenseSKUs = @('EMSPREMIUM', 'ENTERPRISEPREMIUM', 'AAD_PREMIUM_P2')
+    $FirstBreakGlassIsLicensed = $false
+    $SecondBreakGlassIsLicensed = $false
+    ForEach ($sku in $validLicenseSKUs) {
+        #check first break glass account
+        If ($FirstBreakGlassAcct.LicenseDetails -contains $sku) {
+            $FirstBreakGlassIsLicensed = $true
+            $Comments += $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $sku
+        }
+        #check second break glass account
+        If ($SecondBreakGlassAcct.LicenseDetails -contains $sku) {
+            $SecondBreakGlassIsLicensed = $true
+            $Comments += $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $sku
+        }
+    }
+    # check that both accounts are licensed
+    if ($FirstBreakGlassIsLicensed -and $SecondBreakGlassIsLicensed) {
         $IsCompliant = $true
-        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails +
-        $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
     }
     else {
-        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAcct.LicenseDetails + " & " +
-        $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAcct.LicenseDetails 
+        $IsCompliant = $false
+
+        $FirstBreakGlassAssignedLicenseString = $FirstBreakGlassAcct.LicenseDetails -join ';'
+        $SecondBreakGlassAssignedLisenseString = $SecondBreakGlassAcct.LicenseDetails -join ';'
+        $Comments = $FirstBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $FirstBreakGlassAssignedLicenseString + " & " + `
+            $SecondBreakGlassAcct.UserPrincipalName + $msgTable.bgAssignedLicense + $SecondBreakGlassAssignedLisenseString
     }
 
     $PsObject = [PSCustomObject]@{
