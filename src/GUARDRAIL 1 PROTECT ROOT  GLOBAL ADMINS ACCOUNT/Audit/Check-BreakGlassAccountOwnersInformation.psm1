@@ -71,6 +71,7 @@ function Get-BreakGlassOwnerinformation {
             $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
             Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
+        
     }
     $IsCompliant = $FirstBreakGlassOwner.ComplianceStatus -and $SecondBreakGlassOwner.ComplianceStatus
 
