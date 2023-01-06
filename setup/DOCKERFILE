@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.3-labs 
 # escape=`
 FROM  mcr.microsoft.com/azure-powershell:latest
 
@@ -11,13 +12,35 @@ RUN git clone https://github.com/mbrat2005/GuardrailsSolutionAccelerator.git
 RUN git -C GuardrailsSolutionAccelerator checkout container-instance-test
 
 # create directory for extracted modules
-RUN mkdir /GuardrailsSolutionAccelerator/extractedModules
+#RUN mkdir /GuardrailsSolutionAccelerator/extractedModules
 
 # switch to powershell
 SHELL ["pwsh", "-command"]
 
 # unzip zipped modules to module directory
-RUN Set-Location /root/.local/share/powershell/Modules; Get-ChildItem -Path "/GuardrailsSolutionAccelerator/psmodules/*.zip" | ForEach-Object { $_ | Expand-Archive -DestinationPath $_.BaseName -ErrorAction Stop }
+#RUN Set-Location /root/.local/share/powershell/Modules; Get-ChildItem -Path "/GuardrailsSolutionAccelerator/psmodules/*.zip" | ForEach-Object { $_ | Expand-Archive -DestinationPath $_.BaseName -ErrorAction Stop }
+
+RUN <<-EOF
+    Set-Location /GuardrailsSolutionAccelerator
+    $moduleManifestFilesObjs = Get-ChildItem -Path ./src -Recurse -Include *.psm1
+    Write-Host "'$($moduleManifestFiles.count)' module manifest files "
+
+    ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+        $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+        
+        If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+          Write-Host "Module '$($moduleManifest.BaseName)' found, copying module files..."
+
+          $destPath = "/root/.local/share/powershell/Modules/$($moduleManifest.BaseName)"
+          New-Item -Path $destPath -ItemType Directory -Force
+          Copy-Item -Path "$($moduleManifest.Directory)/*" -Destination $destPath/ -Force
+
+        }
+        Else {
+            Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+        }
+    }
+EOF
 
 # install OMS Ingestion API Module
 RUN Install-Module -Name OMSIngestionAPI -Force
