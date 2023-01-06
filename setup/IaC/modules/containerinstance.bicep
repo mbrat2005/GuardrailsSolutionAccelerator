@@ -52,71 +52,71 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
           environmentVariables: [
             {
               name: 'KeyvaultName'
-              secureValue: '"${guardrailsKVname}"'
+              secureValue: guardrailsKVname
             }
             {
               name: 'WorkSpaceID'
-              secureValue: '"${guardrailsLogAnalyticscustomerId}"'
+              secureValue: guardrailsLogAnalyticscustomerId
             }
             { 
               name: 'LogType'
-              secureValue: '"GuardrailsCompliance"'
+              secureValue: 'GuardrailsCompliance'
             }
             { 
               name: 'PBMMPolicyID'
-              secureValue: '"/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}"'
+              secureValue: '/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}'
             }
             { 
               name: 'GuardrailWorkspaceIDKeyName'
-              secureValue: '"WorkSpaceKey"'
+              secureValue: 'WorkSpaceKey'
             }
             { 
               name: 'StorageAccountName'
-              value: '"${guardrailsStoragename}"'
+              value: guardrailsStoragename
             }
             { 
               name: 'ContainerName'
-              secureValue: '"${containername}"'
+              secureValue: containername
             }
             { 
               name: 'ResourceGroupName'
-              value: '"${resourceGroup().name}"'
+              value: resourceGroup().name
             }
             { 
               name: 'AllowedLocationPolicyId'
-              secureValue: '"/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}"'
+              secureValue: '/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}'
             }
             { 
               name: 'DepartmentNumber'
-              value: '"${DepartmentNumber}"'
+              value: DepartmentNumber
             }
             { 
               name: 'CBSSubscriptionName'
-              secureValue: '"${CBSSubscriptionName}"'
+              secureValue: CBSSubscriptionName
             }
             { 
               name: 'SecurityLAWResourceId'
-              secureValue: '"${SecurityLAWResourceId}"'
+              secureValue: SecurityLAWResourceId
             }
             { 
               name: 'HealthLAWResourceId'
-              secureValue: '"${HealthLAWResourceId}"'
+              secureValue: HealthLAWResourceId
             }
             { 
               name: 'TenantDomainUPN'
-              value: '"${TenantDomainUPN}"'
+              value: TenantDomainUPN
             }
             { 
               name: 'GuardRailsLocale'
-              value: '"${Locale}"'
+              value: Locale
             }
             { 
               name: 'lighthouseTargetManagementGroupID'
-              secureValue: '"${lighthouseTargetManagementGroupID}"'
+              secureValue: lighthouseTargetManagementGroupID
             }
             { 
               name: 'DepartmentName'
-              value: '"${DepartmentName}"'
+              value: DepartmentName
             }
           ]
         }
