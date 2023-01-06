@@ -29,8 +29,6 @@ function Get-BreakGlassOwnerinformation {
     )
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-
-    [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
      
     $FirstBreakGlassOwner = [PSCustomObject]@{
         UserPrincipalName  = $FirstBreakGlassUPNOwner
@@ -45,6 +43,7 @@ function Get-BreakGlassOwnerinformation {
 
     [PSCustomObject] $BGOwners = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
+    
     $BGOwners.add( $FirstBreakGlassOwner) | Out-Null
     $BGOwners.add( $SecondBreakGlassOwner) | Out-Null
     
@@ -53,18 +52,23 @@ function Get-BreakGlassOwnerinformation {
         $urlPath = '/users/' + $BGOwner.UserPrincipalName + '/manager'
         try {
             $response = Invoke-GraphQuery -urlPath $urlPath -ErrorAction Stop
-            $BGOwner.ComplianceStatus = $true
-            $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $BGOwner.UserPrincipalName
-        }
-        catch {
-            If ($response.statusCode -eq 404) {
+
+            If ($response.statusCode -eq 200) {
+                $BGOwner.ComplianceStatus = $true
+                $BGOwner.ComplianceComments = $msgTable.bgAccountHasManager -f $BGOwner.UserPrincipalName
+            }
+            ElseIf ($response.statusCode -eq 404) {
                 $BGOwner.ComplianceStatus = $false
                 $BGOwner.ComplianceComments = $msgTable.bgAccountNoManager -f $BGOwner.UserPrincipalName
             }
             Else {
-                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
-                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
+                $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; unhandled status code in response: '$($response.statusCode)'" )
+                Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; unhandled status code in response: '$($response.statusCode)'"
             }
+        }
+        catch {
+            $ErrorList.Add("Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_" )
+            Write-Error "Error: Failed to call Microsoft Graph REST API at URL '$urlPath'; returned error message: $_"
         }
     }
     $IsCompliant = $FirstBreakGlassOwner.ComplianceStatus -and $SecondBreakGlassOwner.ComplianceStatus
