@@ -1,0 +1,13 @@
+FROM  mcr.microsoft.com/azure-powershell:latest
+
+# install git
+RUN apt-get update && apt-get install -y git
+
+# clone GuardrailsSolutionAccelerator repo
+RUN git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git
+
+# add Guardrails modules to PSModulePath
+RUN pwsh -Command "Copy-Item -Path /GuardrailsSolutionAccelerator/psmodules/* -Destination $env:PSModulePath -Recurse"
+
+# install OMS Ingestion API Module
+RUN  pwsh -Command "Install-Module -Name OMSIngestionAPI -Force"

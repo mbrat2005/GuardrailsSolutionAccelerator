@@ -37,7 +37,34 @@ module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
   name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
   params: {}
 }
-module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
+// module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
+//   name: 'guardrails-automationaccount'
+//   params: {
+//     AllowedLocationPolicyId: AllowedLocationPolicyId
+//     automationAccountName: automationAccountName
+//     CBSSubscriptionName: CBSSubscriptionName
+//     containername: containername
+//     CustomModulesBaseURL: CustomModulesBaseURL
+//     DepartmentNumber: DepartmentNumber
+//     DepartmentName: DepartmentName
+//     guardrailsKVname: kvName
+//     guardrailsLogAnalyticscustomerId: LAW.outputs.logAnalyticsWorkspaceId
+//     guardrailsStoragename: storageAccountName
+//     HealthLAWResourceId: HealthLAWResourceId
+//     lighthouseTargetManagementGroupID: lighthouseTargetManagementGroupID
+//     Locale: Locale
+//     location: location
+//     newDeployment: newDeployment
+//     PBMMPolicyID: PBMMPolicyID
+//     releaseDate: releaseDate
+//     releaseVersion: releaseVersion
+//     SecurityLAWResourceId: SecurityLAWResourceId
+//     TenantDomainUPN: TenantDomainUPN
+//     updatePSModules: updatePSModules
+//     updateCoreResources: updateCoreResources
+//   }
+// }
+module containerinstance 'modules/containerinstance.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: 'guardrails-automationaccount'
   params: {
     AllowedLocationPolicyId: AllowedLocationPolicyId
@@ -100,4 +127,4 @@ module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreR
   }
 }
 
-output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
+output guardrailsContainerInstanceMSI string = newDeployment ? containerinstance.outputs.guardrailsContainerInstanceMSI : ''

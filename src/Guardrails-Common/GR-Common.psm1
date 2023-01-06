@@ -476,6 +476,14 @@ function Invoke-GraphQuery {
         StatusCode = $response.StatusCode
     }
 }
+
+function Get-AutomationVariable {
+    param ([parameter(Mandatory=$true)]$name)
+
+    $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+
+    return $secretValue
+}
 # endregion
 
 # SIG # Begin signature block
