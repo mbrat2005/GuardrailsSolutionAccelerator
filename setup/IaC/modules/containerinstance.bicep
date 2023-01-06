@@ -32,6 +32,7 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
     releasedate: releaseDate
   }
   properties: {
+    restartPolicy: 'Never'
     containers: [
       {
         name: 'guardrails-main'

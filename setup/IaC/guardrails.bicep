@@ -65,7 +65,7 @@ module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
 //   }
 // }
 module containerinstance 'modules/containerinstance.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
-  name: 'guardrails-automationaccount'
+  name: 'guardrails-containerinstance'
   params: {
     AllowedLocationPolicyId: AllowedLocationPolicyId
     automationAccountName: automationAccountName
