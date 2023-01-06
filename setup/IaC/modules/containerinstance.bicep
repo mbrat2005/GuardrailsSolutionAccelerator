@@ -49,7 +49,7 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             '-ExecutionPolicy'
             'Bypass'
             '-File'
-            'C:\\guardrailssolutionaccelerator\\main.ps1'
+            '/GuardrailsSolutionAccelerator/main.ps1'
           ]
           environmentVariables: [
             {

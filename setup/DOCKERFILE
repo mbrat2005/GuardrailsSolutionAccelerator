@@ -6,9 +6,11 @@ FROM  mcr.microsoft.com/azure-powershell:latest
 RUN apt-get update && apt-get install -y git
 
 # clone GuardrailsSolutionAccelerator repo
+ARG BUILD_FORCE=1
 RUN git clone https://github.com/mbrat2005/GuardrailsSolutionAccelerator.git
 
 # checkout container-instance-test branch
+ARG BUILD_FORCE=1
 RUN git -C GuardrailsSolutionAccelerator checkout container-instance-test
 
 # create directory for extracted modules
