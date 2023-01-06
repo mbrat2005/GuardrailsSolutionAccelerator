@@ -44,31 +44,26 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
               memoryInGB: 2
             }
           }
-          command: [
-            'pwsh'
-            '-File'
-            '/GuardrailsSolutionAccelerator/setup/main.ps1'
-          ]
           environmentVariables: [
             {
               name: 'KeyvaultName'
-              secureValue: guardrailsKVname
+              value: guardrailsKVname
             }
             {
               name: 'WorkSpaceID'
-              secureValue: guardrailsLogAnalyticscustomerId
+              value: guardrailsLogAnalyticscustomerId
             }
             { 
               name: 'LogType'
-              secureValue: 'GuardrailsCompliance'
+              value: 'GuardrailsCompliance'
             }
             { 
               name: 'PBMMPolicyID'
-              secureValue: '/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}'
+              value: '/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}'
             }
             { 
               name: 'GuardrailWorkspaceIDKeyName'
-              secureValue: 'WorkSpaceKey'
+              value: 'WorkSpaceKey'
             }
             { 
               name: 'StorageAccountName'
@@ -76,7 +71,7 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             }
             { 
               name: 'ContainerName'
-              secureValue: containername
+              value: containername
             }
             { 
               name: 'ResourceGroupName'
@@ -84,7 +79,7 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             }
             { 
               name: 'AllowedLocationPolicyId'
-              secureValue: '/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}'
+              value: '/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}'
             }
             { 
               name: 'DepartmentNumber'
@@ -92,15 +87,15 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             }
             { 
               name: 'CBSSubscriptionName'
-              secureValue: CBSSubscriptionName
+              value: CBSSubscriptionName
             }
             { 
               name: 'SecurityLAWResourceId'
-              secureValue: SecurityLAWResourceId
+              value: SecurityLAWResourceId
             }
             { 
               name: 'HealthLAWResourceId'
-              secureValue: HealthLAWResourceId
+              value: HealthLAWResourceId
             }
             { 
               name: 'TenantDomainUPN'
@@ -112,94 +107,7 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             }
             { 
               name: 'lighthouseTargetManagementGroupID'
-              secureValue: lighthouseTargetManagementGroupID
-            }
-            { 
-              name: 'DepartmentName'
-              value: DepartmentName
-            }
-          ]
-        }
-      }
-      {
-        name: 'guardrails-backend'
-        properties: {
-          image: 'mbrat2005/guardrailssolutionaccelerator:latest'
-          resources: {
-            requests: {
-              cpu: 2
-              memoryInGB: 2
-            }
-          }
-          command: [
-            'pwsh'
-            '-File'
-            '/GuardrailsSolutionAccelerator/setup/backend.ps1'
-          ]
-          environmentVariables: [
-            {
-              name: 'KeyvaultName'
-              secureValue: guardrailsKVname
-            }
-            {
-              name: 'WorkSpaceID'
-              secureValue: guardrailsLogAnalyticscustomerId
-            }
-            { 
-              name: 'LogType'
-              secureValue: 'GuardrailsCompliance'
-            }
-            { 
-              name: 'PBMMPolicyID'
-              secureValue: '/providers/Microsoft.Authorization/policySetDefinitions/${PBMMPolicyID}'
-            }
-            { 
-              name: 'GuardrailWorkspaceIDKeyName'
-              secureValue: 'WorkSpaceKey'
-            }
-            { 
-              name: 'StorageAccountName'
-              value: guardrailsStoragename
-            }
-            { 
-              name: 'ContainerName'
-              secureValue: containername
-            }
-            { 
-              name: 'ResourceGroupName'
-              value: resourceGroup().name
-            }
-            { 
-              name: 'AllowedLocationPolicyId'
-              secureValue: '/providers/Microsoft.Authorization/policyDefinitions/${AllowedLocationPolicyId}'
-            }
-            { 
-              name: 'DepartmentNumber'
-              value: DepartmentNumber
-            }
-            { 
-              name: 'CBSSubscriptionName'
-              secureValue: CBSSubscriptionName
-            }
-            { 
-              name: 'SecurityLAWResourceId'
-              secureValue: SecurityLAWResourceId
-            }
-            { 
-              name: 'HealthLAWResourceId'
-              secureValue: HealthLAWResourceId
-            }
-            { 
-              name: 'TenantDomainUPN'
-              value: TenantDomainUPN
-            }
-            { 
-              name: 'GuardRailsLocale'
-              value: Locale
-            }
-            { 
-              name: 'lighthouseTargetManagementGroupID'
-              secureValue: lighthouseTargetManagementGroupID
+              value: lighthouseTargetManagementGroupID
             }
             { 
               name: 'DepartmentName'
