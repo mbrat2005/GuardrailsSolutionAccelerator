@@ -44,6 +44,12 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
               memoryInGB: 2
             }
           }
+          workingDirectory: '/GuardrailsSolutionAccelerator/setup'
+          command: [
+            'pwsh'
+            '-File'
+            'main.ps1'
+          ]
           environmentVariables: [
             {
               name: 'KeyvaultName'
