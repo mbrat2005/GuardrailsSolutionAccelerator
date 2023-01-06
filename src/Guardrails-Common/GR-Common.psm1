@@ -480,9 +480,13 @@ function Invoke-GraphQuery {
 function Get-AutomationVariable {
     param ([parameter(Mandatory=$true)]$name)
 
-    $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
-
-    return $secretValue.trim('"')
+    If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+        return $value
+    }
+    Else {
+        return $secretValue.trim('"')
+        $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+    }
 }
 # endregion
 
