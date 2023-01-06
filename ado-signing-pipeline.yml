@@ -29,6 +29,9 @@ parameters:
   displayName: 'Pre-clean the test environment of existing deployments'
   type: boolean
   default: 'true'
+- name: 'uniqueNameSuffix'
+  type: string
+  default: 'gsa654'
 
 variables: 
   - group: 'GuardrailsTestDeployments'
@@ -40,6 +43,8 @@ variables:
     value: ${{ parameters.skipSigning }}
   - name: preClean
     value: ${{ parameters.preClean }}
+  - name: 'uniqueNameSuffix'
+    value: ${{ parameters.uniqueNameSuffix }}
 
 steps:
   
