@@ -13,11 +13,11 @@ RUN git -C GuardrailsSolutionAccelerator checkout container-instance-test
 # create directory for extracted modules
 RUN mkdir /GuardrailsSolutionAccelerator/extractedModules
 
-# unzip zipped modules
-RUN pwsh -command 'Set-Location /GuardrailsSolutionAccelerator/extractedModules;Get-ChildItem -Path "/GuardrailsSolutionAccelerator/psmodules/*.zip" | ForEach-Object { $_ | Expand-Archive -DestinationPath $_.BaseName -ErrorAction Stop }'
+# switch to powershell
+SHELL ["pwsh", "-command"]
 
-# add Guardrails modules to PSModulePath
-RUN pwsh -command "[System.Environment]::SetEnvironmentVariable('PSModulePath',($env:PSModulePath + ':/GuardrailsSolutionAccelerator/extractedModules','Machine'))"
+# unzip zipped modules to module directory
+RUN Set-Location /root/.local/share/powershell/Modules; Get-ChildItem -Path "/GuardrailsSolutionAccelerator/psmodules/*.zip" | ForEach-Object { $_ | Expand-Archive -DestinationPath $_.BaseName -ErrorAction Stop }
 
 # install OMS Ingestion API Module
-RUN  pwsh -Command "Install-Module -Name OMSIngestionAPI -Force"
+RUN Install-Module -Name OMSIngestionAPI -Force
