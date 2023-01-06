@@ -44,11 +44,10 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
               memoryInGB: 2
             }
           }
-          workingDirectory: '/GuardrailsSolutionAccelerator/setup'
           command: [
             'pwsh'
             '-File'
-            'main.ps1'
+            '/GuardrailsSolutionAccelerator/setup/main.ps1'
           ]
           environmentVariables: [
             {
@@ -132,11 +131,10 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
               memoryInGB: 2
             }
           }
-          workingDirectory: '/GuardrailsSolutionAccelerator/setup'
           command: [
             'pwsh'
             '-File'
-            'backend.ps1'
+            '/GuardrailsSolutionAccelerator/setup/backend.ps1'
           ]
           environmentVariables: [
             {
