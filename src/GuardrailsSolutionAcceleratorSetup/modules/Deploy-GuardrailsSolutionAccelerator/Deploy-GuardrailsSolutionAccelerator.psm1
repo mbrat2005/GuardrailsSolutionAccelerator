@@ -269,7 +269,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
                 
                 # add runbooks to AA
-                Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                # Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
             }
             
             # deploy Lighthouse components

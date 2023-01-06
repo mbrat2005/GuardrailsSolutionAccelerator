@@ -44,11 +44,6 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
               memoryInGB: 2
             }
           }
-          command: [
-            'tail'
-            '-f'
-            '/dev/null'
-          ]
           environmentVariables: [
             {
               name: 'KeyvaultName'
