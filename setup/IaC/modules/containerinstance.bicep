@@ -44,13 +44,11 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
               memoryInGB: 2
             }
           }
-          // command: [
-          //   'pwsh'
-          //   '-ExecutionPolicy'
-          //   'Bypass'
-          //   '-File'
-          //   '/GuardrailsSolutionAccelerator/setup/main.ps1'
-          // ]
+          command: [
+            'tail'
+            '-f'
+            '/dev/null'
+          ]
           environmentVariables: [
             {
               name: 'KeyvaultName'
