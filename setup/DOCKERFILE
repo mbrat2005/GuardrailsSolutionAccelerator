@@ -19,6 +19,9 @@ RUN git -C GuardrailsSolutionAccelerator checkout container-instance-test
 # switch to powershell
 SHELL ["pwsh", "-command"]
 
+# install Az.Marketplace module
+RUN Install-Module -Name Az.Marketplace -Force
+
 # unzip zipped modules to module directory
 #RUN Set-Location /root/.local/share/powershell/Modules; Get-ChildItem -Path "/GuardrailsSolutionAccelerator/psmodules/*.zip" | ForEach-Object { $_ | Expand-Archive -DestinationPath $_.BaseName -ErrorAction Stop }
 

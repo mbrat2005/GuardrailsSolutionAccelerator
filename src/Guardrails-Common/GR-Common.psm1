@@ -155,6 +155,7 @@ function read-blob {
         Container   = $containerName
         Destination = $FilePath
         Context     = $Context
+        Force       = $true
     }
     Get-AzStorageBlobContent @blobParams
 }

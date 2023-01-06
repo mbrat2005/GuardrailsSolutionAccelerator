@@ -11,7 +11,7 @@ catch {
 #Standard variables
 $WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
 $LogType=Get-AutomationVariable -Name "LogType" 
-$KeyVaultName=Get-AutomationVariable -Name "KeyVaultName" 
+$KeyVaultName=Get-AutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
 $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
@@ -50,7 +50,7 @@ Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName="GR-ComplianceChecks-Msgs"
-$messagesBaseDirectory="C:\Modules\User\GR-ComplianceChecks"
+$messagesBaseDirectory= (Get-Module -ListAvailable GR-ComplianceChecks).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
 $messagesBindingVariableName="msgTable"
 Write-Output "Loading messages in $($Locale)"
 #dir 'C:\Modules\User\GR-ComplianceChecks'
