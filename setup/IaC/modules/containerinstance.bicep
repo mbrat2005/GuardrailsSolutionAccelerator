@@ -45,11 +45,11 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             }
           }
           command: [
-            'pwsh.exe'
+            'pwsh'
             '-ExecutionPolicy'
             'Bypass'
             '-File'
-            '/GuardrailsSolutionAccelerator/main.ps1'
+            '/GuardrailsSolutionAccelerator/setup/main.ps1'
           ]
           environmentVariables: [
             {
