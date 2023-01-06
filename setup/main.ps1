@@ -1,5 +1,13 @@
 Disable-AzContextAutosave
 
+# Connects to Azure using the Automation Account's managed identity
+try {
+    Connect-AzAccount -Identity -ErrorAction Stop
+}
+catch {
+    throw "Critical: Failed to connect to Azure with the 'Connect-AzAccount' command and '-identity' (MSI) parameter; verify that Azure Automation identity is configured. Error message: $_"
+}
+
 #Standard variables
 $WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
 $LogType=Get-AutomationVariable -Name "LogType" 
@@ -11,13 +19,7 @@ $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
 $Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
 
-# Connects to Azure using the Automation Account's managed identity
-try {
-    Connect-AzAccount -Identity -ErrorAction Stop
-}
-catch {
-    throw "Critical: Failed to connect to Azure with the 'Connect-AzAccount' command and '-identity' (MSI) parameter; verify that Azure Automation identity is configured. Error message: $_"
-}
+
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
 Write-Output "Starting main runbooks."

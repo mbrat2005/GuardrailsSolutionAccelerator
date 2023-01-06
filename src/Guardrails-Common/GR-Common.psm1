@@ -482,7 +482,7 @@ function Get-AutomationVariable {
 
     $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
 
-    return $secretValue
+    return $secretValue.trim('"')
 }
 # endregion
 
