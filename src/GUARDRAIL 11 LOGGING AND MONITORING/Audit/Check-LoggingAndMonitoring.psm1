@@ -341,9 +341,6 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
             $Comments= $msgTable.noSecurityContactInfo -f $sub.Name
             $MitigationCommands += $msgTable.setSecurityContact -f $sub.Name
         }
-        else {
-            Write-Information "At least 1 Defender plan is 'Standard' tier for $($sub.Name)" -InformationAction Continue
-        }
         
         # We need to exlude 
         # - CloudPosture since this plan is always shows as Free
@@ -358,9 +355,7 @@ https://docs.microsoft.com/en-us/azure/automation/how-to/region-mappings
             $Comments += $msgTable.notAllDfCStandard -f $sub.Name
             $MitigationCommands += $msgTable.setDfCToStandard -f $sub.Name
         }
-        else {
-            Write-Information "At least 1 Defender plan is 'Standard' tier for $($sub.Name)" -InformationAction Continue
-        }
+
     }
     if ($IsCompliant)
     {
