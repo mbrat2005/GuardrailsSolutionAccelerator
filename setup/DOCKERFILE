@@ -6,15 +6,10 @@ FROM  mcr.microsoft.com/azure-powershell:latest
 RUN apt-get update && apt-get install -y git
 
 # clone GuardrailsSolutionAccelerator repo
-ARG BUILD_FORCE=1
 RUN git clone https://github.com/mbrat2005/GuardrailsSolutionAccelerator.git
 
 # checkout container-instance-test branch
-ARG BUILD_FORCE=1
 RUN git -C GuardrailsSolutionAccelerator checkout container-instance-test
-
-# create directory for extracted modules
-#RUN mkdir /GuardrailsSolutionAccelerator/extractedModules
 
 # switch to powershell
 SHELL ["pwsh", "-command"]
@@ -22,9 +17,7 @@ SHELL ["pwsh", "-command"]
 # install Az.Marketplace module
 RUN Install-Module -Name Az.Marketplace -Force
 
-# unzip zipped modules to module directory
-#RUN Set-Location /root/.local/share/powershell/Modules; Get-ChildItem -Path "/GuardrailsSolutionAccelerator/psmodules/*.zip" | ForEach-Object { $_ | Expand-Archive -DestinationPath $_.BaseName -ErrorAction Stop }
-
+# install Guardrails Modules in powershell module path
 RUN <<-EOF
     Set-Location /GuardrailsSolutionAccelerator
     $moduleManifestFilesObjs = Get-ChildItem -Path ./src -Recurse -Include *.psm1
@@ -49,3 +42,31 @@ EOF
 
 # install OMS Ingestion API Module
 RUN Install-Module -Name OMSIngestionAPI -Force
+
+# create execution script
+COPY <<'EOF' /execute.ps1
+#!/usr/bin/env pwsh
+param (
+    [parameter(Mandatory=$false)]
+    [ValidateSet('main','backend')]
+    [string]$runbook
+    )
+If ([string]::IsNullOrEmpty($runbook)) {
+    Write-Host "No runbook specified, exiting..."
+    exit 0
+}
+switch ($runbook) {
+    'main' {
+        Write-Host "Running main runbook..."
+        Set-Location /GuardrailsSolutionAccelerator/setup
+        .\main.ps1
+    }
+    'backend' {
+        Write-Host "Running backend runbook..."
+        Set-Location /GuardrailsSolutionAccelerator/setup
+        .\backend.ps1
+    }
+}
+EOF
+
+CMD ["pwsh", "/execute.ps1", "-runbook"]
