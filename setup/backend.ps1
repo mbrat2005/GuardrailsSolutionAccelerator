@@ -1,17 +1,17 @@
 Disable-AzContextAutosave
 
 #Standard variables
-$WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
-$KeyVaultName=Get-AutomationVariable -Name "KeyVaultName" 
-$GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
-#$ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
+$WorkSpaceID=Get-GSAAutomationVariable -Name "WorkSpaceID" 
+$KeyVaultName=Get-GSAAutomationVariable -Name "KeyVaultName" 
+$GuardrailWorkspaceIDKeyName=Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
+#$ResourceGroupName=Get-GSAAutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
-#$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
-$Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
-$lighthouseTargetManagementGroupID = Get-AutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
-$DepartmentName = Get-AutomationVariable -Name "DepartmentName" 
-$DepartmentNumber = Get-AutomationVariable -Name "DepartmentNumber" 
+#$StorageAccountName=Get-GSAAutomationVariable -Name "StorageAccountName" 
+$Locale=Get-GSAAutomationVariable -Name "GuardRailsLocale" 
+$lighthouseTargetManagementGroupID = Get-GSAAutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
+$DepartmentName = Get-GSAAutomationVariable -Name "DepartmentName" 
+$DepartmentNumber = Get-GSAAutomationVariable -Name "DepartmentNumber" 
 
 # Connects to Azure using the Automation Account's managed identity
 try {

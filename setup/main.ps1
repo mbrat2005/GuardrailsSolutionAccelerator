@@ -9,15 +9,15 @@ catch {
 }
 
 #Standard variables
-$WorkSpaceID=Get-AutomationVariable -Name "WorkSpaceID" 
-$LogType=Get-AutomationVariable -Name "LogType" 
-$KeyVaultName=Get-AutomationVariable -Name "KeyvaultName" 
-$GuardrailWorkspaceIDKeyName=Get-AutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
-$ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
+$WorkSpaceID=Get-GSAAutomationVariable -Name "WorkSpaceID" 
+$LogType=Get-GSAAutomationVariable -Name "LogType" 
+$KeyVaultName=Get-GSAAutomationVariable -Name "KeyvaultName" 
+$GuardrailWorkspaceIDKeyName=Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
+$ResourceGroupName=Get-GSAAutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime=(get-date).tostring("yyyy-MM-dd HH:mm:ss")
-$StorageAccountName=Get-AutomationVariable -Name "StorageAccountName" 
-$Locale=Get-AutomationVariable -Name "GuardRailsLocale" 
+$StorageAccountName=Get-GSAAutomationVariable -Name "StorageAccountName" 
+$Locale=Get-GSAAutomationVariable -Name "GuardRailsLocale" 
 
 
 $SubID = (Get-AzContext).Subscription.Id
@@ -83,7 +83,7 @@ foreach ($module in $modules)
         {
             foreach ($v in $variables)
             {
-                $tempvarvalue=Get-AutomationVariable -Name $v.value
+                $tempvarvalue=Get-GSAAutomationVariable -Name $v.value
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
             }      
         }

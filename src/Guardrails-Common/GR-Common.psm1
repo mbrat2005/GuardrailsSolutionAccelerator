@@ -99,7 +99,7 @@ function copy-toBlob {
             Blob = ($FilePath | Split-Path -Leaf)
         }
         if ($force)
-        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null}
+        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null }
         else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
     }
     catch {
@@ -201,9 +201,9 @@ Function Add-LogEntry {
 
     # build log entry object, convert to json
     $entryHash = @{
-        "message" = $message
+        "message"    = $message
         "moduleName" = $moduleName
-        "severity" = $severity
+        "severity"   = $severity
     } + $additionalValues
     
     $entryJson = ConvertTo-Json -inputObject $entryHash -Depth 20
@@ -219,69 +219,69 @@ Function Add-LogEntry {
 
 Function Add-TenantInfo {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $workspaceKey,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
-        $LogType="GR_TenantInfo",
-        [Parameter(Mandatory=$true)]
+        $LogType = "GR_TenantInfo",
+        [Parameter(Mandatory = $true)]
         [string]
         $ReportTime,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $TenantId,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $DepartmentName,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $DepartmentNumber
-        )
-    $tenantInfo=Get-AutomationVariable("tenantDomainUPN")
+    )
+    $tenantInfo = Get-GSAAutomationVariable("tenantDomainUPN")
     $object = [PSCustomObject]@{ 
-        TenantDomain = $tenantInfo
+        TenantDomain       = $tenantInfo
         DepartmentTenantID = $TenantId
-        ReportTime = $ReportTime
-        DepartmentName = $DepartmentName
-        DepartmentNumber = $DepartmentNumber
+        ReportTime         = $ReportTime
+        DepartmentName     = $DepartmentName
+        DepartmentNumber   = $DepartmentNumber
     }
-    if ($debug) { Write-Output $tenantInfo}
-    $JSON= ConvertTo-Json -inputObject $object
+    if ($debug) { Write-Output $tenantInfo }
+    $JSON = ConvertTo-Json -inputObject $object
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 
 function Add-LogAnalyticsResults {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $workspaceKey,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
-        $LogType="GR_Results",
-        [Parameter(Mandatory=$false)]
+        $LogType = "GR_Results",
+        [Parameter(Mandatory = $false)]
         [array]
         $Results
-   )
+    )
 
-    $JSON= ConvertTo-Json -inputObject $Results
+    $JSON = ConvertTo-Json -inputObject $Results
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 function Check-DocumentExistsInStorage {
     param (
@@ -294,7 +294,7 @@ function Check-DocumentExistsInStorage {
         [string]$ItemName,
         [hashtable] $msgTable, 
         [string]$itsgcode,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $ReportTime
     )
@@ -344,63 +344,62 @@ function Check-DocumentExistsInStorage {
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
     }
-    $moduleOutput= [PSCustomObject]@{ 
+    $moduleOutput = [PSCustomObject]@{ 
         ComplianceResults = $PsObject
-        Errors=$ErrorList
+        Errors            = $ErrorList
         AdditionalResults = $AdditionalResults
     }
-return $moduleOutput
+    return $moduleOutput
 
 }
 
 function Check-UpdateAvailable {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $WorkSpaceID,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]
         $workspaceKey,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
-        $LogType="GR_VersionInfo",
-        [Parameter(Mandatory=$true)]
+        $LogType = "GR_VersionInfo",
+        [Parameter(Mandatory = $true)]
         [string]
         $ReportTime,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]
         $ResourceGroupName
     )
     #fetches current public version (from repo...maybe should download the zip...)
-    $ReleaseVersion=((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
+    $ReleaseVersion = ((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
-        $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
+        $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
     }
-    $rg=Get-AzResourceGroup -Name $ResourceGroupName 
-    $currentVersion=get-rgtagValue -tagkey releaseversion -object $rg
-    if ($debug) { Write-Output "RG Tag: $currentVersion"}
-    if ($debug) { Write-Output "Avail. Release: $ReleaseVersion"}
+    $rg = Get-AzResourceGroup -Name $ResourceGroupName 
+    $currentVersion = get-rgtagValue -tagkey releaseversion -object $rg
+    if ($debug) { Write-Output "RG Tag: $currentVersion" }
+    if ($debug) { Write-Output "Avail. Release: $ReleaseVersion" }
     
-    if ($currentVersion -ne $ReleaseVersion)
-    {
-        $updateNeeded=$true
+    if ($currentVersion -ne $ReleaseVersion) {
+        $updateNeeded = $true
     }
     else {
-        $updateNeeded=$false
+        $updateNeeded = $false
     }
     $object = [PSCustomObject]@{ 
-        CurrentVersion = $currentVersion
+        CurrentVersion   = $currentVersion
         AvailableVersion = $ReleaseVersion
-        UpdateNeeded= $updateNeeded
-        ReportTime = $ReportTime
+        UpdateNeeded     = $updateNeeded
+        ReportTime       = $ReportTime
     }
-    $JSON= ConvertTo-Json -inputObject $object
+    $JSON = ConvertTo-Json -inputObject $object
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-    -sharedkey $workspaceKey `
-    -body $JSON `
-    -logType $LogType `
-    -TimeStampField Get-Date 
+        -sharedkey $workspaceKey `
+        -body $JSON `
+        -logType $LogType `
+        -TimeStampField Get-Date 
 }
 function get-itsgdata {
     [CmdletBinding()]
@@ -410,13 +409,13 @@ function get-itsgdata {
         $URL,
         [string] $WorkSpaceID,
         [string] $workspaceKey,
-        [string] $LogType="GRITSGControls",
+        [string] $LogType = "GRITSGControls",
         [switch] $DebugCode
     )
     (Invoke-WebRequest -UseBasicParsing $URL).Content | out-file tempitsg.csv
-    $Header="Family","Control ID","Enhancement","Name","Class","Definition","Supplemental Guidance,References"
-    $itsgtempinfo=Import-Csv ./tempitsg.csv -Header $Header
-    $itsginfo=$itsgtempinfo | Select-Object Name,Definition, @{Name="itsgcode";Expression={ ($_.Family + $_."Control ID" + $_.Enhancement).replace("`t","") }}
+    $Header = "Family", "Control ID", "Enhancement", "Name", "Class", "Definition", "Supplemental Guidance,References"
+    $itsgtempinfo = Import-Csv ./tempitsg.csv -Header $Header
+    $itsginfo = $itsgtempinfo | Select-Object Name, Definition, @{Name = "itsgcode"; Expression = { ($_.Family + $_."Control ID" + $_.Enhancement).replace("`t", "") } }
     $JSONcontrols = ConvertTo-Json -inputObject $itsginfo
     
     if ($DebugCode) {
@@ -424,15 +423,15 @@ function get-itsgdata {
     }
 
     Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-   -sharedkey $workspaceKey `
-   -body $JSONcontrols `
-   -logType $LogType `
-   -TimeStampField Get-Date
+        -sharedkey $workspaceKey `
+        -body $JSONcontrols `
+        -logType $LogType `
+        -TimeStampField Get-Date
 }
 function New-LogAnalyticsData {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [array] 
         $Data,
         [Parameter()]
@@ -473,20 +472,28 @@ function Invoke-GraphQuery {
     }
     
     @{
-        Content = $response.Content | ConvertFrom-Json
+        Content    = $response.Content | ConvertFrom-Json
         StatusCode = $response.StatusCode
     }
 }
 
-function Get-AutomationVariable {
-    param ([parameter(Mandatory=$true)]$name)
+function Get-GSAAutomationVariable {
+    param ([parameter(Mandatory = $true)]$name)
 
-    If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+    # when running in an Azure Automation Account
+    If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
+        $value = Get-AutomationVariable -Name $name
         return $value
     }
+    # when running outside an automation account
     Else {
-        return $secretValue.trim('"')
-        $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+        If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+            return $value
+        }
+        Else {
+            return $secretValue.trim('"')
+            $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+        }
     }
 }
 # endregion
