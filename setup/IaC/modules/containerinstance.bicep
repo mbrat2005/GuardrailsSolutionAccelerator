@@ -21,7 +21,7 @@ param TenantDomainUPN string
 param updatePSModules bool = false
 param updateCoreResources bool = false
 
-resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-01' = {
+resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-01' = if (newDeployment || updateCoreResources) {
   name: '${automationAccountName}-main'
   location: location
   identity: {
@@ -115,6 +115,10 @@ resource containerinstance 'Microsoft.ContainerInstance/containerGroups@2022-09-
             { 
               name: 'DepartmentName'
               value: DepartmentName
+            }
+            {
+              name: 'CustomModulesBaseURL'
+              value: CustomModulesBaseURL
             }
           ]
         }

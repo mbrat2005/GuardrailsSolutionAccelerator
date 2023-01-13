@@ -58,6 +58,35 @@ If ([string]::IsNullOrEmpty($runbook)) {
 switch ($runbook) {
     'main' {
         Write-Host "Running main runbook..."
+
+        If (![string]::IsNullOrEmpty($env:CustomModulesBaseURL)) {
+            Write-Host "`$env:CustomModulesBaseURL is set to '$env:CustomModulesBaseURL', downloading custom modules..."
+
+            $moduleFileNamePattern = [regex]"(?:uri: '`\$\{CustomModulesBaseURL\}/)(?<moduleFileName>.+?\.zip)'"
+            $moduleFileNames = @()
+            $moduleFIleNamePattern.matches((Get-Content /GuardrailsSolutionAccelerator/setup/IaC/modules/automationaccount.bicep)) | Foreach-Object {
+                $moduleFileNames += $_.Groups["moduleFileName"].Value
+            }
+            
+            New-Item -ItemType Directory -Path /tempModules -Force
+            $webClient = New-Object System.Net.WebClient
+            $moduleFileNames | Foreach-Object {
+                $moduleFileName = $_
+                $moduleFileURL = "$env:CustomModulesBaseURL/$moduleFileName"
+
+                If (Test-Path -Path /tempModules/$moduleFileName) {
+                    Remove-Item -Path /tempModules/$moduleFileName -Force
+                }
+
+                Write-Host "Downloading module '$moduleFileName' from '$moduleFileURL'..."
+                $webClient.DownloadFile($moduleFileURL, "/tempModules/$moduleFileName")
+
+                Write-Host "Extracting module '$moduleFileName'..."
+                $moduleFileBaseName = $moduleFileName.replace('.zip','')
+                Expand-Archive -Path "/tempModules/$moduleFileName" -DestinationPath /root/.local/share/powershell/Modules/$moduleFileBaseName -Force
+            }
+        }
+
         Set-Location /GuardrailsSolutionAccelerator/setup
         .\main.ps1
     }
