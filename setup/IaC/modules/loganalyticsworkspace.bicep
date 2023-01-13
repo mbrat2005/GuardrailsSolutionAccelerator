@@ -11,7 +11,6 @@ param updateWorkbook bool = false
 var wb = loadTextContent('gr.workbook')
 var wbConfig2='"/subscriptions/${subscriptionId}/resourceGroups/${rg}/providers/Microsoft.OperationalInsights/workspaces/${logAnalyticsWorkspaceName}"]}'
 //var wbConfig3='''
-
 //'''
 // var wbConfig='${wbConfig1}${wbConfig2}${wbConfig3}'
 var wbConfig='${wb}${wbConfig2}'

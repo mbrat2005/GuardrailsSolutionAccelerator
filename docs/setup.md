@@ -110,13 +110,13 @@ Import the GuardrailsSolutionAcceleratorSetup module from the downloaded code:
 
 ```powershell
 cd ./GuardrailsSolutionAccelerator # navigate to the solution directory
-Import-Module -Path ./src/GuardrailsSolutionAcceleratorSetup
+Import-Module -Name ./src/GuardrailsSolutionAcceleratorSetup
 
 ```
 
 Start the Guardrails Solution Accelerator deployment with the default configuration (core resources only):
 ```powershell
-Deploy-GuardrailsSolutionAccelerator -configFilePath .\config.json
+Deploy-GuardrailsSolutionAccelerator -configFilePath .\setup\config.json
 ```
 
 Alternatively, these parameters can be used to verify a deployment or to deploy additional components:
