@@ -30,7 +30,7 @@ function Get-CloudConsoleAccess {
     foreach ($location in $locations) {
         #Determine location conditions
         #get all valid locations: needs to have Canada Only
-        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions -eq "CA") {
+        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
             $validLocations += $location
         }
     }
