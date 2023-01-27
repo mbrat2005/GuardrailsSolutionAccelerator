@@ -254,6 +254,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
         # set module install or update source URL
         $params = @{}
         If ($alternatePSModulesURL) {
+            Write-Verbose "-alternatePSModulesURL specified, using alternate URL for Guardrails PowerShell modules: $alternatePSModulesURL"
             $params = @{ moduleBaseURL = $alternatePSModulesURL }
         }
         Else {
@@ -261,6 +262,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
             $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest'
             $moduleBaseURL = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/psmodules" -f $latestRelease.tag_name
 
+            Write-Verbose "Using latest release from GitHub for Guardrails PowerShell modules: $moduleBaseURL"
             $params = @{ moduleBaseURL = $moduleBaseURL }
         }
         $paramObject = New-GSACoreResourceDeploymentParamObject -config $config @params -Verbose:$useVerbose
