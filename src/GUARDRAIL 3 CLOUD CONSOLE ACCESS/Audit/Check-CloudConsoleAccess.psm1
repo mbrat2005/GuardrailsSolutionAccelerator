@@ -26,6 +26,7 @@ function Get-CloudConsoleAccess {
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
     }
     # $locations
+    
     $validLocations = @()
     foreach ($location in $locations) {
         #Determine location conditions
@@ -45,7 +46,7 @@ function Get-CloudConsoleAccess {
             $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
 
             $caps = $response.Content.value
-            $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $cap.state -eq 'enabled' }
+            $validPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
         }
         catch {
             $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_")
