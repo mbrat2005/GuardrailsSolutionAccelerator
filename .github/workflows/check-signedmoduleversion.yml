@@ -4,7 +4,8 @@ on: pull_request
 jobs:
   check-signed-module-versions:
     name: 'Check signed module versions'
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: script/Check-ZippedModuleVersions.ps1
+    - run: '& $env:GITHUB_ACTION_PATH/scripts/Check-ZippedModuleVersions.ps1'
+      shell: powershell
