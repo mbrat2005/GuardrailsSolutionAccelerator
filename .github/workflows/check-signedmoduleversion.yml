@@ -1,0 +1,10 @@
+name: check-signed-module-versions
+on: pull_request
+
+jobs:
+  check-signed-module-versions:
+    name: 'Check signed module versions'
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout
+    - run: script/Check-ZippedModuleVersions.ps1
