@@ -4,7 +4,7 @@ on: pull_request
 jobs:
   zip-pr-modules:
     name: 'Zip modules in PR'
-    run-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@master
@@ -34,10 +34,9 @@ jobs:
 
         # output whether modules were changed
         Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
-      displayName: 'Zip signed modules'
-      enabled: true
 
-    - powershell: |
+    - name: commitSignedZippedModules
+      run: |
           gci env:
           git fetch
           git checkout $($env:GITHUB_HEAD_REF)
@@ -46,5 +45,3 @@ jobs:
           git add -A
           git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
           git push origin HEAD:$($env:GITHUB_HEAD_REF)
-      name: commitSignedZippedModules
-      displayName: 'Commit Signed and Zipped Modules'
