@@ -36,6 +36,7 @@ jobs:
         Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
 
     - name: commitSignedZippedModules
+      shell: pwsh
       run: |
           gci env:
           git fetch
