@@ -11,8 +11,8 @@ jobs:
       shell: pwsh
       run: |
         $moduleVersionRegex = [regex]"(?:ModuleVersion\s?=\s?')([\d\.]*)'" 
-        $zippedModules = Get-ChildItem -path ../psmodules
-        $allManifestFiles = Get-ChildItem -path ../src -Filter *.psd1 -Recurse -File
+        $zippedModules = Get-ChildItem -path ../GuardrailsSolutionAccelerator/psmodules
+        $allManifestFiles = Get-ChildItem -path ../GuardrailsSolutionAccelerator/src -Filter *.psd1 -Recurse -File
 
         ForEach ($zippedModule in $zippedModules) {
             $zipFile = [System.IO.Compression.zipfile]::OpenRead($zippedModule.FullName)
