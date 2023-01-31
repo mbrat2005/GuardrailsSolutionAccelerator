@@ -7,5 +7,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
-    - run: '& $env:GITHUB_ACTION_PATH/scripts/Check-ZippedModuleVersions.ps1'
+    - run: './scripts/Check-ZippedModuleVersions.ps1'
       shell: pwsh
