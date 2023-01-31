@@ -13,7 +13,7 @@ jobs:
       run: |
         Write-Host "Executing powershell script in '$pwd'"
         
-        $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
+        $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1 -Exclude *GuardrailsSolutionAcceleratorSetup*
         Write-Host "'$($moduleManifestFiles.count)' module manifest files "
 
         ForEach ($moduleManifest in $moduleManifestFilesObjs) {
