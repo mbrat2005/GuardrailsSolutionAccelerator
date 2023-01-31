@@ -1,0 +1,50 @@
+name: pr-zip-modules
+on: pull_request
+
+jobs:
+  zip-pr-modules:
+    name: 'Zip modules in PR'
+    run-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@master
+    - name: zip-modules
+      shell: pwsh
+      run: |
+        Write-Host "Executing powershell script in '$pwd'"
+        gci env: | FT -AutoSize
+        
+        $moduleManifestFilesObjs = Get-ChildItem -Path .\src -Recurse -Include *.psm1
+        Write-Host "'$($moduleManifestFiles.count)' module manifest files "
+
+        ForEach ($moduleManifest in $moduleManifestFilesObjs) {
+            $moduleCodeFile = Get-Item -Path $moduleManifest.FullName.replace('psd1','psm1')
+            
+            If ($moduleManifestFilesObjs.FullName -icontains $moduleManifest.FullName -or $moduleManifestFilesObjs.FullName -icontains $moduleCodeFile.FullName) {
+              Write-Host "Module '$($moduleManifest.BaseName)' found, zipping module files..."
+
+              $destPath = "./psmodules/$($moduleManifest.BaseName).zip"
+              Compress-Archive -Path "$($moduleManifest.Directory)/*" -DestinationPath $destPath -Force
+
+            }
+            Else {
+                Write-Host "Neither the manifest '$($moduleManifest.FullName.toLower())' or script file '$($moduleCodeFile.FullName.ToLower())' for module '$($moduleManifest.BaseName)' was changed, skipping zipping..."
+            }
+        }
+
+        # output whether modules were changed
+        Write-Output ("##vso[task.setvariable variable=filesZipped;isOutput=true]$($true)")
+      displayName: 'Zip signed modules'
+      enabled: true
+
+    - powershell: |
+          gci env:
+          git fetch
+          git checkout $($env:GITHUB_HEAD_REF)
+          git config --global user.name 'Matthew Bratschun'
+          git config --global user.email 'mbratschun@microsoft.com'
+          git add -A
+          git commit -am "incremented changed module versions: $(git log -1 --pretty=%B)"
+          git push origin HEAD:$($env:GITHUB_HEAD_REF)
+      name: commitSignedZippedModules
+      displayName: 'Commit Signed and Zipped Modules'
