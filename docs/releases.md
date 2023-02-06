@@ -1,8 +1,10 @@
 # Release Process
 
-## Prerequisites
+[This process is for the Microsoft maintainers of this repo]
 
-#### Create a Azure DevOps Pipeline that runs manually against your fork
+## Prerequisites for creating a release
+
+### Create a Azure DevOps Pipeline that runs manually against your fork
 
 1. Navigate to: https://dev.azure.com/guardrailssolutionaccelerator/GuardrailsSolutionAccelerator
 2. Under Project Settings, create a Service Connection to your GitHub account, selecting the GuardrailsSolutionAccelerator fork
@@ -51,4 +53,25 @@
 1. Merge the PR
 1. In GitHub Azure/GuardrailsSolutionAccelerator, create a new Release. On the tag selection, enter the new tag name that matches the release (ex: v1.0.6). 
 1. Check the box to generate release notes based on the previous release tag (ex: v1.0.5)
+1. Drag and drop all the zipped PowerShell modules from the `/psmodules` directory into the release
 1. Publish the release 
+
+## Process to publish a pre-release
+
+A pre-release release is used to make code updates made between releases available for consumption in new or updated deployments.
+
+Prerequisites: _You must have write permissions to Azure/GuardrailsSolutionAccelerator_
+
+```git
+# (After all PRs to be included are merged)
+git checkout main
+git fetch upstream
+git reset upstream/main --hard
+```
+
+**Update ./setup/tags.json** with the prerelease version number.
+
+```git
+git tag -f prerelease-v1.0.8.8
+git push upstream tag prerelease-v1.0.8.8
+```

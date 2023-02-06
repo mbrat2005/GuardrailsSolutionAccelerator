@@ -1,6 +1,6 @@
 # Guardrails - Update
 
-Updating the components of a previously-deploy Guardrails Solution Accelerator instance is accomplished using the GuardrailsSolutionAcceleratorSetup PowerShell module. It is possible to update individual components of a deployment but recommended to update all components to ensure versions remain synchronized. 
+Updating the components of a previously-deploy Guardrails Solution Accelerator instance is accomplished using the GuardrailsSolutionAcceleratorSetup PowerShell module. It is possible to update individual components of a deployment but recommended to update all components to ensure versions remain synchronized.
 
 The components which can be updated are:
 
@@ -10,6 +10,8 @@ The components which can be updated are:
 | AutomationAccountRunbooks | The Azure Automation Account runbook definitions which execute the guardrail PowerShell modules | Local clone of the GitHub repo |
 | Workbook | The Workbook definition which displays the results guardrail PowerShell module executions, pulling from the Log Analytics workspace | Local clone of the GitHub repo |
 | CoreComponents | This step updates the Azure ARM resource configurations based on the Bicep templates for resources not otherwise updated above (such as Automation Account config and variables) | Local clone of the GitHub repo |
+
+When updating a deployment, the default configuration deploys the PowerShell modules included in the latest full release on GitHub. To deploy a specific release, use the '-releaseVersion' parameter and specify a release name, such as `v1.0.9` or `prelease-v1.0.8.1`. Deploying a pre-release version is not typically recommended outside of testing scenarios, and if used should be updated to the next full release when available. Alternatively to specifying a release version, you can use the `-prelease` parameter to deploy the latest pre-release module versions.
 
 ## Update Process
 
