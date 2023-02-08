@@ -71,7 +71,7 @@ steps:
       $prereleaseTag = $tags.releaseVersion
       git remote get-url origin
       gci env:
-      [System.Environment]::SetEnvironmentVariable('GIT_TERMINAL_PROMPT',1)
+
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
 
@@ -81,8 +81,8 @@ steps:
       echo "git checkout $($env:GITHUB_HEAD_REF)"
       git checkout $($env:GITHUB_HEAD_REF)
 
-      echo "git -c http.extraHeader=`"Authorization: Basic $env:MYPAT`" push origin :$prereleaseTag"
-      git -c http.extraHeader="Authorization: Basic $env:MYPAT" push origin :$prereleaseTag
+      echo "git push $env:PATPLAIN :$prereleaseTag"
+      git push https://$env:PATPLAIN@github.com/Azure/GuardrailsSolutionAccelerator.git :$prereleaseTag
 
       echo "git tag -d $prereleaseTag"
       git tag -d $prereleaseTag
