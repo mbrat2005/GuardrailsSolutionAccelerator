@@ -71,7 +71,7 @@ steps:
       $prereleaseTag = $tags.releaseVersion
 
       gci env:
-
+      [System.Environment]::SetEnvironmentVariable('GIT_TERMINAL_PROMPT',1)
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" fetch
