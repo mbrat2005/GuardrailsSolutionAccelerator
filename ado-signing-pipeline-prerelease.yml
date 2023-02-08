@@ -72,7 +72,7 @@ steps:
 
       gci env:
 
-      New-Alias -Name git -Value "git -c http.extraHeader='Authorization: Basic $env:PAT'"
+      New-Alias -Name git -Value "git -c http.extraHeader='Authorization: Basic $env:PAT_SECRET'"
 
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
@@ -84,6 +84,8 @@ steps:
       git push origin tag $prereleaseVersion
 
       Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseVersion")
+  env:
+    PAT_SECRET: $(PAT)
 
 - task: EsrpCodeSigning@2
   condition: eq(variables.skipSigning, 'false')
