@@ -69,7 +69,7 @@ steps:
       }
 
       $prereleaseTag = $tags.releaseVersion
-
+      git remote get-url origin
       gci env:
       [System.Environment]::SetEnvironmentVariable('GIT_TERMINAL_PROMPT',1)
       git config --global user.name 'Matthew Bratschun'
