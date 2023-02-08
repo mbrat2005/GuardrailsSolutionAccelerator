@@ -81,7 +81,7 @@ steps:
       echo "git checkout $($env:GITHUB_HEAD_REF)"
       git checkout $($env:GITHUB_HEAD_REF)
 
-      echo "git push $env:PATPLAIN :$prereleaseTag"
+      echo "git push https://$env:PATPLAIN@github.com/Azure/GuardrailsSolutionAccelerator.git :$prereleaseTag"
       git push https://$env:PATPLAIN@github.com/Azure/GuardrailsSolutionAccelerator.git :$prereleaseTag
 
 
