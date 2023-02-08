@@ -70,7 +70,9 @@ steps:
 
       $prereleaseTag = $tags.releaseVersion
 
-      New-Alias -Name git -Value "git -c http.extraHeader='Authorization: Basic $(PAT)'"
+      gci env:
+
+      New-Alias -Name git -Value "git -c http.extraHeader='Authorization: Basic $env:PAT'"
 
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
