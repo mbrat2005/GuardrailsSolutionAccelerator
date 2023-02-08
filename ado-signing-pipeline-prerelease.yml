@@ -74,11 +74,13 @@ steps:
       [System.Environment]::SetEnvironmentVariable('GIT_TERMINAL_PROMPT',1)
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
-      git -c http.extraHeader="Authorization: Basic $env:MYPAT" fetch
+
+      echo "git -c http.extraHeader=`"Authorization: Basic $env:MYPAT`" fetch -v"
+      git -c http.extraHeader="Authorization: Basic $env:MYPAT" fetch -v
       git checkout $($env:GITHUB_HEAD_REF)
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" push origin :$prereleaseTag
-      git tag -d $prereleaseVersion
-      git tag $prereleaseVersion
+      git tag -d $prereleaseTag
+      git tag $prereleaseTag
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" push origin tag $prereleaseTag
 
       Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseTag")
