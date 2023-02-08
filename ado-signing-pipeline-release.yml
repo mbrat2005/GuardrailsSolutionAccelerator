@@ -6,7 +6,17 @@
 trigger:
   tags:
     include:
-    - v1* 
+    - v1*
+  paths:
+    include:
+    - setup/tags.json
+    exclude:
+    - docs
+    - psmodules
+    - src
+    - tools
+
+pr: none
 
 pool:
   vmImage: windows-latest
