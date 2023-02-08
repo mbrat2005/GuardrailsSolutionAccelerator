@@ -94,7 +94,7 @@ function Get-HealthMonitoringStatus {
         $MitigationCommands+= "$($msgTable.createHealthLAW) ($HealthLAWName)"
     }
     else {
-        $LinkedServices=get-apiLinkedServicesData -subscriptionId $HSubscription `
+        $LinkedServices=get-apiLinkedServicesData -subscriptionId $Subscription `
         -resourceGroup $LAW.ResourceGroupName `
         -LAWName $LAW.Name
         if (($LinkedServices.value.properties.resourceId | Where-Object {$_ -match "automationAccounts"}).count -lt 1)
