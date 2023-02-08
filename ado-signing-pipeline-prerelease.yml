@@ -84,6 +84,7 @@ steps:
       echo "git push $env:PATPLAIN :$prereleaseTag"
       git push https://$env:PATPLAIN@github.com/Azure/GuardrailsSolutionAccelerator.git :$prereleaseTag
 
+
       echo "git tag -d $prereleaseTag"
       git tag -d $prereleaseTag
 
