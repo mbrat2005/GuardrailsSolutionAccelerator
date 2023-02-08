@@ -59,6 +59,7 @@ steps:
     targetType: inline
     ignoreLASTEXITCODE: true
     script: |
+      gci -recurse -directory -depth 5
       $tags = Get-Content -Path /setup/tags.json | ConvertFrom-Json
 
       If ($tags.releaseVersion -notlike 'prerelease-v*') {
