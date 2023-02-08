@@ -1,19 +1,5 @@
 
 trigger: none
-
-pr: 
-  branches:
-    include:
-    - v1*
-  paths:
-    include:
-    - setup/tags.json
-    exclude:
-    - docs
-    - psmodules
-    - src
-    - tools
-
 pr: none
 
 pool:
