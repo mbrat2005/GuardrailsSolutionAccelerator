@@ -67,16 +67,18 @@ steps:
         exit
       }
 
+      $prereleaseTag = $tags.releaseVersion
+      git remote
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
       git fetch
       git checkout $($env:GITHUB_HEAD_REF)
-      #git push --delete origin $tags.releaseVersion
-      #git tag -d $tags.releaseVersion
-      git tag $tags.releaseVersion
-      git push origin tag $tags.releaseVersion
+      git push origin :$prereleaseVersion
+      git tag -d $prereleaseVersion
+      git tag $prereleaseVersion
+      git push origin tag $prereleaseVersion
 
-      Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseTag")
+      Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseVersion")
 
 - task: EsrpCodeSigning@2
   condition: eq(variables.skipSigning, 'false')
