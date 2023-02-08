@@ -83,8 +83,14 @@ steps:
 
       echo "git -c http.extraHeader=`"Authorization: Basic $env:MYPAT`" push origin :$prereleaseTag"
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" push origin :$prereleaseTag
+
+      echo "git tag -d $prereleaseTag"
       git tag -d $prereleaseTag
+
+      echo "git tag $prereleaseTag"
       git tag $prereleaseTag
+
+      echo "git -c http.extraHeader=`"Authorization: Basic $env:MYPAT`" push origin tag $prereleaseTag"
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" push origin tag $prereleaseTag
 
       Write-Output ("##vso[task.setvariable variable=prereleaseTag;isOutput=true]$prereleaseTag")
