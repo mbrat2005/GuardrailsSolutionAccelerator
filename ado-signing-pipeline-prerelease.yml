@@ -67,10 +67,10 @@ steps:
         exit
       }
 
-      git fetch
-      git checkout $($env:GITHUB_HEAD_REF)
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
+      git fetch
+      git checkout $($env:GITHUB_HEAD_REF)
       git push --delete origin $tags.releaseVersion
       git tag -d $tags.releaseVersion
       git tag $tags.releaseVersion
