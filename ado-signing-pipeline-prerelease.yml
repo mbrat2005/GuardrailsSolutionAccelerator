@@ -60,7 +60,7 @@ steps:
     ignoreLASTEXITCODE: true
     script: |
       Set-Location -Path $env:BUILD_SOURCESDIRECTORY
-      $tags = Get-Content -Path /setup/tags.json | ConvertFrom-Json
+      $tags = Get-Content -Path ./setup/tags.json | ConvertFrom-Json
 
       If ($tags.releaseVersion -notlike 'prerelease-v*') {
         Write-Error "The releaseVersion in tags.json should always start with 'prerelease-v' for a pre-release to be published. Update the tag and try again!" -ErrorAction Stop
