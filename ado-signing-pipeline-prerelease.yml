@@ -68,7 +68,9 @@ steps:
       }
 
       $prereleaseTag = $tags.releaseVersion
-      git remote
+
+      gci env:
+
       git config --global user.name 'Matthew Bratschun'
       git config --global user.email 'mbratschun@microsoft.com'
       git fetch
