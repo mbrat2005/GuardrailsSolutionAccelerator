@@ -77,7 +77,11 @@ steps:
 
       echo "git -c http.extraHeader=`"Authorization: Basic $env:MYPAT`" fetch -v"
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" fetch -v
+
+      echo "git checkout $($env:GITHUB_HEAD_REF)"
       git checkout $($env:GITHUB_HEAD_REF)
+
+      echo "git -c http.extraHeader=`"Authorization: Basic $env:MYPAT`" push origin :$prereleaseTag"
       git -c http.extraHeader="Authorization: Basic $env:MYPAT" push origin :$prereleaseTag
       git tag -d $prereleaseTag
       git tag $prereleaseTag
