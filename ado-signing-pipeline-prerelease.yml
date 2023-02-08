@@ -1,18 +1,6 @@
 
 trigger: none
-
-pr: 
-  branches:
-    include:
-    - prerelease-v1*
-  paths:
-    include:
-    - setup/tags.json
-    exclude:
-    - docs
-    - psmodules
-    - src
-    - tools
+pr: none
 
 pool:
   vmImage: windows-latest
