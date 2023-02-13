@@ -380,8 +380,8 @@ function Check-UpdateAvailable {
     }
     $rg=Get-AzResourceGroup -Name $ResourceGroupName 
 
-    $deployedVersion=$rg.Tags["releaseversion"]
-    $currentVersion = $tags.releaseVersion
+    $deployedVersion=$rg.Tags["ReleaseVersion"]
+    $currentVersion = $tags.ReleaseVersion
 
     if ($debug) { Write-Output "RG Tag: $deployedVersion"}
     if ($debug) { Write-Output "Avail. Release: $currentVersion"}
