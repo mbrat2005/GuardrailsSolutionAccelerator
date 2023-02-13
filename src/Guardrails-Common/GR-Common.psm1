@@ -371,16 +371,22 @@ function Check-UpdateAvailable {
         $ResourceGroupName
     )
     #fetches current public version (from repo...maybe should download the zip...)
-    $ReleaseVersion=((Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Azure/GuardrailsSolutionAccelerator/main/setup/tags.json).content | ConvertFrom-Json).ReleaseVersion
+    $latestRelease = Invoke-RestMethod 'https://api.github.com/repos/Azure/GuardrailsSolutionAccelerator/releases/latest' -Verbose:$false
+    $tagsFileURI = "https://github.com/Azure/GuardrailsSolutionAccelerator/raw/{0}/setup/tags.json" -f $latestRelease.name
+    $tags = Invoke-RestMethod $tagsFileURI -Verbose:$false
+
     if ([string]::IsNullOrEmpty($ResourceGroupName)) {
         $ResourceGroupName=Get-AutomationVariable -Name "ResourceGroupName"
     }
     $rg=Get-AzResourceGroup -Name $ResourceGroupName 
-    $currentVersion=get-rgtagValue -tagkey releaseversion -object $rg
-    if ($debug) { Write-Output "RG Tag: $currentVersion"}
-    if ($debug) { Write-Output "Avail. Release: $ReleaseVersion"}
+
+    $deployedVersion=$rg.Tags["releaseversion"]
+    $currentVersion = $tags.releaseVersion
+
+    if ($debug) { Write-Output "RG Tag: $deployedVersion"}
+    if ($debug) { Write-Output "Avail. Release: $currentVersion"}
     
-    if ($currentVersion -ne $ReleaseVersion)
+    if ($deployedVersion -ne $currentVersion)
     {
         $updateNeeded=$true
     }
@@ -388,8 +394,8 @@ function Check-UpdateAvailable {
         $updateNeeded=$false
     }
     $object = [PSCustomObject]@{ 
-        CurrentVersion = $currentVersion
-        AvailableVersion = $ReleaseVersion
+        CurrentVersion = $deployedVersion
+        AvailableVersion = $currentVersion
         UpdateNeeded= $updateNeeded
         ReportTime = $ReportTime
     }
