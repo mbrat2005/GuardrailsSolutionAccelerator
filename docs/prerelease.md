@@ -27,9 +27,9 @@ The script below creates a Storage Account in the specified Resource Group and A
 
 ```azurepowershell
 # create a storage account and container for staging the zipped modules 
-$resourceGroupName = 'rg-classic' # name of the resource group where the storage account will be created
-$storageAccountName = 'mtbstoregsa06' # globally unique name of the temporary storage account used to stage the zipped modules. must be publicly accessible
-$location = 'canadacentral' # Azure location where the storage account will be created, ex 'centralcanada'
+$resourceGroupName = 'REPLACE' # name of the resource group where the storage account will be created
+$storageAccountName = 'REPLACE' # globally unique name of the temporary storage account used to stage the zipped modules. must be publicly accessible
+$location = 'REPLACE' # Azure location where the storage account will be created, ex 'centralcanada'
 
 If (-NOT(Test-Path -Path ./src -PathType Container) -or -NOT(Test-Path -Path ./psmodules -PathType Container)) {
     Write-Error "Unable to find ./src and/or ./psmodules directories at '$($pwd)'. Please run this script from the root of the repository." -ErrorAction Stop
