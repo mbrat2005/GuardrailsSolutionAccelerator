@@ -83,6 +83,9 @@ allowedLocationPolicy = AllowedLocationPolicy
 dataAtRest = PROTECTION OF DATA-AT-REST
 dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
+# GuardRail #7
+enableTLS12 = TLS 1.2 is enabled whereever possible to secure data in transit
+
 # GuardRail #8
 noNSG=No NSG is present.
 subnetCompliant = Subnet is compliant.

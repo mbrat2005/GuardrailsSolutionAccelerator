@@ -83,6 +83,9 @@ allowLocationPolicy = Politique de localisation autorisée
 dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
+# GuardRail #7
+enableTLS12 = TLS 1.2 is enabled whereever possible to secure data in transit
+
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
 subnetCompliant = Le sous-réseau est conforme.
