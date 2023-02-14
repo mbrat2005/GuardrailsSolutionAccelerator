@@ -383,10 +383,19 @@ function Check-UpdateAvailable {
     $deployedVersion=$rg.Tags["ReleaseVersion"]
     $currentVersion = $tags.ReleaseVersion
 
-    if ($debug) { Write-Output "RG Tag: $deployedVersion"}
-    if ($debug) { Write-Output "Avail. Release: $currentVersion"}
+    try {
+        # script version numbers of surrounding characters and then converted to a version object
+        $deployedVersionVersion = ($deployedVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]+?$','$1') -as [version]
+        $currentVersionVersion = ($currentVersion -replace '[\w-]+?(\d+?\.\d+?\.\d+?(\.\d+?)?)[\w-]+?$','$1') -as [version]
+    }
+    catch {
+        Write-Error "Error: Failed to convert version numbers to version objects. Error: $_"
+    }
+
+    if ($debug) { Write-Output "Resource Group Tag (deployed version): $deployedVersion; $deployedVersionVersion"}
+    if ($debug) { Write-Output "Latest available version from GitHub: $currentVersion; $currentVersionVersion"}
     
-    if ($deployedVersion -ne $currentVersion)
+    if ($deployedVersionVersion -lt $currentVersionVersion)
     {
         $updateNeeded=$true
     }
@@ -394,7 +403,7 @@ function Check-UpdateAvailable {
         $updateNeeded=$false
     }
     $object = [PSCustomObject]@{ 
-        CurrentVersion = $deployedVersion
+        DeployedVersion = $deployedVersion
         AvailableVersion = $currentVersion
         UpdateNeeded= $updateNeeded
         ReportTime = $ReportTime
