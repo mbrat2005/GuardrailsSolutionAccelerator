@@ -17,11 +17,11 @@ CtrName12 = GUARDRAIL 12: CONFIGURATION OF CLOUD MARKETPLACES
 
 # Guardrail 1
 adLicense = AD License Type
-mfaEnforcement = MFA Enforcement
+mfaEnforcement = MFA Enforcement Excl. Break Glass Accounts
 mfaEnabledFor =  MFA Authentication should not be enabled for BreakGlass account: {0} 
 mfaDisabledFor =  MFA Authentication is not enabled for {0} 
 m365Assignment = Microsoft 365 E5 Assignment
-bgProcedure = Break Glass account Procedure
+bgProcedure = Break Glass Account Non-technical
 bgCreation = Break Glass account Creation
 bgAccountResponsibility = Responsibility of break glass accounts must be with someone not-technical, director level or above
 bgAccountOwnerContact = Break Glass Account Owners Contact information
@@ -36,24 +36,25 @@ bgAccountNoManager = BG Account {0} doesn't have a Manager
 bgBothHaveManager = Both BreakGlass accounts have manager
 
 # GuardRail #2
+AADLicenseTypeFound = Found correct license type
+AADLicenseTypeNotFound = Required AAD license type not found
+accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Azure Active Directory
+ADDeletedUser = AD Deleted User
+ADDisabledUsers = AD Disabled Users
+apiError = API Error
+apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
+compliantComment = Didnt find any unsynced deprecated users
+gcPasswordGuidanceDoc = Adherence to GC Password Guidance document attestation exists
+guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
+guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
+mitigationCommands = Verify is the users reported are deprecated.
+noGuestAccounts = There are no GUEST users in your tenant.
+noncompliantComment = Total Number of non-compliant users {0}. 
+noncompliantUsers = The following Users are disabled and not synchronized with AD: - 
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
-accountNotDeleted = This user account has been deleted but has not yet been DELETED PERMANENTLY from Azure Active Directory
-guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
 removeGuestAccountsComment = Remove guest accounts from Azure AD or remove their permissions from the Azure subscriptions.
-noGuestAccounts = There are no GUEST users in your tenant.
-guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
-ADDeletedUser = AD Deleted User
-ADDisabledUsers = AD Disabled Users
-noncompliantUsers = The following Users are disabled and not synchronized with AD: - 
-noncompliantComment = Total Number of non-compliant users {0}. 
-compliantComment = Didnt find any unsynced deprecated users
-mitigationCommands = Verify is the users reported are deprecated.
-apiError = API Error
-apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
-AADLicenseTypeFound = Found correct license type
-AADLicenseTypeNotFound = Required AAD license type not found
 
 # GuardRail #3
 consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Access.

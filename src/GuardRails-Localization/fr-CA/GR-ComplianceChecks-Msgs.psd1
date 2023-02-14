@@ -36,24 +36,25 @@ bgAccountNoManager =  Le compte BG {0} n'a pas de gestionnaire
 bgBothHaveManager =  Les deux comptes brise-glace ont un gestionnaire
 
 # GuardRail #2
+AADLicenseTypeFound = Type de licence AAD trouvé 
+AADLicenseTypeNotFound = Type de licence AAD non trouvé
+accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Active Directory
+ADDeletedUser = Utilisateur AD Supprimé
+ADDisabledUsers = Utilisateur AD désactivé
+apiError = Erreur API
+apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
+compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
+gcPasswordGuidanceDoc = Adherence to GC Password Guidance document attestation exists
+guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
+guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
+mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
+noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
+noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
+noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
-accountNotDeleted = Ce compte d'utilisateur a été supprimé mais n'a pas encore été SUPPRIMÉ DÉFINITIVEMENT d'Azure Active Directory
-guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
 removeGuestAccountsComment = Supprimez les comptes invités d'Azure AD ou supprimez leurs permissions dans les abonnements Azure.
-noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
-guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
-ADDeletedUser = Utilisateur AD Supprimé
-ADDisabledUsers = Utilisateur AD désactivé
-noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
-noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
-compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
-apiError = Erreur API
-apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
-AADLicenseTypeFound = Type de licence AAD trouvé 
-AADLicenseTypeNotFound = Type de licence AAD non trouvé
 
 # GuardRail #3
 noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les politiques doivent avoir un emplacement unique et cet emplacement doit être réservé au Canada.
