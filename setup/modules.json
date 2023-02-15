@@ -412,16 +412,15 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-     "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation -ReservedSubnetList $vars.reservedSubnetList",
-     "variables":
-     [
+    "Script": "Get-SubnetComplianceInformation -ControlName $msgTable.CtrName8 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcodesegmentation $vars.itsgcodesegmentation -itsgcodeseparation $vars.itsgcodeseparation -ReservedSubnetList $vars.reservedSubnetList",
+    "variables": [
       {
-        "Name":"cbssubscriptionName",
-        "Value":"CBSSubscriptionName"
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
       },
       {
-        "Name":"reservedSubnetList",
-        "Value":"reservedSubnetList"
+        "Name": "reservedSubnetList",
+        "Value": "reservedSubnetList"
       }
     ],
     "localVariables": [
@@ -504,6 +503,90 @@
     ]
   },
   {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.NetworkBoundaryProtectionPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "NetworkBoundaryProtectionPolicy.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.LimitPublicIPsPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "LimitPublicIPsPolicy.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
+    "ModuleName": "Check-DocumentExistsInStorage",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "True",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.AuthSourceIPPolicyConfirm -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "storageAccountName",
+        "Value": "StorageAccountName"
+      },
+      {
+        "Name": "containerName",
+        "Value": "ContainerName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "DocumentName",
+        "Value": "AuthSourceIPPolicyConfirm.txt"
+      },
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-CBSSensors",
     "Control": "Guardrails10",
     "ModuleType": "Builtin",
@@ -542,7 +625,7 @@
         "Value": "AU2"
       }
     ]
-  },  
+  },
   {
     "ModuleName": "Check-HealthMonitoring",
     "Control": "Guardrails11",
@@ -566,7 +649,8 @@
         "Value": "AU2"
       }
     ]
-  },  {
+  },
+  {
     "ModuleName": "Check-SecurityMonitoring",
     "Control": "Guardrails11",
     "ModuleType": "Builtin",

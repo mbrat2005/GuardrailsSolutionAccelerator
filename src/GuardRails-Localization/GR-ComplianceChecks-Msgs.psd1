@@ -102,13 +102,16 @@ networkDiagram = Network architecture diagram
 noSubnets = No subnets found in the subscription.
 
 # GuardRail # 9
-vnetDDosConfig = VNet DDos configuration
+authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
-noVNets = No VNet found in the subscription.
-vnetNetworkWatcherConfig = VNet Network Watcher configuration
+limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
+networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
 networkWatcherEnabled=Network Watcher for region {1}
 networkWatcherNotEnabled=Network Watcher not enabled for region {1}
+noVNets = No VNet found in the subscription.
+vnetDDosConfig = VNet DDos configuration
+vnetNetworkWatcherConfig = VNet Network Watcher configuration
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
