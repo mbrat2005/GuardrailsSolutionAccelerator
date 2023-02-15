@@ -148,6 +148,7 @@ noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
+passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

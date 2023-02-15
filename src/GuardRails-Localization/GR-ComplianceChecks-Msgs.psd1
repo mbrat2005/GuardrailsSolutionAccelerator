@@ -148,6 +148,7 @@ noSecurityContactInfo = Subscription {0} is missing Contact Information.
 setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
 notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
+passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
