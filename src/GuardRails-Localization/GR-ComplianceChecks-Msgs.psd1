@@ -111,7 +111,7 @@ networkWatcherEnabled=Network Watcher for region {1}
 networkWatcherNotEnabled=Network Watcher not enabled for region {1}
 noVNets = No VNet found in the subscription.
 vnetDDosConfig = VNet DDos configuration
-vnetNetworkWatcherConfig = VNet Network Watcher configuration
+networkWatcherConfig = VNet Network Watcher configuration
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
@@ -161,7 +161,7 @@ enableMktPlace = Enable Azure Private MarketPlace as per: https://docs.microsoft
 
 # GR-Common
 procedureFileFound = File {0} found in Container.
-procedureFileNotFound = Coudnt find document for {0}, please create and upload a file with the name {1} in Container {2} on {3} Storage account to confirm you have completed the Item in the control.
+procedureFileNotFound = Could not find document for {0}, please create and upload a file with the name '{1}' in Container '{2}' on Storage Account '{3}' to confirm you have completed the Item in the control.
 
 '@
 # SIG # Begin signature block
