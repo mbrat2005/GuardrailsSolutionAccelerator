@@ -106,6 +106,9 @@ vnetDDosConfig = VNet DDos configuration
 ddosEnabled=DDos Protection Enabled. 
 ddosNotEnabled=DDos Protection not enabled.
 noVNets = No VNet found in the subscription.
+vnetNetworkWatcherConfig = VNet Network Watcher configuration
+networkWatcherEnabled=Network Watcher for region {1}
+networkWatcherNotEnabled=Network Watcher not enabled for region {1}
 
 # GuardRail #10
 cbsSubDoesntExist = CBS Subscription doesnt exist
