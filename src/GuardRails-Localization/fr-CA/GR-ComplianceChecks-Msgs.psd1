@@ -107,11 +107,11 @@ ddosEnabled = Protection DDos activée.
 ddosNotEnabled = Protection DDos non activée.
 limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
 networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
-networkWatcherEnabled=Network Watcher for region {0}
-networkWatcherNotEnabled=Network Watcher not enabled for region {0}
+networkWatcherEnabled=Network Watcher for region '{0}'
+networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
 noVNets = Aucun VNet n'est présent.
 vnetDDosConfig = Configuration DDos VNet
-vnetNetworkWatcherConfig = VNet Network Watcher configuration
+networkWatcherConfig = VNet Network Watcher configuration
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
