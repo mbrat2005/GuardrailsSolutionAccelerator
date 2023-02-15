@@ -484,6 +484,26 @@
     ]
   },
   {
+    "ModuleName": "Check-NetworkWatcherEnabled",
+    "Control": "Guardrails9",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Get-NetworkWatcherStatus -ControlName $msgTable.CtrName9 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsgcode $vars.itsgcode",
+    "variables": [
+      {
+        "Name": "cbssubscriptionName",
+        "Value": "CBSSubscriptionName"
+      }
+    ],
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "SC5"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-CBSSensors",
     "Control": "Guardrails10",
     "ModuleType": "Builtin",

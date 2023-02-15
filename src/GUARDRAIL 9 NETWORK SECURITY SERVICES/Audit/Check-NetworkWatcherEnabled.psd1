@@ -9,16 +9,16 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = '.\Check-VNetComplianceStatus.psm1'
+RootModule = '.\Check-NetworkWatcher.psd1'
 
 # Version number of this module.
-ModuleVersion = '1.1.3'
+ModuleVersion = '1.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '8212963c-ba49-4026-a4c8-a1247359ff01'
+GUID = '57bfba17-513d-4e24-949c-3b6c225f08f4'
 
 # Author of this module
 Author = 'FastTrack for Azure Team'

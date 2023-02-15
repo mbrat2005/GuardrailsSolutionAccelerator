@@ -42,8 +42,6 @@ function Get-VNetComplianceInformation {
         
         $VNets=Get-AzVirtualNetwork
         Write-Debug "Found $($VNets.count) VNets."
-
-        $nonExcludedVnetRegions = @()
         if ($VNets)
         {
             foreach ($VNet in $VNets)
@@ -52,11 +50,6 @@ function Get-VNetComplianceInformation {
                 $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet
                 if ($ev -ne "true" -and $vnet.Name -notin $ExcludedVNetsList)
                 {
-
-                    # add vnet region to regions list - used in checking for network watcher in that region
-                    $nonExcludedVnetRegions += $VNet.Location
-
-                    # check if ddos protection is enabled at the vnet level
                     if ($Vnet.EnableDdosProtection) 
                     {
                         $ComplianceStatus = $true 
@@ -82,32 +75,6 @@ function Get-VNetComplianceInformation {
                 else {
                     Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
                 }    
-            }
-
-            # check if network watcher is enabled in the region
-            $comments = $null
-            $ComplianceStatus = $false
-            ForEach ($region in ($nonExcludedVnetRegions | Get-Unique)) {
-                $nw = Get-AzNetworkWatcher -Location $region -ErrorAction SilentlyContinue
-                if ($nw) {
-                    $ComplianceStatus = $true 
-                    $Comments= $msgTable.networkWatcherEnabled -f $region
-                }
-                else {
-                    $ComplianceStatus = $false
-                    $Comments = $msgTable.networkWatcherNotEnabled -f $region
-                }
-                # Create PSOBject with Information.
-                $VNetObject = [PSCustomObject]@{ 
-                    VNETName = $region
-                    SubscriptionName  = $sub.Name 
-                    ComplianceStatus = $ComplianceStatus
-                    Comments = $Comments
-                    ItemName = $msgTable.networkWatcherConfig
-                    itsgcode = $itsgcode
-                    ControlName = $ControlName
-                    ReportTime = $ReportTime
-                }               
             }
         }
     }
