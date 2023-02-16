@@ -21,7 +21,7 @@ function Get-NetworkWatcherStatus {
         [switch]
         $debuginfo
     )
-    [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $RegionList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
@@ -31,7 +31,7 @@ function Get-NetworkWatcherStatus {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
-    if ($ExcludedVNets -ne $null)
+    if ($null -ne $ExcludedVNets)
     {
         $ExcludedVNetsList=$ExcludedVNets.Split(",")
     }
@@ -75,8 +75,7 @@ function Get-NetworkWatcherStatus {
                     $Comments = $msgTable.networkWatcherNotEnabled -f $region
                 }
                 # Create PSOBject with Information.
-                $VNetObject = [PSCustomObject]@{ 
-                    VNETName = $region
+                $RegionObject = [PSCustomObject]@{ 
                     SubscriptionName  = $sub.Name 
                     ComplianceStatus = $ComplianceStatus
                     Comments = $Comments
@@ -85,17 +84,16 @@ function Get-NetworkWatcherStatus {
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
-                $VNetList.add($VNetObject) | Out-Null                               
+                $RegionList.add($RegionObject) | Out-Null                               
             }
         }
     }
     if ($debuginfo){ 
-        Write-Output "Listing $($VNetList.Count) List members."
-        $VNetList | Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" 
+        Write-Output "Listing $($RegionList.Count) List members."
     }
     #Creates Results object:
     $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $VNetList 
+        ComplianceResults = $RegionList 
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }

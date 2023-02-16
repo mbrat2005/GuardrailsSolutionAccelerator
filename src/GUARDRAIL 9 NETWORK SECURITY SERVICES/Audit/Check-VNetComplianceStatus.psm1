@@ -31,7 +31,7 @@ function Get-VNetComplianceInformation {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
-    if ($ExcludedVNets -ne $null)
+    if ($null -ne $ExcludedVNets)
     {
         $ExcludedVNetsList=$ExcludedVNets.Split(",")
     }
