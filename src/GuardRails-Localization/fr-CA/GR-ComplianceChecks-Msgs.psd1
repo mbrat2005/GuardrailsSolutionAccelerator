@@ -51,6 +51,7 @@ mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes.
 noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
+privilegedAccountManagementPlan = Attestation that the privileged account management plane is adhered to. 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
@@ -61,6 +62,7 @@ noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les poli
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
+authorizedProcessedByCSO = TBS's key consideration of having an authorized user process approved by CSO or designated official for cyber security. Includes a risk-based conditional access control policy with appropriate logging and monitoring enabled
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -153,6 +155,7 @@ setSecurityContact = Veuillez définir un contact de sécurité pour Defender fo
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
 passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
+severityNotificationToEmailConfigured = Attestation that severity notifications are configured to be sent to an email address.
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché

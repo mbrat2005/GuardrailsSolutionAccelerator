@@ -50,7 +50,8 @@ guestMustbeRemoved = This GUEST account should not have any role assignment in t
 mitigationCommands = Verify is the users reported are deprecated.
 noGuestAccounts = There are no GUEST users in your tenant.
 noncompliantComment = Total Number of non-compliant users {0}. 
-noncompliantUsers = The following Users are disabled and not synchronized with AD: - 
+noncompliantUsers = The following Users are disabled and not synchronized with AD: -
+privilegedAccountManagementPlan = Attestation that the privileged account management plane is adhered to. 
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
@@ -61,6 +62,7 @@ consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Acc
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
+authorizedProcessedByCSO = TBS's key consideration of having an authorized user process approved by CSO or designated official for cyber security. Includes a risk-based conditional access control policy with appropriate logging and monitoring enabled
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
@@ -153,6 +155,7 @@ setSecurityContact = Please set a security contact for Defender for Cloud in the
 notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
 passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
+severityNotificationToEmailConfigured = Attestation that severity notifications are configured to be sent to an email address.
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
