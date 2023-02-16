@@ -283,6 +283,7 @@ function Add-LogAnalyticsResults {
         -TimeStampField Get-Date 
 }
 function Check-DocumentExistsInStorage {
+    [Alias('Check-DocumentsExistInStorage')]
     param (
         [string] $StorageAccountName,
         [string] $ContainerName, 
