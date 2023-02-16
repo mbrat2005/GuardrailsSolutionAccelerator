@@ -439,7 +439,7 @@
     "Control": "Guardrails8",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "False",
+    "Required": "True",
     "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
