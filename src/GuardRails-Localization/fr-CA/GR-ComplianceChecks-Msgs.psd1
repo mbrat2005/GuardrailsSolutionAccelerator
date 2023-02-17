@@ -86,7 +86,7 @@ dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 # GuardRail #7
-enableTLS12 = TLS 1.2 est activé dans la mesure du possible pour sécuriser les données en transit
+enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.

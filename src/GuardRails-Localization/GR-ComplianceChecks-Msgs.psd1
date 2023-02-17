@@ -44,14 +44,14 @@ ADDisabledUsers = AD Disabled Users
 apiError = API Error
 apiErrorMitigation = Please verify existance of the user (more likely) or application permissions.
 compliantComment = Didnt find any unsynced deprecated users
-gcPasswordGuidanceDoc = Adherence to GC Password Guidance document attestation exists
+gcPasswordGuidanceDoc = GC Password Guidance Doc
 guestAccountsNoPermission = There are Guest accounts in the tenant but they don't have any permission in the subscriptions.
 guestMustbeRemoved = This GUEST account should not have any role assignment in the Azure subscriptions
 mitigationCommands = Verify is the users reported are deprecated.
 noGuestAccounts = There are no GUEST users in your tenant.
 noncompliantComment = Total Number of non-compliant users {0}. 
 noncompliantUsers = The following Users are disabled and not synchronized with AD: -
-privilegedAccountManagementPlan = Attestation that the privileged account management plan is adhered to. 
+privilegedAccountManagementPlan = Privileged Account Management plan
 removeDeletedAccount = Permanently remove deleted accounts
 removeDeprecatedAccount = Remove deprecated accounts
 removeGuestAccounts = Remove guest accounts.
@@ -86,7 +86,7 @@ dataAtRest = PROTECTION OF DATA-AT-REST
 dataInTransit = PROTECTION OF DATA-IN-TRANSIT
 
 # GuardRail #7
-enableTLS12 = TLS 1.2 is enabled whereever possible to secure data in transit
+enableTLS12 = TLS 1.2+ is enabled whereever possible to secure data in transit
 
 # GuardRail #8
 noNSG=No NSG is present.
@@ -154,8 +154,8 @@ noSecurityContactInfo = Subscription {0} is missing Contact Information.
 setSecurityContact = Please set a security contact for Defender for Cloud in the subscription. {0}
 notAllDfCStandard = Not all pricing plan options are set to Standard for subscription {0}
 setDfCToStandard = Please set Defender for Cloud plans to Standard. ({0})
-passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
-severityNotificationToEmailConfigured = Attestation that severity notifications are configured to be sent to an email address.
+passwordNotificationsConfigured = Notifications Enabled
+severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
 # GuardRail #12
 mktPlaceCreation = MarketPlaceCreation
