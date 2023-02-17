@@ -44,14 +44,14 @@ ADDisabledUsers = Utilisateur AD désactivé
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-gcPasswordGuidanceDoc = Adherence to GC Password Guidance document attestation exists
+gcPasswordGuidanceDoc = GC Password Guidance Doc
 guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
 guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
-privilegedAccountManagementPlan = Attestation that the privileged account management plan is adhered to. 
+privilegedAccountManagementPlan = Privileged Account Management plan 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
@@ -154,8 +154,8 @@ noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
-passwordNotificationsConfigured = Attestation que les notifications lorsque les utilisateurs réinitialisent les mots de passe et toute modification du mot de passe administrateur est configurée
-severityNotificationToEmailConfigured = Attestation que les notifications de sévérité sont configurées pour être envoyées à une adresse courriel
+passwordNotificationsConfigured = Notifications Enabled
+severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
