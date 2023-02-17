@@ -1,16 +1,81 @@
-function Test-AllowedLocation {
+
+
+function Check-PolicyStatus {
     param (
-        [array] $AssignedLocations,
+        [System.Object] $objList,
+        [Parameter(Mandatory=$true)]
+        [string] $objType, #subscription or management Group
+        [string] $PolicyID, # full policy id, not just the GUID
+        [string] $ControlName,
+        [string] $ItemName,
+        [string] $itsgcode,
+        [hashtable] $msgTable,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $ReportTime,
         [array] $AllowedLocations
-    )
-    $IsCompliant = $true
-    foreach ($AssignedLocation in $AssignedLocations) {
-        if ( $AssignedLocation -notin $AllowedLocations) {
-            $IsCompliant = $false
+    )   
+    [PSCustomObject] $tempObjectList = New-Object System.Collections.ArrayList
+    foreach ($obj in $objList)
+    {
+        Write-Verbose "Checking $objType : $($obj.Name)"
+        if ($objType -eq "subscription") {
+            $tempId="/subscriptions/$($obj.Id)"
         }
+        else {
+            $tempId=$obj.Id
+        }
+        try {
+            $AssignedPolicyList = Get-AzPolicyAssignment -scope $tempId -PolicyDefinitionId $PolicyID
+        }
+        catch {
+            $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+            Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($tempId)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
+        }
+        If ($null -eq $AssignedPolicyList -or (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))))
+        {
+            $Comment=$($msgTable.policyNotAssigned -f $objType)
+            $ComplianceStatus=$false
+        }
+        else {
+            # Test for allowed locations if not null
+            $ComplianceStatus=$true # should be true unless we find a non-compliant location
+            $Comment=$msgTable.isCompliant 
+            if (!([string]::IsNullOrEmpty($AllowedLocations)))
+            {
+                $AssignedLocations = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value # gets currently assigned locations
+                foreach ($AssignedLocation in $AssignedLocations) {
+                    if ( $AssignedLocation -notin $AllowedLocations) {
+                        $ComplianceStatus=$false
+                        $Comment=$msgTable.notAllowedLocation
+                    }
+                }
+            }
+        }
+        if ($null -eq $obj.DisplayName)
+        {
+            $DisplayName=$obj.Name
+        }
+        else {
+            $DisplayName=$obj.DisplayName
+        }
+
+        $c = New-Object -TypeName PSCustomObject -Property @{ 
+            Type = [string]$objType
+            Id = [string]$obj.Id
+            Name = [string]$obj.Name
+            DisplayName = [string]$DisplayName
+            ComplianceStatus = [boolean]$ComplianceStatus
+            Comments = [string]$Comment
+            ItemName = [string]$ItemName
+            itsgcode = [string]$itsgcode
+            ControlName = [string]$ControlName
+            ReportTime = [string]$ReportTime
+        }
+        
+        $tempObjectList.add($c)| Out-Null
     }
-    
-    return $IsCompliant 
+    return $tempObjectList
 }
 
 function Verify-AllowedLocationPolicy {
@@ -19,8 +84,6 @@ function Verify-AllowedLocationPolicy {
         [string] $ControlName,
         [string] $ItemName,
         [string] $PolicyID, 
-        [string] $WorkSpaceID,
-        [string] $workspaceKey,
         [string] $LogType,
         [string] $itsgcode,
         [hashtable] $msgTable,
@@ -32,215 +95,61 @@ function Verify-AllowedLocationPolicy {
         $CBSSubscriptionName
     )
 
-    #$PolicyID = "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c"
-
-    [System.Object] $RootMG = $null
-    [string] $PolicyID = $policyID
-    [PSCustomObject] $MGList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $MGItems = New-Object System.Collections.ArrayList
-    [PSCustomObject] $SubscriptionList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $CompliantList = New-Object System.Collections.ArrayList
-    [PSCustomObject] $NonCompliantList = New-Object System.Collections.ArrayList
+    [PSCustomObject] $FinalObjectList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $AllowedLocations = @("canada" , "canadaeast" , "canadacentral")
-
+    #Check management groups   
     try {
-        $managementGroups = Get-AzManagementGroup -ErrorAction Stop
+        $objs = Get-AzManagementGroup -ErrorAction Stop
     }
     catch {
         $Errorlist.Add("Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
         throw "Error: Failed to execute the 'Get-AzManagementGroup' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
-    
-    foreach ($mg in $managementGroups) {
-        $MG = Get-AzManagementGroup -GroupName $mg.Name -Expand -Recurse
-        $MGItems.Add($MG)
-        if ($null -eq $MG.ParentId) {
-            $RootMG = $MG
-        }
-    }
-    foreach ($items in $MGItems) {
-        foreach ($Children in $items.Children ) {
-            foreach ($c in $Children) {
-                if ($c.Type -eq "/subscriptions" -and (-not $SubscriptionList.Contains($c) -and $c.DisplayName -ne $CBSSubscriptionName)) {
-                    [string]$type = "subscription"
-                    $SubscriptionList.Add($c)
-
-                    try {
-                        $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID -ErrorAction Stop
-                    }
-                    catch {
-                        $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
-                        Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
-                    }
-                    $AssignedPolicyLocation = $AssignedPolicyList.Properties.Parameters.listOfAllowedLocations.value
-
-                    If ($null -eq $AssignedPolicyList) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.policyNotAssigned -f $type) | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ComplianceStatus -Value $false | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-                        $NonCompliantList.add($c)
-                    }
-                    elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))   ) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-                        if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation) | out-null
-                        }
-                        else {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type) | out-null
-                        }
-                        $NonCompliantList.add($c)  
-                    }
-                    else {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-                        $CompliantList.add($c) 
-                    }
-                }
-                elseif ($c.Type -like "*managementGroups*" -and (-not $MGList.Contains($c)) ) {
-                    [string]$type = "Management Groups"
-                    $MGList.Add($c)
-
-                    try {
-                        $AssignedPolicyList = Get-AzPolicyAssignment -scope $c.Id -PolicyDefinitionId $PolicyID -ErrorAction Stop
-                    }
-                    catch {
-                        $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
-                        Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($c.id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
-                    }
-
-                    If ($null -eq $AssignedPolicyList) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.policyNotAssigned -f $type) | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-                        $NonCompliantList.add($c)
-                    }
-                    elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
-                        if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type + $msgTable.notAllowedLocation) | out-null
-                        }
-                        else {
-                            $c | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.excludedFromScope -f $type) | out-null
-                        }
-                        $NonCompliantList.add($c)  
-                    }
-                    else {       
-                        $c | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-                        $c | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-                        $CompliantList.add($c) 
-                    }
-                }
-            }                
-        }
-    }
-
 
     try {
-        $AssignedPolicyList = Get-AzPolicyAssignment -scope $RootMG.Id -PolicyDefinitionId $PolicyID -ErrorAction Stop
+        $ErrorActionPreference = 'Stop'
+        $type = "Management Group"
+        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
     catch {
-        $Errorlist.Add("Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($RootMG.Id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_")
-        Write-Error "Error: Failed to execute the 'Get-AzPolicyAssignment' command for scope '$($RootMG.Id)'--verify your permissions and the installion of the Az.Resources module; returned error message: $_"                
+        $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_")
+        throw "Failed to execute the 'Check-PolicyStatus' function. Error message: $_"
     }
-    If ($null -eq $AssignedPolicyList) {
-        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.policyNotAssignedRootMG | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-        $NonCompliantList.add($RootMG)
+    finally {
+        $ErrorActionPreference = 'Continue'
     }
-    elseif (-not ([string]::IsNullOrEmpty(($AssignedPolicyList.Properties.NotScopesScope)))) {
-        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $false | out-null
-        if (-not (Test-AllowedLocation -AssignedLocations $AssignedPolicyLocation -AllowedLocations $AllowedLocations)  ) {
-            $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $($msgTable.rootMGExcluded + $msgTable.notAllowedLocation) | out-null
-        }
-        else {
-            $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.rootMGExcluded | out-null
-        }
-        $NonCompliantList.add($RootMG)  
+    #Check Subscriptions
+    try {
+        $objs = Get-AzSubscription -ErrorAction Stop
     }
-    else {       
-        $RootMG | Add-Member -MemberType NoteProperty -Name Comments -Value $msgTable.isCompliant | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name "ComplianceStatus" -Value $true | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ControlName -Value $ControlName -Force | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ItemName -Value $ItemName -Force | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name itsgcode -Value $itsgcode | out-null
-        $RootMG | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | out-null
-        $CompliantList.add($RootMG) 
+    catch {
+        $Errorlist.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_" )
+        throw "Error: Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Resources module; returned error message: $_"
     }
-    $finalList = $CompliantList + $NonCompliantList
-    <#
-    if ($CompliantList.Count -gt 0) {
-        $JsonObject = $CompliantList | convertTo-Json
-        if ($DebugData) {
-            "Sending Compliant data."
-            "Id: $WorkSpaceID"
-            "Key: $workspaceKey"
-            "Body: $JsonObject"
-        }
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-            -sharedkey $workspaceKey `
-            -body $JsonObject `
-            -logType $LogType `
-            -TimeStampField Get-Date
+
+    try {
+        $ErrorActionPreference = 'Stop'
+        $type = "subscription"
+        $FinalObjectList+=Check-PolicyStatus -AllowedLocations $AllowedLocations -objList $objs -objType $type -PolicyID $PolicyID -itsgcode $itsgcode -ReportTime $ReportTime -ItemName $ItemName -msgTable $msgTable -ControlName $ControlName
     }
-    if ($NonCompliantList.Count -gt 0) {
-        $JsonObject = $NonCompliantList | convertTo-Json  
-        if ($DebugData) {
-            "Sending Non-Compliant data."
-            "Id: $WorkSpaceID"
-            "Key: $workspaceKey"
-            "Body: $JsonObject"
-        }
-        Send-OMSAPIIngestionFile  -customerId $WorkSpaceID `
-            -sharedkey $workspaceKey `
-            -body $JsonObject `
-            -logType $LogType `
-            -TimeStampField Get-Date
+    catch {
+        $Errorlist.Add("Failed to execute the 'Check-PolicyStatus' function. ReportTime: '$ReportTime' Error message: $_" )
+        throw "Failed to execute the 'Check-PolicyStatus' function. Error message: $_"
     }
-    #>
     $moduleOutput= [PSCustomObject]@{ 
-        ComplianceResults = $finalList 
+        ComplianceResults = $FinalObjectList 
         Errors=$ErrorList
         AdditionalResults = $AdditionalResults
     }
-    return $moduleOutput  
+    return $moduleOutput
 }
 
 # SIG # Begin signature block
-# MIInngYJKoZIhvcNAQcCoIInjzCCJ4sCAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIInqgYJKoZIhvcNAQcCoIInmzCCJ5cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBY+3qUuaDIY0QV
-# 1nRHsYiN5Obp2qsByfsZqdOW6rbO2KCCDYEwggX/MIID56ADAgECAhMzAAACzI61
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCcR8591OJXtHAy
+# 1lg7tJf6b1pXfWQcoxkYUe/KmqrblqCCDYEwggX/MIID56ADAgECAhMzAAACzI61
 # lqa90clOAAAAAALMMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -312,141 +221,141 @@ function Verify-AllowedLocationPolicy {
 # xw4o7t5lL+yX9qFcltgA1qFGvVnzl6UJS0gQmYAf0AApxbGbpT9Fdx41xtKiop96
 # eiL6SJUfq/tHI4D1nvi/a7dLl+LrdXga7Oo3mXkYS//WsyNodeav+vyL6wuA6mk7
 # r/ww7QRMjt/fdW1jkT3RnVZOT7+AVyKheBEyIXrvQQqxP/uozKRdwaGIm1dxVk5I
-# RcBCyZt2WwqASGv9eZ/BvW1taslScxMNelDNMYIZczCCGW8CAQEwgZUwfjELMAkG
+# RcBCyZt2WwqASGv9eZ/BvW1taslScxMNelDNMYIZfzCCGXsCAQEwgZUwfjELMAkG
 # A1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQx
 # HjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEoMCYGA1UEAxMfTWljcm9z
 # b2Z0IENvZGUgU2lnbmluZyBQQ0EgMjAxMQITMwAAAsyOtZamvdHJTgAAAAACzDAN
 # BglghkgBZQMEAgEFAKCBrjAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgor
-# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgrrRKQYUP
-# KLi8lNX+3wVPGI2KKgaabiFwMdgbNYXW3PswQgYKKwYBBAGCNwIBDDE0MDKgFIAS
+# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgsiHGnFdP
+# i+age/ODo1M5GMVLl1rMzvclSUbF+XXKFPQwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
 # AE0AaQBjAHIAbwBzAG8AZgB0oRqAGGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbTAN
-# BgkqhkiG9w0BAQEFAASCAQAiAFXQm7mlUvCNM9p0E/3SDZ006KKxUDO0NWZwLG+N
-# cS9yNoPWJ5J1DoA/8/Aee8WnV+93fzWaZKhNQ6vFXt6wKu9o4XikRROU/F+J+EQY
-# agYfa6EvsIleHjGsmPquVR4gBfa8s459HlXrYXenNfy83VmfSHDSdQGqNlBvsCH8
-# GnsV/mGMspuk1doliLGYu1t5WqbxldWp44ORNoOACPchktQbU8mIw9Wnyy40VzC6
-# OC7NNSgYtpXsF6OgeSAjJ264VecUMCufLBpEAEfiNd8P3EHLqOOYnQgnLGIQBb98
-# mQVfmz1XZkhZqZ6QovTFGDLio03cZcPj1qNoveGSn1TvoYIW/TCCFvkGCisGAQQB
-# gjcDAwExghbpMIIW5QYJKoZIhvcNAQcCoIIW1jCCFtICAQMxDzANBglghkgBZQME
-# AgEFADCCAVEGCyqGSIb3DQEJEAEEoIIBQASCATwwggE4AgEBBgorBgEEAYRZCgMB
-# MDEwDQYJYIZIAWUDBAIBBQAEIIpKIhKn0DLHkv0JJmok4HEGkvEVll2RnNYems3S
-# vwSbAgZjbTknT7IYEzIwMjIxMTMwMTgxMTM4LjAwNFowBIACAfSggdCkgc0wgcox
+# BgkqhkiG9w0BAQEFAASCAQCQRXFXvnzTFiCMJzdWBK1HsI8jN7bNJ49KLU4CqhzI
+# Jn9w3PQfI31CjvBGtXTJ5R7q34Vtn6N1+4rasQN55Lh4VDBZBFyzy2IjxoB70ys4
+# FxjQHLfRbZK34x2FC9xHLpvo2vc1VJlq9oOoHZZEufIgInizASEy/HDXrmkeXd9i
+# 6ODc07mRXlgt89NJQIxX93i305rOLLuLtZOmdmGC9hoBdSbCqzEUNGzGyf2ZPef2
+# wdO/LkgyLtpYYYNLep6pE/sKYOGwOv6EnLt1hXon39+tE4tjRsJM8QqxF2rFgoc/
+# ixDKtNxiWyCoo9Y6KV7eFjNduPKf1lKjjL+Sx/jVCYtjoYIXCTCCFwUGCisGAQQB
+# gjcDAwExghb1MIIW8QYJKoZIhvcNAQcCoIIW4jCCFt4CAQMxDzANBglghkgBZQME
+# AgEFADCCAVUGCyqGSIb3DQEJEAEEoIIBRASCAUAwggE8AgEBBgorBgEEAYRZCgMB
+# MDEwDQYJYIZIAWUDBAIBBQAEINfiaWrXrX0g9OpCHPOstHLejpB3V+Se7yN1FHBh
+# lxQ5AgZjwR+pvPkYEzIwMjMwMjA2MTUwOTIyLjE0OVowBIACAfSggdSkgdEwgc4x
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
-# b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJTAjBgNVBAsTHE1p
-# Y3Jvc29mdCBBbWVyaWNhIE9wZXJhdGlvbnMxJjAkBgNVBAsTHVRoYWxlcyBUU1Mg
-# RVNOOjQ5QkMtRTM3QS0yMzNDMSUwIwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFt
-# cCBTZXJ2aWNloIIRVDCCBwwwggT0oAMCAQICEzMAAAHAVaSNw2QVxUsAAQAAAcAw
-# DQYJKoZIhvcNAQELBQAwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0
-# b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3Jh
-# dGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTAwHhcN
-# MjIxMTA0MTkwMTI1WhcNMjQwMjAyMTkwMTI1WjCByjELMAkGA1UEBhMCVVMxEzAR
-# BgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1p
-# Y3Jvc29mdCBDb3Jwb3JhdGlvbjElMCMGA1UECxMcTWljcm9zb2Z0IEFtZXJpY2Eg
-# T3BlcmF0aW9uczEmMCQGA1UECxMdVGhhbGVzIFRTUyBFU046NDlCQy1FMzdBLTIz
-# M0MxJTAjBgNVBAMTHE1pY3Jvc29mdCBUaW1lLVN0YW1wIFNlcnZpY2UwggIiMA0G
-# CSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC87WD7Y2GGYFC+UaUJM4xoXDeNsiFR
-# 0NOqRpCFGl0dVv6G5T/Qc2EuahFi+unvPm8igvUw8CRUEVYkiStwbuxKt52fJnCt
-# 5jbTsL2fxeK8v1kE5B6JR4v9MyUnpWKetxp9uF2eQ07kkOU+jML10bJKK5uvJ2zk
-# Yq27r0PXA1q30MhCXpqUU7qmdxkrhEjN+/4rOQztGRje8emFXQLwQVSkX6XKxoYl
-# cV/1CxRQfCP1cpYd9z0F+EugJF5dTO+Cuyl0WZWcD0BNheaJ1KOuyF/wD4TT8WlN
-# 2Fc8j1deqxkMcGqvsOVihIJTeW+tUNG7Wnmkcd/uzeQzXoekrpqsO1jdqLWygBKY
-# Sm/cLY3/LkwMECkN3hKlKQsxrv7p6z91p5LvN0fWp0JrZGgk8zoSH/piYF+h+F8t
-# Ch8o8mXfgAuVlYrkDNW0VE05dpyiPowAbZ1PxFzl+koIfUTeftmN7R0rbhBV9K/9
-# g7HDnYQJowuVbk+EdPdkg01oKZGBwcJMKU4rMLYU6vTdgFzbM85bpshV1eWg+YEx
-# VoT62Feo+YA0HDRiydxo6RWCCMNvk7lWo6n3wySUekmgkjqmTnMCXHz860LsW62t
-# 21g1QLrKRfMwA8W5iRYaDH9bsDSK0pbxbNjPA7dsCGmvDOei4ZmZGLDaTyl6fzQH
-# OrN3I+9vNPFCwwIDAQABo4IBNjCCATIwHQYDVR0OBBYEFABExnjzSPCkrc/qq5VZ
-# QQnRzfSFMB8GA1UdIwQYMBaAFJ+nFV0AXmJdg/Tl0mWnG1M1GelyMF8GA1UdHwRY
-# MFYwVKBSoFCGTmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2lvcHMvY3JsL01p
-# Y3Jvc29mdCUyMFRpbWUtU3RhbXAlMjBQQ0ElMjAyMDEwKDEpLmNybDBsBggrBgEF
-# BQcBAQRgMF4wXAYIKwYBBQUHMAKGUGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9w
-# a2lvcHMvY2VydHMvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUyMDIwMTAo
-# MSkuY3J0MAwGA1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwgwDQYJKoZI
-# hvcNAQELBQADggIBAK1OHQRCfXqQpDIJ5WT1VzXSbovQTAtGjcBNGi4/th3aFZ4Q
-# HZjhkXgIkp72p9dYYkrNXu0xSboMCwEpgf+dP7zJsjy4mIcad+dWLpKHuAWOdOl+
-# HWPVP3Qf+4t6gWOk6f/56gKgmaitbkZvZ7OVOWjkjSQ0C5vG0LGpsuLO480+hvyR
-# EApCC/7j8ILUmaJQUbS4og2UqP1KwdytZ4EFAdfrac2DOIjBPjgmoesDTYjpyZAC
-# L0Flyx/ns44ulFiXOg8ffH/6V1LJJcCbIura5Jta1C4Pzgj/RmBL8Hkvd7CpN2IT
-# Upspfz0xbkmoIr/Ij+YAhBqaYCUc+pT15llMw84dCzReukKKOWT6rKjYloeLJLDD
-# qe4+pfNTewSPdVbTRiJVJrIoS7UitHPNfctryp7o6otO8r/qC7ld0qrtNPznacHo
-# g/RAz4G522vgVvHj+y+kocakr3/MG5occNdfkChKSyH+RINgp959AiEh9AknOgTd
-# f4yKYwmuCvBleW1vqPUgvQdjeoKlrTcaGCLQhPOp+TDcxqfcbyQHVCX5J41yI9SP
-# vcqfa94l6cYu1PwmRQz1FSLTCg7SK5ji0mdi5L5J6pq9dQ5apRhVjX0UivU8uqmZ
-# aRus7nEqOTI4egCYvGM1sqM6eQDB+37UbTSS6UqrOo9ub5Kf7jsmwZAWE0ZtMIIH
-# cTCCBVmgAwIBAgITMwAAABXF52ueAptJmQAAAAAAFTANBgkqhkiG9w0BAQsFADCB
-# iDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1Jl
-# ZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEyMDAGA1UEAxMp
-# TWljcm9zb2Z0IFJvb3QgQ2VydGlmaWNhdGUgQXV0aG9yaXR5IDIwMTAwHhcNMjEw
-# OTMwMTgyMjI1WhcNMzAwOTMwMTgzMjI1WjB8MQswCQYDVQQGEwJVUzETMBEGA1UE
-# CBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9z
-# b2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQ
-# Q0EgMjAxMDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAOThpkzntHIh
-# C3miy9ckeb0O1YLT/e6cBwfSqWxOdcjKNVf2AX9sSuDivbk+F2Az/1xPx2b3lVNx
-# WuJ+Slr+uDZnhUYjDLWNE893MsAQGOhgfWpSg0S3po5GawcU88V29YZQ3MFEyHFc
-# UTE3oAo4bo3t1w/YJlN8OWECesSq/XJprx2rrPY2vjUmZNqYO7oaezOtgFt+jBAc
-# nVL+tuhiJdxqD89d9P6OU8/W7IVWTe/dvI2k45GPsjksUZzpcGkNyjYtcI4xyDUo
-# veO0hyTD4MmPfrVUj9z6BVWYbWg7mka97aSueik3rMvrg0XnRm7KMtXAhjBcTyzi
-# YrLNueKNiOSWrAFKu75xqRdbZ2De+JKRHh09/SDPc31BmkZ1zcRfNN0Sidb9pSB9
-# fvzZnkXftnIv231fgLrbqn427DZM9ituqBJR6L8FA6PRc6ZNN3SUHDSCD/AQ8rdH
-# GO2n6Jl8P0zbr17C89XYcz1DTsEzOUyOArxCaC4Q6oRRRuLRvWoYWmEBc8pnol7X
-# KHYC4jMYctenIPDC+hIK12NvDMk2ZItboKaDIV1fMHSRlJTYuVD5C4lh8zYGNRiE
-# R9vcG9H9stQcxWv2XFJRXRLbJbqvUAV6bMURHXLvjflSxIUXk8A8FdsaN8cIFRg/
-# eKtFtvUeh17aj54WcmnGrnu3tz5q4i6tAgMBAAGjggHdMIIB2TASBgkrBgEEAYI3
-# FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQqp1L+ZMSavoKRPEY1Kc8Q/y8E7jAd
-# BgNVHQ4EFgQUn6cVXQBeYl2D9OXSZacbUzUZ6XIwXAYDVR0gBFUwUzBRBgwrBgEE
-# AYI3TIN9AQEwQTA/BggrBgEFBQcCARYzaHR0cDovL3d3dy5taWNyb3NvZnQuY29t
-# L3BraW9wcy9Eb2NzL1JlcG9zaXRvcnkuaHRtMBMGA1UdJQQMMAoGCCsGAQUFBwMI
-# MBkGCSsGAQQBgjcUAgQMHgoAUwB1AGIAQwBBMAsGA1UdDwQEAwIBhjAPBgNVHRMB
-# Af8EBTADAQH/MB8GA1UdIwQYMBaAFNX2VsuP6KJcYmjRPZSQW9fOmhjEMFYGA1Ud
-# HwRPME0wS6BJoEeGRWh0dHA6Ly9jcmwubWljcm9zb2Z0LmNvbS9wa2kvY3JsL3By
-# b2R1Y3RzL01pY1Jvb0NlckF1dF8yMDEwLTA2LTIzLmNybDBaBggrBgEFBQcBAQRO
-# MEwwSgYIKwYBBQUHMAKGPmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2kvY2Vy
-# dHMvTWljUm9vQ2VyQXV0XzIwMTAtMDYtMjMuY3J0MA0GCSqGSIb3DQEBCwUAA4IC
-# AQCdVX38Kq3hLB9nATEkW+Geckv8qW/qXBS2Pk5HZHixBpOXPTEztTnXwnE2P9pk
-# bHzQdTltuw8x5MKP+2zRoZQYIu7pZmc6U03dmLq2HnjYNi6cqYJWAAOwBb6J6Gng
-# ugnue99qb74py27YP0h1AdkY3m2CDPVtI1TkeFN1JFe53Z/zjj3G82jfZfakVqr3
-# lbYoVSfQJL1AoL8ZthISEV09J+BAljis9/kpicO8F7BUhUKz/AyeixmJ5/ALaoHC
-# gRlCGVJ1ijbCHcNhcy4sa3tuPywJeBTpkbKpW99Jo3QMvOyRgNI95ko+ZjtPu4b6
-# MhrZlvSP9pEB9s7GdP32THJvEKt1MMU0sHrYUP4KWN1APMdUbZ1jdEgssU5HLcEU
-# BHG/ZPkkvnNtyo4JvbMBV0lUZNlz138eW0QBjloZkWsNn6Qo3GcZKCS6OEuabvsh
-# VGtqRRFHqfG3rsjoiV5PndLQTHa1V1QJsWkBRH58oWFsc/4Ku+xBZj1p/cvBQUl+
-# fpO+y/g75LcVv7TOPqUxUYS8vwLBgqJ7Fx0ViY1w/ue10CgaiQuPNtq6TPmb/wrp
-# NPgkNWcr4A245oyZ1uEi6vAnQj0llOZ0dFtq0Z4+7X6gMTN9vMvpe784cETRkPHI
-# qzqKOghif9lwY1NNje6CbaUFEMFxBmoQtB1VM1izoXBm8qGCAsswggI0AgEBMIH4
-# oYHQpIHNMIHKMQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4G
-# A1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSUw
-# IwYDVQQLExxNaWNyb3NvZnQgQW1lcmljYSBPcGVyYXRpb25zMSYwJAYDVQQLEx1U
-# aGFsZXMgVFNTIEVTTjo0OUJDLUUzN0EtMjMzQzElMCMGA1UEAxMcTWljcm9zb2Z0
-# IFRpbWUtU3RhbXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUAEBDsTEXX0qTBUvUT
-# cB3yTQ95vp2ggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGlu
-# Z3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBv
-# cmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0EgMjAxMDAN
-# BgkqhkiG9w0BAQUFAAIFAOcyFR0wIhgPMjAyMjEyMDEwMTQ1MDFaGA8yMDIyMTIw
-# MjAxNDUwMVowdDA6BgorBgEEAYRZCgQBMSwwKjAKAgUA5zIVHQIBADAHAgEAAgIO
-# PjAHAgEAAgIRmDAKAgUA5zNmnQIBADA2BgorBgEEAYRZCgQCMSgwJjAMBgorBgEE
-# AYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqGSIb3DQEBBQUAA4GB
-# AFo25NW2py3i7lLMbG8EPadAkZbrlVJ7RIGDe4h4tIVq/HWBEppR+vdOxtMnHz1t
-# MHKCs2DySBxb5lTB87r9M/4rBhUOP9eHMZ2iwofl/lmOaePybSml8AhAWuNpcoH0
-# jtRRhvZzpYfjL0phZQMduLR8SUDwtVZPbzUwVJlOPD3+MYIEDTCCBAkCAQEwgZMw
-# fDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1Jl
-# ZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UEAxMd
-# TWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAHAVaSNw2QVxUsAAQAA
-# AcAwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzENBgsqhkiG9w0BCRAB
-# BDAvBgkqhkiG9w0BCQQxIgQgtMoR6fNZ3ybEub/iBougQPyWBO/GfUXqb6gRVv86
-# x0UwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBa8ViiUghcwTTMr9bpewKS
-# RhfuVg1v3IDwnHBjTg+TTzCBmDCBgKR+MHwxCzAJBgNVBAYTAlVTMRMwEQYDVQQI
-# EwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3Nv
-# ZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1wIFBD
-# QSAyMDEwAhMzAAABwFWkjcNkFcVLAAEAAAHAMCIEIH/kTCPXKaugTXZ0nqvty9ZV
-# Fm9fieHTGDcLJHChwia1MA0GCSqGSIb3DQEBCwUABIICAF4sZ1zT7pk+AxidNxKo
-# OerZwVJvsPczM2Y3u+QSfzjhCKgbzTxwTjQuM+SR64IS+x7jQa5muOQlAiKteSUz
-# h+p1A+Oee35svMC0c7DF73peb10NQnp/miwz23Ql9NWEB6dSLSNGT6akgEDI8rWr
-# s781R4SSKR8DwhFm8eI7KL3l1i0Lhu3rl2tDn3sphAuqD/9HoxagUyqGKcexgfNL
-# ZH+audRo8rEI0CX7SSezzJCAB1jl457OAngMn1j6KCED16ojovO5lYa2OnHFnSiZ
-# atAMog47AF7CDJZxY9jWvF4C6r/428Y0/4qR59La56ruhUR/tRRGal5jE1PJXw2N
-# gKHGUyRQgz5MjHUHVwkSU2D0+G6fe/bSuNdndrn0MPYsb4Xq9u6FBiWlnmKZX6EG
-# hfjAhVUOIrBFv5OVjr7CCtkaq5FwfK8bodiwLwn6V4yro4/mmi3j4ZDzk8j4n08Y
-# 2Q7uWBVvADQ+2GYa5TO5WTP+U7z3wTQcyaoHTyGoytYqGGqPIEl4AAxYTNcgcUJI
-# kjUEV7kb+rR4M/lUMZ1xWfdbN5HBIdZtuacEqdX46PKLYU2eVGPf6ItHciS1/dO7
-# DiVwgrcHV6R7hpgQDPp5QOYioSRgJm6dtw7p/k+b+kz8JIYUKItcI9yamCYbD9qo
-# 0pcdOpX77FLp6F5nywn0Dck9
+# b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1p
+# Y3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMg
+# VFNTIEVTTjpGODdBLUUzNzQtRDdCOTElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUt
+# U3RhbXAgU2VydmljZaCCEVwwggcQMIIE+KADAgECAhMzAAABrqoLXLM0pZUaAAEA
+# AAGuMA0GCSqGSIb3DQEBCwUAMHwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNo
+# aW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29y
+# cG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1wIFBDQSAyMDEw
+# MB4XDTIyMDMwMjE4NTEzN1oXDTIzMDUxMTE4NTEzN1owgc4xCzAJBgNVBAYTAlVT
+# MRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQK
+# ExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1pY3Jvc29mdCBPcGVy
+# YXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVTTjpGODdB
+# LUUzNzQtRDdCOTElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUtU3RhbXAgU2Vydmlj
+# ZTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAJOMGvEhNQwLHactznPp
+# Y8Jg5qI8Qsgp0mhl2G2ztVPonq4gsOMe5u9p5f17PIM1KXjUaKNl3djncq29Liqm
+# qnaKORggPHNEk7Q+tal5Iyc+S8k/R31gCGt4qvQVqBLQNivxOukUfapG41LTdLHe
+# M4uwInk+QrGQH2K4wjNtiUpirF2PdCcbkXyALEpyT2RrwzJmzcmbdCscY0N3RHxr
+# MeWQ3k7sNt41NBZOT+4pCmkw8UkgKiSJXMzKs38MxUqx/OlS80dLDTHd+Zei1S1/
+# qbCtTGzNm0bj6qfklUM3JFAF1JLXwwvqgZRdDQU6224wtGnwalTaOI0R0eX+crcP
+# pXGB27EIgYU+0lo2aH79SNrsPWEcdBICd0yfhFU2niVJepGzkXetJvbFxW3iN7sc
+# jLfw/S6UXF7wtEzdONXViI5P2UM779P6EIZ+g81E2MWX8XjLVyvIsvzyckJ4FFi+
+# h1yPE+vzckPxzHOsiLaafucsyMjAaAM8Wwa+02BujEOylfLSyk0iv9IvSI9ZkJW/
+# gLvQ42U0+U035ZhUhCqbKEWEMIr2ya2rYprUMEKcXf4R97LVPBfsJnbkNUubpUA4
+# K1i7ijQ1pkUlt+YQ/34mtEy7eSigVpVznqfrNVerCvHG5IwfeFVhPNbAwK6lBEQ2
+# 9nMYjRXj4QLyvmKRmqOJM/w1AgMBAAGjggE2MIIBMjAdBgNVHQ4EFgQU0zBv378o
+# YIrBqa10/vztZDphUe4wHwYDVR0jBBgwFoAUn6cVXQBeYl2D9OXSZacbUzUZ6XIw
+# XwYDVR0fBFgwVjBUoFKgUIZOaHR0cDovL3d3dy5taWNyb3NvZnQuY29tL3BraW9w
+# cy9jcmwvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUyMDIwMTAoMSkuY3Js
+# MGwGCCsGAQUFBwEBBGAwXjBcBggrBgEFBQcwAoZQaHR0cDovL3d3dy5taWNyb3Nv
+# ZnQuY29tL3BraW9wcy9jZXJ0cy9NaWNyb3NvZnQlMjBUaW1lLVN0YW1wJTIwUENB
+# JTIwMjAxMCgxKS5jcnQwDAYDVR0TAQH/BAIwADATBgNVHSUEDDAKBggrBgEFBQcD
+# CDANBgkqhkiG9w0BAQsFAAOCAgEAXb+R8P1VAEQOPK0zAxADIXP4cJQmartjVFLM
+# EkLYh39PFtVbt84Rv0Q1GSTYmhP8f/OOvnmC5ejw3Nc1VRi74rWGUITv18Wqr8eB
+# vASd4eDAxFbA8knOOm/ZySkMDDYdb6738aQ0yvqf7AWchgPntCc/nhNapSJmjzUk
+# e7EvjB8ei0BnY0xl+AQcSxJG/Vnsm9IwOer8E1miVLYfPn9fIDdaav1bq9i+gnZf
+# 1hS7apGpxbitCJr1KGD4jIyABkxHheoPOhhtQm1uznE7blKxH8pU7W2A+eqggsNk
+# M3VB0nrzRZBqm4SmBSNhOPzy3ofOmLcRK/aloOAr6nehi8i5lhmTg1LkOAxChLwH
+# vluiCY9K+2vIpt48ioK/h+tz5RgVdb+S8xwn728lN8KPkkB2Ra5iicrvtgA55wSU
+# dh6FFxXxeS+bsgBayn7ZyafTpDM7BQOBYwaodsuVf5XgGryGx84k4R58mPwB3Q09
+# CRAGs35NOt6TrPXqcylNu6Zz8xTQDcaJp54pKyOoW5iIDFjpLneXTEjtWCFCgAo4
+# zbp9CNITp97KPnc3gZVaMvEpU8Sp7VZwN9ckR2WDKyOjDghIcfuFJTLOdkOuMLGs
+# WPdnY6idtWc2bUDQa2QbzmNSZyFthEprwQ2GmgaGbGKuYVVqUj/Yt21HD0PBeDI5
+# Mal8ScwwggdxMIIFWaADAgECAhMzAAAAFcXna54Cm0mZAAAAAAAVMA0GCSqGSIb3
+# DQEBCwUAMIGIMQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4G
+# A1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMTIw
+# MAYDVQQDEylNaWNyb3NvZnQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkgMjAx
+# MDAeFw0yMTA5MzAxODIyMjVaFw0zMDA5MzAxODMyMjVaMHwxCzAJBgNVBAYTAlVT
+# MRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQK
+# ExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1l
+# LVN0YW1wIFBDQSAyMDEwMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA
+# 5OGmTOe0ciELeaLL1yR5vQ7VgtP97pwHB9KpbE51yMo1V/YBf2xK4OK9uT4XYDP/
+# XE/HZveVU3Fa4n5KWv64NmeFRiMMtY0Tz3cywBAY6GB9alKDRLemjkZrBxTzxXb1
+# hlDcwUTIcVxRMTegCjhuje3XD9gmU3w5YQJ6xKr9cmmvHaus9ja+NSZk2pg7uhp7
+# M62AW36MEBydUv626GIl3GoPz130/o5Tz9bshVZN7928jaTjkY+yOSxRnOlwaQ3K
+# Ni1wjjHINSi947SHJMPgyY9+tVSP3PoFVZhtaDuaRr3tpK56KTesy+uDRedGbsoy
+# 1cCGMFxPLOJiss254o2I5JasAUq7vnGpF1tnYN74kpEeHT39IM9zfUGaRnXNxF80
+# 3RKJ1v2lIH1+/NmeRd+2ci/bfV+AutuqfjbsNkz2K26oElHovwUDo9Fzpk03dJQc
+# NIIP8BDyt0cY7afomXw/TNuvXsLz1dhzPUNOwTM5TI4CvEJoLhDqhFFG4tG9ahha
+# YQFzymeiXtcodgLiMxhy16cg8ML6EgrXY28MyTZki1ugpoMhXV8wdJGUlNi5UPkL
+# iWHzNgY1GIRH29wb0f2y1BzFa/ZcUlFdEtsluq9QBXpsxREdcu+N+VLEhReTwDwV
+# 2xo3xwgVGD94q0W29R6HXtqPnhZyacaue7e3PmriLq0CAwEAAaOCAd0wggHZMBIG
+# CSsGAQQBgjcVAQQFAgMBAAEwIwYJKwYBBAGCNxUCBBYEFCqnUv5kxJq+gpE8RjUp
+# zxD/LwTuMB0GA1UdDgQWBBSfpxVdAF5iXYP05dJlpxtTNRnpcjBcBgNVHSAEVTBT
+# MFEGDCsGAQQBgjdMg30BATBBMD8GCCsGAQUFBwIBFjNodHRwOi8vd3d3Lm1pY3Jv
+# c29mdC5jb20vcGtpb3BzL0RvY3MvUmVwb3NpdG9yeS5odG0wEwYDVR0lBAwwCgYI
+# KwYBBQUHAwgwGQYJKwYBBAGCNxQCBAweCgBTAHUAYgBDAEEwCwYDVR0PBAQDAgGG
+# MA8GA1UdEwEB/wQFMAMBAf8wHwYDVR0jBBgwFoAU1fZWy4/oolxiaNE9lJBb186a
+# GMQwVgYDVR0fBE8wTTBLoEmgR4ZFaHR0cDovL2NybC5taWNyb3NvZnQuY29tL3Br
+# aS9jcmwvcHJvZHVjdHMvTWljUm9vQ2VyQXV0XzIwMTAtMDYtMjMuY3JsMFoGCCsG
+# AQUFBwEBBE4wTDBKBggrBgEFBQcwAoY+aHR0cDovL3d3dy5taWNyb3NvZnQuY29t
+# L3BraS9jZXJ0cy9NaWNSb29DZXJBdXRfMjAxMC0wNi0yMy5jcnQwDQYJKoZIhvcN
+# AQELBQADggIBAJ1VffwqreEsH2cBMSRb4Z5yS/ypb+pcFLY+TkdkeLEGk5c9MTO1
+# OdfCcTY/2mRsfNB1OW27DzHkwo/7bNGhlBgi7ulmZzpTTd2YurYeeNg2LpypglYA
+# A7AFvonoaeC6Ce5732pvvinLbtg/SHUB2RjebYIM9W0jVOR4U3UkV7ndn/OOPcbz
+# aN9l9qRWqveVtihVJ9AkvUCgvxm2EhIRXT0n4ECWOKz3+SmJw7wXsFSFQrP8DJ6L
+# GYnn8AtqgcKBGUIZUnWKNsIdw2FzLixre24/LAl4FOmRsqlb30mjdAy87JGA0j3m
+# Sj5mO0+7hvoyGtmW9I/2kQH2zsZ0/fZMcm8Qq3UwxTSwethQ/gpY3UA8x1RtnWN0
+# SCyxTkctwRQEcb9k+SS+c23Kjgm9swFXSVRk2XPXfx5bRAGOWhmRaw2fpCjcZxko
+# JLo4S5pu+yFUa2pFEUep8beuyOiJXk+d0tBMdrVXVAmxaQFEfnyhYWxz/gq77EFm
+# PWn9y8FBSX5+k77L+DvktxW/tM4+pTFRhLy/AsGConsXHRWJjXD+57XQKBqJC482
+# 2rpM+Zv/Cuk0+CQ1ZyvgDbjmjJnW4SLq8CdCPSWU5nR0W2rRnj7tfqAxM328y+l7
+# vzhwRNGQ8cirOoo6CGJ/2XBjU02N7oJtpQUQwXEGahC0HVUzWLOhcGbyoYICzzCC
+# AjgCAQEwgfyhgdSkgdEwgc4xCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5n
+# dG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9y
+# YXRpb24xKTAnBgNVBAsTIE1pY3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNv
+# MSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVTTjpGODdBLUUzNzQtRDdCOTElMCMGA1UE
+# AxMcTWljcm9zb2Z0IFRpbWUtU3RhbXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUA
+# vJqwk/xnycgV5Gdy5b4IwE/TWuOggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEG
+# A1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWlj
+# cm9zb2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFt
+# cCBQQ0EgMjAxMDANBgkqhkiG9w0BAQUFAAIFAOeLQScwIhgPMjAyMzAyMDYxMzA0
+# MzlaGA8yMDIzMDIwNzEzMDQzOVowdDA6BgorBgEEAYRZCgQBMSwwKjAKAgUA54tB
+# JwIBADAHAgEAAgIlNjAHAgEAAgIRHDAKAgUA54ySpwIBADA2BgorBgEEAYRZCgQC
+# MSgwJjAMBgorBgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqG
+# SIb3DQEBBQUAA4GBAKUCupPJPdksp1ZvX0PArPIQExsg6BirETcddu22oZ0ET93i
+# VYJEn99JxMUKXVDqVB0wsdDM2N2nAGy+HrtHeNxptA4W5Iwo81EgavW4DAgnkhMe
+# 8UWwObmMb/CwqLNPP2ahw9AlWXXnjYJ7TFVGNB7DweIz+ddDKQyOSQK/aj1CMYIE
+# DTCCBAkCAQEwgZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24x
+# EDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlv
+# bjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGu
+# qgtcszSllRoAAQAAAa4wDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzEN
+# BgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgmonRGLptGDJn0tytMWJrjbRe
+# wvGiJ1rlVH0QOcOF+X0wgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBJKB0+
+# uIzDWqHun09mqTU8uOg6tew0yu1uQ0iU/FJvaDCBmDCBgKR+MHwxCzAJBgNVBAYT
+# AlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYD
+# VQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBU
+# aW1lLVN0YW1wIFBDQSAyMDEwAhMzAAABrqoLXLM0pZUaAAEAAAGuMCIEIDLyrsZN
+# aTPRXiCMUsbLbpLXiLroQ5W2FAxXsE85HfYQMA0GCSqGSIb3DQEBCwUABIICAGyv
+# ELyQbaxJO7bATIBtzRtrRubmawykNd9K8pTxmNwNptfSgHD0JePafouRjNxRb/ID
+# L7W+vFb/GUy8+eAXRMHwi99/A7VlMH72JfAD+lCIyQWJ2CVzty6PDeazZDduoNAj
+# +4RZk8oo744szQzG7T1Aa6IwawcvP6UgDhxfNsf00yRKMZHgk3XGLxosBoepML4y
+# gzuzGK6eGCw/JIQ7qLD88piQfIjldKLAeZ0QyZ2UBgvNbDKegiRAJBFBIOsPI1ab
+# F078CG1wOAIZ2dvkAHpbvmMLyQQk/pAMAkqYaKBvKgCyIFdMSJJ0k7Dh9qWJ6CLt
+# SdFKe9bq76vlf1qWaYZhrf8Y0SmX06CWlNmy/Ouwm1aTGvW7gmDhpGrI1AZ0JFZE
+# oPbQQVXld1KoHplujsfDGr993LBPbksYcBQfXNv/5IfoCVAUffol07rTiYpD5zCE
+# PQdBvasP9SP07pLfZbjP+3MRMeAp+z/2wJBElV1XFfZ8Eo6jzAHKX4r4sm+W+imr
+# sce74gVkhMoGKryEsdSovR7+EedqA2g1SgW6F5c8drUpp2Z3O4fHMm/dQw1eocOt
+# uYnBtBgkgAZrsps+cSikOFFlJyWdzigLh5PKZnVrdYIcN5Xn0fdkQvFiUVmcwSZR
+# 8K9+8EEslW01ndde7Ml+fhE3Vdq8jg+y3M5YnPR2
 # SIG # End signature block

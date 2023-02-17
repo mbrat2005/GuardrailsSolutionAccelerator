@@ -30,16 +30,10 @@ Expand-Archive ./v1.0.1.zip
 ```
 cd ./v1.0.1/GuardrailsSolutionAccelerator-1.0.1/setup/
 ```
-### Use current repo code
 
-You may use the current repo code. Be aware that the code in the repo may be in the process of being updated. Some modules may not be signed. If there is a requirement for fully signed and release code, use the previous option.
+### Use prerelease code
 
-```
-git clone https://github.com/Azure/GuardrailsSolutionAccelerator.git
-```
-```
-cd ./GuardrailsSolutionAccelerator/setup/
-```
+See [Installing or Updating from Prerelease](./prerelease)
 
 ## Configuration
 
@@ -106,6 +100,7 @@ Add tags as required per your policies in a json array format.
 Please do not delete the default required tags 
 
 ## Deployment
+
 Import the GuardrailsSolutionAcceleratorSetup module from the downloaded code:
 
 ```powershell
@@ -116,7 +111,7 @@ Import-Module ./src/GuardrailsSolutionAcceleratorSetup
 
 Start the Guardrails Solution Accelerator deployment with the default configuration (core resources only):
 ```powershell
-Deploy-GuardrailsSolutionAccelerator -configFilePath .\config.json
+Deploy-GuardrailsSolutionAccelerator -configFilePath .\setup\config.json
 ```
 
 Alternatively, these parameters can be used to verify a deployment or to deploy additional components:
@@ -135,7 +130,36 @@ Get-Help Deploy-GuardrailsSolutionAccelerator -Detailed
 
 ### Centralized Reporting (Lighthouse) Configuration
 
-If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-newComponents` parameter when calling `Deploy-GuardrailsSolutionAccelerator` and specify the centralized reporting components (along with CoreComponents) to be deployed. For example:
+ The accelerator implements two different scenarios for centralized management, detailed below. Azure Lighthouse is used to delegate access to a managed tenant by a managing tenant. These components can be added to an existing deployment or included in a new deployment. 
+
+#### Centralized Customer Reporting Support
+
+This option grants the remote tenant identity specified in the configuration file access to the Guardrails reporting data in the Guardrails resource group. This enables the remote managing tenant to centrally run reports against multiple managed tenants. The summary of this Lighthouse delegation is:
+
+   **Scope:** The Guardrails solution resource group in the managed tenant (where the Guardrails solution is being deployed)
+
+   **Permissions:**
+
+- Managed Services Registration assignment Delete Role (this role allows the managed tenant to delete the Lighthouse delegation)
+- Reader
+- Monitoring Reader
+
+#### [PREVIEW] Centralized Customer Defender for Cloud Support
+
+[This feature is in preview and is intented to support features which are not yet implemented, which a managing tenant pulls Defender for Cloud data from managed tenants.] This option grants the remote tenant identity specified in the configuration file access to the Defender for Cloud data in every subscription under the Management Group ID, also specified in the configuration file. This configuration enables the remote managing tenant to access the Defender for Cloud data in the managed tenant (where setup is being executed).  
+
+   **Scope:** The Guardrails solution resource group in the managed tenant (where the Guardrails solution is being deployed)
+
+   **Permissions:**
+
+- Managed Services Registration assignment Delete Role (this role allows the managed tenant to delete the Lighthouse delegation)
+- Security Reader
+
+#### Lighthouse Configuration Deployment
+
+If this Guardrails Accelerator solution will be deployed in a scenario where a central Azure tenant will report on the Guardrails data of this Azure tenant, include the `-newComponents` parameter when calling `Deploy-GuardrailsSolutionAccelerator` and specify the centralized reporting components (along with CoreComponents) to be deployed. This same command will work to add the Lighthouse configurations to an existing deployment. 
+
+For example:
 
 ```powershell
  Deploy-GuardrailsSolutionAccelerator -configFilePath "C:\config.json" -validatePrerequisites -newComponents CoreComponents,CentralizedCustomerDefenderForCloudSupport,CentralizedCustomerReportingSupport. 
@@ -151,3 +175,22 @@ For this feature to deploy, the following values must also existing the config.j
 #### Troubleshooting Lighthouse Configuration
 
 The Defender for Cloud automated Lighthouse delegation deployment to each subscription may take up to 24 hours to apply. If, after 24 hours, all subscriptions are not showing as properly delegated, ensure that the the Microsoft.ManagedServices and Microsoft.PolicyInsights Resource Providers are registered in each target subscription. Check that a Remediation Task exists at the target management group (on the customer side), and review it for deployment failures.
+
+## Removing an existing deployment
+
+In the event that an existing Guardrails deployment needs to be removed, the GuardrailsSolutionAcceleratorSetup has built-in modules to ensure a complete clean up. The modules are not imported automatically, but can be manually imported as shown below:
+
+> **Warning**
+> Removing your deployment permanently deletes your Log Analytics data. To retain the data, move the Log Analytics workspace to a different resource group before executing the Remove-GSACoreResource command!
+
+```powershell
+Import-Module src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACoreResources
+Import-Module src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedDefenderCustomerComponents
+Import-Module src\GuardrailsSolutionAcceleratorSetup\modules\Remove-GSACentralizedReportingCustomerComponents
+```
+
+To remove components, use the `Get-GSAExportedConfig` command to retrieve the deployment's configuration from the Key Vault and pass the config to the appropriate removal command over the pipeline. For example:
+
+```powershell
+Get-GSAExportedConfig -KeyVaultName <keyVaultName> | Remove-GSACoreResources
+```

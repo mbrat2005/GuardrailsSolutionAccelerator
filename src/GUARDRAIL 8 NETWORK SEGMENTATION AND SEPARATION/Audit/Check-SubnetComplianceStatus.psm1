@@ -7,8 +7,10 @@ function Get-SubnetComplianceInformation {
         [string] $itsgcodesegmentation,
         [string] $itsgcodeseparation,
         [Parameter(Mandatory=$false)]
-        [array]
-        $ExcludedSubnets,
+        [string]
+        $ExcludedSubnetsList,#Separated by command, simple string
+        [Parameter(Mandatory=$false)]
+        [string]$ReservedSubnetList, #Separated by command, simple string
         [hashtable] $msgTable,
         [Parameter(Mandatory=$true)]
         [string]
@@ -25,8 +27,10 @@ function Get-SubnetComplianceInformation {
     [PSCustomObject] $SubnetList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     $AdditionalResults= $null
-    
-    $reservedSubnetNames=@("GatewaySubnet","AzureFirewallSubnet","AzureBastionSubnet","AzureFirewallManagementSubnet","RouteServerSubnet")
+    $ExcludeVnetTag="GR8-ExcludeVNetFromCompliance"
+    $ExcludedSubnetListTag="GR-ExcludedSubnets"
+    $reservedSubnetNames=$ReservedSubnetList.Split(",")
+    $ExcludedSubnets=$ExcludedSubnetsList.Split(",")
     $allexcluded=$ExcludedSubnets+$reservedSubnetNames
 
     try {
@@ -37,10 +41,10 @@ function Get-SubnetComplianceInformation {
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
 
-    if ($ExcludedSubnets -ne $null)
-    {
-        $ExcludedSubnetsList=$ExcludedSubnets.Split(",")
-    }
+    # if ($ExcludedSubnets -ne $null)
+    # {
+    #     $ExcludedSubnetsList=$ExcludedSubnets.Split(",")
+    # }
     foreach ($sub in $subs)
     {
         Write-Verbose "Selecting subscription: $($sub.Name)"
@@ -53,28 +57,27 @@ function Get-SubnetComplianceInformation {
             foreach ($VNet in $VNets)
             {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey "ExcludeFromCompliance" -object $VNet
+                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet # this will exclude the VNet from the compliance check, altogether.
+                $ExcludeSubnetsTag=get-tagValue -tagKey $ExcludedSubnetListTag -object $VNet
+                if (!([string]::IsNullOrEmpty($ExcludeSubnetsTag)))
+                {
+                    $ExcludedSubnetListFromTag=$ExcludeSubnetsTag.Split(",")
+                }
+                else {
+                    $ExcludedSubnetListFromTag=@()
+                }
+
                 if ($ev -ne "true")
                 {
                     #Handles the subnets
                     foreach ($subnet in Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $VNet)
                     {
                         Write-Debug "Working on $($subnet.Name) Subnet..."
-                        if ($subnet.Name -notin $allexcluded)
+                        if ($subnet.Name -notin $allexcluded -and $subnet.Name -notin $ExcludedSubnetListFromTag)
                         {
                             #checks NSGs
                             $ComplianceStatus=$false
                             $Comments = $msgTable.noNSG
-                            <#$MitigationCommands=@"
-# https://docs.microsoft.com/en-us/powershell/module/az.network/set-azvirtualnetworksubnetconfig?view=azps-8.0.0#2-add-a-network-security-group-to-a-subnet
-#Creates NSG Resource for subnet $($subnet.Name)
-Select-azsubscription $($sub.SubscriptionId)
-`$nsg=New-AzNetworkSecurityGroup -Name '$($subnet.Name)-nsg' -ResourceGroupName $($vnet.ResourceGroupName) -Location $($VNet.Location)
-# Assign NSG to subnet
-`$subnet=(Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet.Name)).Subnets | Where-Object Name -eq $($subnet.Name)
-`$subnet.NetworkSecurityGroup = `$nsg
-Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet.Name) | set-azvirtual-network
-"@#>
                             if ($null -ne $subnet.NetworkSecurityGroup)
                             {
                                 Write-Debug "Found $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) NSG"
@@ -87,51 +90,17 @@ Get-AzVirtualNetwork -ResourceGroupName $($vnet.ResourceGroupName) -Name $($vnet
                                     {
                                         $ComplianceStatus=$true
                                         $Comments = $msgTable.subnetCompliant
-                                        #$MitigationCommands="N/A"
                                     }
                                     else {
                                         $ComplianceStatus=$false
                                         $Comments = $msgTable.nsgConfigDenyAll
-                                        <#$MitigationCommands=@"
-Select-azsubscription $($sub.SubscriptionId)
-`$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
-`$RuleParams = @{
-    'Name'                     = 'Denyall'
-    'NetworkSecurityGroup'     = `$nsg
-    'Protocol'                 = '*'
-    'Direction'                = 'Inbound'
-    'Priority'                 = 4096
-    'SourceAddressPrefix'      = '*'
-    'SourcePortRange'          = '*'
-    'DestinationAddressPrefix' = '*'
-    'DestinationPortRange'     = '*'
-    'Access'                   = 'Deny'
-    }
-Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
-"@#>
                                     }
                                 }
                                 else {
                                     #NSG is present but has no custom rules at all.
                                     $ComplianceStatus=$false
                                     $Comments = $msgTable.nsgCustomRule
-    <#                                $MitigationCommands=@"
-Select-azsubscription $($sub.SubscriptionId)
-`$nsg=Get-AzNetworkSecurityGroup -Name $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) -ResourceGroupName $($subnet.NetworkSecurityGroup.Id.Split("/")[4])
-`$RuleParams = @{
-    'Name'                     = 'Denyall'
-    'NetworkSecurityGroup'     = `$nsg
-    'Protocol'                 = '*'
-    'Direction'                = 'Inbound'
-    'Priority'                 = 4096
-    'SourceAddressPrefix'      = '*'
-    'SourcePortRange'          = '*'
-    'DestinationAddressPrefix' = '*'
-    'DestinationPortRange'     = '*'
-    'Access'                   = 'Deny'
-    }
-Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
-"@#>
+    
                                 }
                             }
                             $SubnetObject = [PSCustomObject]@{ 
@@ -142,11 +111,9 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                 ItemName = $msgTable.networkSegmentation
                                 ControlName = $ControlName
                                 itsgcode = $itsgcodesegmentation
-                                #MitigationCommands=$MitigationCommands
                                 ReportTime = $ReportTime
                             }
                             $SubnetList.add($SubnetObject) | Out-Null
-
                             #Checks Routes
                             if ($subnet.RouteTable)
                             {
@@ -155,14 +122,12 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                                 $routeTable=Get-AzRouteTable -ResourceGroupName $subnet.RouteTable.Id.Split("/")[4] -name $UDR
                                 $ComplianceStatus=$false # I still don´t know if it has a UDR with 0.0.0.0 being sent to a Virtual Appliance.
                                 $Comments = $msgTable.routeNVA
-                                #$MitigationCommands = $msgTable.routeNVAMitigation
                                 foreach ($route in $routeTable.Routes)
                                 {
                                     if ($route.NextHopType -eq "VirtualAppliance" -and $route.AddressPrefix -eq "0.0.0.0/0") # Found the required UDR
                                     {
                                         $ComplianceStatus=$true
                                         $Comments= $msgTable.subnetCompliant
-                                        #$MitigationCommands="N/A"
                                     }
                                 }
                             }
@@ -170,7 +135,6 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                         else { #subnet excluded
                             $ComplianceStatus=$true
                             $Comments=$msgTable.subnetExcluded
-                            #$MitigationCommands="N/A"                            
                         }
                         $SubnetObject = [PSCustomObject]@{ 
                             SubscriptionName  = $sub.Name 
@@ -181,7 +145,6 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                             itsgcode = $itsgcodeseparation
                             ControlName = $ControlName
                             ReportTime = $ReportTime
-                            #MitigationCommands=$MitigationCommands
                         }
                         $SubnetList.add($SubnetObject) | Out-Null
                     }
@@ -203,7 +166,6 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
                 ItemName = $msgTable.networkSegmentation
                 ControlName = $ControlName
                 itsgcode = $itsgcodesegmentation
-                MitigationCommands="N/A"
                 ReportTime = $ReportTime
             }
             $SubnetList.add($SubnetObject) | Out-Null
@@ -222,10 +184,10 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
 }
 
 # SIG # Begin signature block
-# MIInoQYJKoZIhvcNAQcCoIInkjCCJ44CAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIInqgYJKoZIhvcNAQcCoIInmzCCJ5cCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAv7i96JrxigL8T
-# lLTwyGZiN1YZtGmc3JHjMeoIjnCF9aCCDYEwggX/MIID56ADAgECAhMzAAACzI61
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCNcY8mJm6Do8uj
+# 3ZJ1AEbFP8FlrU/xf18QAPTFetF7K6CCDYEwggX/MIID56ADAgECAhMzAAACzI61
 # lqa90clOAAAAAALMMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -297,141 +259,141 @@ Add-AzNetworkSecurityRuleConfig @RuleParams | Set-AzNetworkSecurityGroup
 # xw4o7t5lL+yX9qFcltgA1qFGvVnzl6UJS0gQmYAf0AApxbGbpT9Fdx41xtKiop96
 # eiL6SJUfq/tHI4D1nvi/a7dLl+LrdXga7Oo3mXkYS//WsyNodeav+vyL6wuA6mk7
 # r/ww7QRMjt/fdW1jkT3RnVZOT7+AVyKheBEyIXrvQQqxP/uozKRdwaGIm1dxVk5I
-# RcBCyZt2WwqASGv9eZ/BvW1taslScxMNelDNMYIZdjCCGXICAQEwgZUwfjELMAkG
+# RcBCyZt2WwqASGv9eZ/BvW1taslScxMNelDNMYIZfzCCGXsCAQEwgZUwfjELMAkG
 # A1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQx
 # HjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEoMCYGA1UEAxMfTWljcm9z
 # b2Z0IENvZGUgU2lnbmluZyBQQ0EgMjAxMQITMwAAAsyOtZamvdHJTgAAAAACzDAN
 # BglghkgBZQMEAgEFAKCBrjAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgor
-# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgJXO4woMq
-# XXZd3NKUqBpF5/YrYNi/4wPwBfhKoGEzr/UwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
+# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgM8zc7vPr
+# 99i5Kl1UhOJIW1svbsCRVPE4MvKPQFhvB0EwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
 # AE0AaQBjAHIAbwBzAG8AZgB0oRqAGGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbTAN
-# BgkqhkiG9w0BAQEFAASCAQCRcQd2BZTICptdumnqO6mDY2m87KrRnPIa28keC2R0
-# PiSdHsQPWrGv5nml+l46nITsm/RVvZlt8F8Q2T4uCFuQO5g6YLcup/HaYDifSWsK
-# SIvD+Rd1UHTUAGr6e2/KYfZq85wjY4dA6VrUigvuyOYf56k3vGK5CmBN1sIBRego
-# 9PFitnrMfN8dlOqnarh9BLSc012/HCt42tNSji0c9qXiDt8ALnQcxKGjX54+6n2z
-# 8TFbXxugrL/NaTXCwZruWjEMyqxC7iBJcAFXOSJqJFJSfD+JPA9nlvSQ5rEaJSiK
-# 55QQFmx4CQ30yYbH/TAMfrdi5ESUq4ikRVkxU8vHVuFeoYIXADCCFvwGCisGAQQB
-# gjcDAwExghbsMIIW6AYJKoZIhvcNAQcCoIIW2TCCFtUCAQMxDzANBglghkgBZQME
-# AgEFADCCAVEGCyqGSIb3DQEJEAEEoIIBQASCATwwggE4AgEBBgorBgEEAYRZCgMB
-# MDEwDQYJYIZIAWUDBAIBBQAEINntkcNwZGs/wBjP4sKVhNlVo/zTghvtw3e/Jw7e
-# 3guoAgZjbOKQ3NwYEzIwMjIxMTMwMTgxMTMyLjYzOVowBIACAfSggdCkgc0wgcox
+# BgkqhkiG9w0BAQEFAASCAQBqJVdVZWU1gxB4drj5wSdzoHRbEA0R7cT5x0UBQWvT
+# ImJWwHScbM/klB2IcmX4FsoaaLRrGTEXWa0I0mrclMZWwRcw+F2d5ydigZtO6GHL
+# ClcjWEYXQKFsd2SUFVx/hbt+lra/KQvgJeL2Clp/qDHw3l4p3xZbb9oKX3xu/01j
+# Cm5SbYWFLaB+u4kB7TKaXOWgAh4i7Vkq49i3m1G7Kpqf4Semo1JMeqmH+93NsZyj
+# gQnIm+CHEc/IUcC5flU+7fTwlehJH4sg5APm3AKMuEH3BkB01VB1iMGUj3zuhDAV
+# ap9DLKszHoqxNu/1xN2V5apVnSSNL8D89v1H0SRlEc4YoYIXCTCCFwUGCisGAQQB
+# gjcDAwExghb1MIIW8QYJKoZIhvcNAQcCoIIW4jCCFt4CAQMxDzANBglghkgBZQME
+# AgEFADCCAVUGCyqGSIb3DQEJEAEEoIIBRASCAUAwggE8AgEBBgorBgEEAYRZCgMB
+# MDEwDQYJYIZIAWUDBAIBBQAEIABZArtqs8N7jZ+V86GJ4K6Tk5RjrGfa4ZyaJxAs
+# IcmqAgZjxouMN5cYEzIwMjMwMjA2MTUwOTIzLjQxMlowBIACAfSggdSkgdEwgc4x
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
-# b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJTAjBgNVBAsTHE1p
-# Y3Jvc29mdCBBbWVyaWNhIE9wZXJhdGlvbnMxJjAkBgNVBAsTHVRoYWxlcyBUU1Mg
-# RVNOOkREOEMtRTMzNy0yRkFFMSUwIwYDVQQDExxNaWNyb3NvZnQgVGltZS1TdGFt
-# cCBTZXJ2aWNloIIRVzCCBwwwggT0oAMCAQICEzMAAAHFA83NIaH07zkAAQAAAcUw
-# DQYJKoZIhvcNAQELBQAwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0
-# b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3Jh
-# dGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTAwHhcN
-# MjIxMTA0MTkwMTMyWhcNMjQwMjAyMTkwMTMyWjCByjELMAkGA1UEBhMCVVMxEzAR
-# BgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1p
-# Y3Jvc29mdCBDb3Jwb3JhdGlvbjElMCMGA1UECxMcTWljcm9zb2Z0IEFtZXJpY2Eg
-# T3BlcmF0aW9uczEmMCQGA1UECxMdVGhhbGVzIFRTUyBFU046REQ4Qy1FMzM3LTJG
-# QUUxJTAjBgNVBAMTHE1pY3Jvc29mdCBUaW1lLVN0YW1wIFNlcnZpY2UwggIiMA0G
-# CSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQCrSF2zvR5fbcnulqmlopdGHP5NPskn
-# c69V/f43x82nFGzmNjiES/cFX/DkRZdtl07ibfGPTWVMj/EOSr7K2O6I97zEZexn
-# EOe2/svUTMx3mMhKon55i7ySBXTnqaqzx0GjnnFk889zF/m7X3OfThoxAXk9dX8L
-# hktKMVr0gU1yuJt06beUZbWtBEVraNSy6nqC/rfirlTAfT1YYa7TPz1Fu1vIznm+
-# YGBZXx53ptkJmtyhgiMwvwVFO8aXOeqboe3Bl1czAodPdr+QtRI+IYCysiATPPs2
-# kGl46yCz1OvDJZNkE1sHDIgAKZDfiP65Hh63aFmT40fj0qEQnJgPb504hoMYHYRQ
-# 0VJhzLUySC1m3V5GoEHSb5g9jPseOhw/KQpg1BntO/7OCU598KJrHWM5vS7ohgLl
-# fUmvwDBNyxoPK7eoCHHxwVA30MOCJVnD5REVnyjKgOTqwhXWfHnNkvL6E21qR49f
-# 1LtjyfWpZ8COhc8TorT91tPDzsQ4kv8GUkZwqgVPK2vTM+D8w0lJvp/Zr/AORegY
-# IZYmJCsZPGM4/5H3r+cggbTl4TUumTLYU51gw8HgOFbu0F1lq616lNO5KGaCf4Yo
-# RHwCgDWBJKTUQLllfhymlWeAmluUwG7yv+0KF8dV1e+JjqENKEfBAKZmpl5uBJge
-# ceXi6sT7grpkLwIDAQABo4IBNjCCATIwHQYDVR0OBBYEFFTquzi/WbE1gb+u2kvC
-# tXB6TQVrMB8GA1UdIwQYMBaAFJ+nFV0AXmJdg/Tl0mWnG1M1GelyMF8GA1UdHwRY
-# MFYwVKBSoFCGTmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2lvcHMvY3JsL01p
-# Y3Jvc29mdCUyMFRpbWUtU3RhbXAlMjBQQ0ElMjAyMDEwKDEpLmNybDBsBggrBgEF
-# BQcBAQRgMF4wXAYIKwYBBQUHMAKGUGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9w
-# a2lvcHMvY2VydHMvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUyMDIwMTAo
-# MSkuY3J0MAwGA1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwgwDQYJKoZI
-# hvcNAQELBQADggIBAIyo3nx+swc5JxyIr4J2evp0rx9OyBAN5n1u9CMK7E0glkn3
-# b7Gl4pEJ/derjup1HKSQpSdkLp0eEvC3V+HDKLL8t91VD3J/WFhn9GlNL7PSGdqg
-# r4/8gMCJQ2bfY1cuEMG7Q/hJv+4JXiM641RyYmGmkFCBBWEXH/nsliTUsJ2Mh57/
-# 8atx9uRC2Jihv05r3cNKNuwPWOpqJwSeRyVQ3+YSb1mycKcDX785AOn/xDhw98f3
-# gszgnpfQ200F5XLC9YfTC4xo4nMeAMsJ4lSQUT0cTywENV52aPrM8kAj7ujMuNir
-# DuLhEVuJK19ZlIaPC36UslBlFZQJxPdodi9OjVhYNmySiFaDvvD18XZBuI70N+eq
-# hntCjMeLtGI+luOCQkwCGuGl5N/9q3Z734diQo5tSaA8CsfVaOK/CbV3s9haxqsv
-# u7mpm6TfoZvWYRNLWgDZdff4LeuC3NGiE/z2plV/v2VW+OaDfg20gIr+kyT31IG6
-# 2CG2KkVIxB1tdSdLah4u31wq6/Uwm76AnzepdM2RDZCqHG01G9sT1CqaolDDlVb/
-# hJnN7Wk9fHI5M7nIOr6JEhS5up5DOZRwKSLI24IsdaHw4sIjmYg4LWIu1UN/aXD1
-# 5auinC7lIMm1P9nCohTWpvZT42OQ1yPWFs4MFEQtpNNZ33VEmJQj2dwmQaD+MIIH
-# cTCCBVmgAwIBAgITMwAAABXF52ueAptJmQAAAAAAFTANBgkqhkiG9w0BAQsFADCB
-# iDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcTB1Jl
-# ZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEyMDAGA1UEAxMp
-# TWljcm9zb2Z0IFJvb3QgQ2VydGlmaWNhdGUgQXV0aG9yaXR5IDIwMTAwHhcNMjEw
-# OTMwMTgyMjI1WhcNMzAwOTMwMTgzMjI1WjB8MQswCQYDVQQGEwJVUzETMBEGA1UE
-# CBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9z
-# b2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQ
-# Q0EgMjAxMDCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAOThpkzntHIh
-# C3miy9ckeb0O1YLT/e6cBwfSqWxOdcjKNVf2AX9sSuDivbk+F2Az/1xPx2b3lVNx
-# WuJ+Slr+uDZnhUYjDLWNE893MsAQGOhgfWpSg0S3po5GawcU88V29YZQ3MFEyHFc
-# UTE3oAo4bo3t1w/YJlN8OWECesSq/XJprx2rrPY2vjUmZNqYO7oaezOtgFt+jBAc
-# nVL+tuhiJdxqD89d9P6OU8/W7IVWTe/dvI2k45GPsjksUZzpcGkNyjYtcI4xyDUo
-# veO0hyTD4MmPfrVUj9z6BVWYbWg7mka97aSueik3rMvrg0XnRm7KMtXAhjBcTyzi
-# YrLNueKNiOSWrAFKu75xqRdbZ2De+JKRHh09/SDPc31BmkZ1zcRfNN0Sidb9pSB9
-# fvzZnkXftnIv231fgLrbqn427DZM9ituqBJR6L8FA6PRc6ZNN3SUHDSCD/AQ8rdH
-# GO2n6Jl8P0zbr17C89XYcz1DTsEzOUyOArxCaC4Q6oRRRuLRvWoYWmEBc8pnol7X
-# KHYC4jMYctenIPDC+hIK12NvDMk2ZItboKaDIV1fMHSRlJTYuVD5C4lh8zYGNRiE
-# R9vcG9H9stQcxWv2XFJRXRLbJbqvUAV6bMURHXLvjflSxIUXk8A8FdsaN8cIFRg/
-# eKtFtvUeh17aj54WcmnGrnu3tz5q4i6tAgMBAAGjggHdMIIB2TASBgkrBgEEAYI3
-# FQEEBQIDAQABMCMGCSsGAQQBgjcVAgQWBBQqp1L+ZMSavoKRPEY1Kc8Q/y8E7jAd
-# BgNVHQ4EFgQUn6cVXQBeYl2D9OXSZacbUzUZ6XIwXAYDVR0gBFUwUzBRBgwrBgEE
-# AYI3TIN9AQEwQTA/BggrBgEFBQcCARYzaHR0cDovL3d3dy5taWNyb3NvZnQuY29t
-# L3BraW9wcy9Eb2NzL1JlcG9zaXRvcnkuaHRtMBMGA1UdJQQMMAoGCCsGAQUFBwMI
-# MBkGCSsGAQQBgjcUAgQMHgoAUwB1AGIAQwBBMAsGA1UdDwQEAwIBhjAPBgNVHRMB
-# Af8EBTADAQH/MB8GA1UdIwQYMBaAFNX2VsuP6KJcYmjRPZSQW9fOmhjEMFYGA1Ud
-# HwRPME0wS6BJoEeGRWh0dHA6Ly9jcmwubWljcm9zb2Z0LmNvbS9wa2kvY3JsL3By
-# b2R1Y3RzL01pY1Jvb0NlckF1dF8yMDEwLTA2LTIzLmNybDBaBggrBgEFBQcBAQRO
-# MEwwSgYIKwYBBQUHMAKGPmh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbS9wa2kvY2Vy
-# dHMvTWljUm9vQ2VyQXV0XzIwMTAtMDYtMjMuY3J0MA0GCSqGSIb3DQEBCwUAA4IC
-# AQCdVX38Kq3hLB9nATEkW+Geckv8qW/qXBS2Pk5HZHixBpOXPTEztTnXwnE2P9pk
-# bHzQdTltuw8x5MKP+2zRoZQYIu7pZmc6U03dmLq2HnjYNi6cqYJWAAOwBb6J6Gng
-# ugnue99qb74py27YP0h1AdkY3m2CDPVtI1TkeFN1JFe53Z/zjj3G82jfZfakVqr3
-# lbYoVSfQJL1AoL8ZthISEV09J+BAljis9/kpicO8F7BUhUKz/AyeixmJ5/ALaoHC
-# gRlCGVJ1ijbCHcNhcy4sa3tuPywJeBTpkbKpW99Jo3QMvOyRgNI95ko+ZjtPu4b6
-# MhrZlvSP9pEB9s7GdP32THJvEKt1MMU0sHrYUP4KWN1APMdUbZ1jdEgssU5HLcEU
-# BHG/ZPkkvnNtyo4JvbMBV0lUZNlz138eW0QBjloZkWsNn6Qo3GcZKCS6OEuabvsh
-# VGtqRRFHqfG3rsjoiV5PndLQTHa1V1QJsWkBRH58oWFsc/4Ku+xBZj1p/cvBQUl+
-# fpO+y/g75LcVv7TOPqUxUYS8vwLBgqJ7Fx0ViY1w/ue10CgaiQuPNtq6TPmb/wrp
-# NPgkNWcr4A245oyZ1uEi6vAnQj0llOZ0dFtq0Z4+7X6gMTN9vMvpe784cETRkPHI
-# qzqKOghif9lwY1NNje6CbaUFEMFxBmoQtB1VM1izoXBm8qGCAs4wggI3AgEBMIH4
-# oYHQpIHNMIHKMQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4G
-# A1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMSUw
-# IwYDVQQLExxNaWNyb3NvZnQgQW1lcmljYSBPcGVyYXRpb25zMSYwJAYDVQQLEx1U
-# aGFsZXMgVFNTIEVTTjpERDhDLUUzMzctMkZBRTElMCMGA1UEAxMcTWljcm9zb2Z0
-# IFRpbWUtU3RhbXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUAIQAa9hdkkrtxSjrb
-# 4u8RhATHv+eggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGlu
-# Z3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBv
-# cmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFtcCBQQ0EgMjAxMDAN
-# BgkqhkiG9w0BAQUFAAIFAOcxvm0wIhgPMjAyMjExMzAxOTM1MDlaGA8yMDIyMTIw
-# MTE5MzUwOVowdzA9BgorBgEEAYRZCgQBMS8wLTAKAgUA5zG+bQIBADAKAgEAAgIY
-# aAIB/zAHAgEAAgISUTAKAgUA5zMP7QIBADA2BgorBgEEAYRZCgQCMSgwJjAMBgor
-# BgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqGSIb3DQEBBQUA
-# A4GBAH9yWwZ6G64wYJWAlKqs8XQtlLMTHHTfU5sNYgUerd1qZ7H3uFvxvtQQkYHs
-# Pw/Q2h/aqVljCFn+UnlAys2IpiQQCum2k0UYH3KpARK2YEyao/ESpYWUkE7VFiq3
-# +N0jgcw6XlgYMxaXTnO56f4hCTNmb4xFRM45KqIGWVXR34VFMYIEDTCCBAkCAQEw
-# gZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24xEDAOBgNVBAcT
-# B1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEmMCQGA1UE
-# AxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAHFA83NIaH07zkA
-# AQAAAcUwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzENBgsqhkiG9w0B
-# CRABBDAvBgkqhkiG9w0BCQQxIgQg8u59WfxZGr4m3rjRzy5+yCn7xZYSrAqagTcE
-# stjLJ8swgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCAZAbGR9iR3TAr5XT3A
-# 7Sw76ybyAAzKPkS4o+q81D98sTCBmDCBgKR+MHwxCzAJBgNVBAYTAlVTMRMwEQYD
-# VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
-# b3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1w
-# IFBDQSAyMDEwAhMzAAABxQPNzSGh9O85AAEAAAHFMCIEIFIOXVSScytThmeDvS85
-# OzuifX+3vz3ctjcJv4T/xJzyMA0GCSqGSIb3DQEBCwUABIICAJTnWJFLpW0mg3Bs
-# 2C/iv0vGw2iB4LpQSSFLC3otKY51myjOLrwBsK8gyWAHA+Qu01aYJRIFS0EiMqkL
-# NZMZzPStmVinK0hAV2EjHMP51y5fpnO2Vau/iDnNLdqyl6GEdJ8Ix1F/Wu6676jD
-# tNfsHiELl+MN/zvriEZut3zyrAyoN+vWibRb+maPEZpaO40v5Tbl21H+rZgyIAJe
-# PTafQlYmXUFJXGxpxZCqMnpIgUkuZo8C0ZVzIccJV6iIDtOGdlvKCuB9uqMDC1yQ
-# NCBmuBlAxharza8spcsZ+7943hpTyQ1W3zUEcJ2zbqZihP9eKw/6Y37SSK3OL+G3
-# 55yR4cW9YDFri6dDlEFOJinJnJD46bBZsgxYKWaw+QTjce6L4pnpVKgBntgOa0LH
-# kMtr5FidKEw6vNj6Ep39KNe/F0+avvn/ZBe1Clf1lsLFfGE083yqTLSfH+FMM+HD
-# v/U/fv2PSyLG+EaSFLwPHDqb7ccYSLB/kQkbRjMP8eadOEvjJ9sV9TK9pMnD7DBA
-# Nscm80sGjGNsKn5Q0i4GgtS3TNa12BTZTSfuY181cuwF0Te5cyix51mpWaS+zqp8
-# e0D0UWYdrApXw3jsm6Pj1BbMo73dkrRauVSV21uLgg6tAt2RYI4nfLnVgxxeT/6M
-# y10/dvmPk+GPPpewn3w6A6WGhnbI
+# b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1p
+# Y3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMg
+# VFNTIEVTTjo0NjJGLUUzMTktM0YyMDElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUt
+# U3RhbXAgU2VydmljZaCCEVwwggcQMIIE+KADAgECAhMzAAABpAfP44+jum/WAAEA
+# AAGkMA0GCSqGSIb3DQEBCwUAMHwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNo
+# aW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29y
+# cG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1lLVN0YW1wIFBDQSAyMDEw
+# MB4XDTIyMDMwMjE4NTExOFoXDTIzMDUxMTE4NTExOFowgc4xCzAJBgNVBAYTAlVT
+# MRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQK
+# ExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1pY3Jvc29mdCBPcGVy
+# YXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVTTjo0NjJG
+# LUUzMTktM0YyMDElMCMGA1UEAxMcTWljcm9zb2Z0IFRpbWUtU3RhbXAgU2Vydmlj
+# ZTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMBHjgD6FPy81PUhcOIV
+# Gh4bOSaq634Y+TjW2hNF9BlnWxLJCEuMiV6YF5x6YTM7T1ZLM6NnH0whPypiz3bV
+# ZRmwgGyTURKfVyPJ89R3WaZ/HMvcAJZnCMgL+mOpxE94gwQJD/qo8UquOrCKCY/f
+# cjchxV8yMkfIqP69HnWfW0ratk+I2GZF2ISFyRtvEuxJvacIFDFkQXj3H+Xy9IHz
+# Nqqi+g54iQjOAN6s3s68mi6rqv6+D9DPVPg1ev6worI3FlYzrPLCIunsbtYt3Xw3
+# aHKMfA+SH8CV4iqJ/eEZUP1uFJT50MAPNQlIwWERa6cccSVB5mN2YgHf8zDUqQU4
+# k2/DWw+14iLkwrgNlfdZ38V3xmxC9mZc9YnwFc32xi0czPzN15C8wiZEIqCddxbw
+# imc+0LtPKandRXk2hMfwg0XpZaJxDfLTgvYjVU5PXTgB10mhWAA/YosgbB8KzvAx
+# XPnrEnYg3XLWkgBZ+lOrHvqiszlFCGQC9rKPVFPCCsey356VhfcXlvwAJauAk7V0
+# nLVTgwi/5ILyHffEuZYDnrx6a+snqDTHL/ZqRsB5HHq0XBo/i7BVuMXnSSXlFCo3
+# On8IOl8JOKQ4CrIlri9qWJYMxsSICscotgODoYOO4lmXltKOB0l0IAhEXwSSKID5
+# QAa9wTpIagea2hzjI6SUY1W/AgMBAAGjggE2MIIBMjAdBgNVHQ4EFgQU4tATn6z4
+# CBL2xZQd0jjN6SnjJMIwHwYDVR0jBBgwFoAUn6cVXQBeYl2D9OXSZacbUzUZ6XIw
+# XwYDVR0fBFgwVjBUoFKgUIZOaHR0cDovL3d3dy5taWNyb3NvZnQuY29tL3BraW9w
+# cy9jcmwvTWljcm9zb2Z0JTIwVGltZS1TdGFtcCUyMFBDQSUyMDIwMTAoMSkuY3Js
+# MGwGCCsGAQUFBwEBBGAwXjBcBggrBgEFBQcwAoZQaHR0cDovL3d3dy5taWNyb3Nv
+# ZnQuY29tL3BraW9wcy9jZXJ0cy9NaWNyb3NvZnQlMjBUaW1lLVN0YW1wJTIwUENB
+# JTIwMjAxMCgxKS5jcnQwDAYDVR0TAQH/BAIwADATBgNVHSUEDDAKBggrBgEFBQcD
+# CDANBgkqhkiG9w0BAQsFAAOCAgEACVYcUNEMlyTuPDBGhiZ1U548ssF6J2g9QElW
+# Eb2cZ4dL0+5G8721/giRtTPvgxQhDF5rJCjHGj8nFSqOE8fnYz9vgb2YclYHvkoK
+# WUJODxjhWS+S06ZLR/nDS85HeDAD0FGduAA80Q7vGzknKW2jxoNHTb74KQEMWiUK
+# 1M2PDN+eISPXPhPudGVGLbIEAk1Goj5VjzbQuLKhm2Tk4a22rkXkeE98gyNojHlB
+# hHbb7nex3zGBTBGkVtwt2ud7qN2rcpuJhsJ/vL/0XYLtyOk7eSQZdfye0TT1/qj1
+# 8iSXHsIXDhHOuTKqBiiatoo4Unwk7uGyM0lv38Ztr+YpajSP+p0PEMRH9RdfrKRm
+# 4bHV5CmOTIzAmc49YZt40hhlVwlClFA4M+zn3cyLmEGwfNqD693hD5W3vcpnhf3x
+# hZbVWTVpJH1CPGTmR4y5U9kxwysK8VlfCFRwYUa5640KsgIv1tJhF9LXemWIPEnu
+# w9JnzHZ3iSw5dbTSXp9HmdOJIzsO+/tjQwZWBSFqnayaGv3Y8w1KYiQJS8cKJhwn
+# hGgBPbyan+E5D9TyY9dKlZ3FikstwM4hKYGEUlg3tqaWEilWwa9SaNetNxjSfgah
+# 782qzbjTQhwDgc6Jf07F2ak0YMnNJFHsBb1NPw77dhmo9ki8vrLOB++d6Gm2Z/jD
+# pDOSst8wggdxMIIFWaADAgECAhMzAAAAFcXna54Cm0mZAAAAAAAVMA0GCSqGSIb3
+# DQEBCwUAMIGIMQswCQYDVQQGEwJVUzETMBEGA1UECBMKV2FzaGluZ3RvbjEQMA4G
+# A1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMTIw
+# MAYDVQQDEylNaWNyb3NvZnQgUm9vdCBDZXJ0aWZpY2F0ZSBBdXRob3JpdHkgMjAx
+# MDAeFw0yMTA5MzAxODIyMjVaFw0zMDA5MzAxODMyMjVaMHwxCzAJBgNVBAYTAlVT
+# MRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQK
+# ExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBUaW1l
+# LVN0YW1wIFBDQSAyMDEwMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA
+# 5OGmTOe0ciELeaLL1yR5vQ7VgtP97pwHB9KpbE51yMo1V/YBf2xK4OK9uT4XYDP/
+# XE/HZveVU3Fa4n5KWv64NmeFRiMMtY0Tz3cywBAY6GB9alKDRLemjkZrBxTzxXb1
+# hlDcwUTIcVxRMTegCjhuje3XD9gmU3w5YQJ6xKr9cmmvHaus9ja+NSZk2pg7uhp7
+# M62AW36MEBydUv626GIl3GoPz130/o5Tz9bshVZN7928jaTjkY+yOSxRnOlwaQ3K
+# Ni1wjjHINSi947SHJMPgyY9+tVSP3PoFVZhtaDuaRr3tpK56KTesy+uDRedGbsoy
+# 1cCGMFxPLOJiss254o2I5JasAUq7vnGpF1tnYN74kpEeHT39IM9zfUGaRnXNxF80
+# 3RKJ1v2lIH1+/NmeRd+2ci/bfV+AutuqfjbsNkz2K26oElHovwUDo9Fzpk03dJQc
+# NIIP8BDyt0cY7afomXw/TNuvXsLz1dhzPUNOwTM5TI4CvEJoLhDqhFFG4tG9ahha
+# YQFzymeiXtcodgLiMxhy16cg8ML6EgrXY28MyTZki1ugpoMhXV8wdJGUlNi5UPkL
+# iWHzNgY1GIRH29wb0f2y1BzFa/ZcUlFdEtsluq9QBXpsxREdcu+N+VLEhReTwDwV
+# 2xo3xwgVGD94q0W29R6HXtqPnhZyacaue7e3PmriLq0CAwEAAaOCAd0wggHZMBIG
+# CSsGAQQBgjcVAQQFAgMBAAEwIwYJKwYBBAGCNxUCBBYEFCqnUv5kxJq+gpE8RjUp
+# zxD/LwTuMB0GA1UdDgQWBBSfpxVdAF5iXYP05dJlpxtTNRnpcjBcBgNVHSAEVTBT
+# MFEGDCsGAQQBgjdMg30BATBBMD8GCCsGAQUFBwIBFjNodHRwOi8vd3d3Lm1pY3Jv
+# c29mdC5jb20vcGtpb3BzL0RvY3MvUmVwb3NpdG9yeS5odG0wEwYDVR0lBAwwCgYI
+# KwYBBQUHAwgwGQYJKwYBBAGCNxQCBAweCgBTAHUAYgBDAEEwCwYDVR0PBAQDAgGG
+# MA8GA1UdEwEB/wQFMAMBAf8wHwYDVR0jBBgwFoAU1fZWy4/oolxiaNE9lJBb186a
+# GMQwVgYDVR0fBE8wTTBLoEmgR4ZFaHR0cDovL2NybC5taWNyb3NvZnQuY29tL3Br
+# aS9jcmwvcHJvZHVjdHMvTWljUm9vQ2VyQXV0XzIwMTAtMDYtMjMuY3JsMFoGCCsG
+# AQUFBwEBBE4wTDBKBggrBgEFBQcwAoY+aHR0cDovL3d3dy5taWNyb3NvZnQuY29t
+# L3BraS9jZXJ0cy9NaWNSb29DZXJBdXRfMjAxMC0wNi0yMy5jcnQwDQYJKoZIhvcN
+# AQELBQADggIBAJ1VffwqreEsH2cBMSRb4Z5yS/ypb+pcFLY+TkdkeLEGk5c9MTO1
+# OdfCcTY/2mRsfNB1OW27DzHkwo/7bNGhlBgi7ulmZzpTTd2YurYeeNg2LpypglYA
+# A7AFvonoaeC6Ce5732pvvinLbtg/SHUB2RjebYIM9W0jVOR4U3UkV7ndn/OOPcbz
+# aN9l9qRWqveVtihVJ9AkvUCgvxm2EhIRXT0n4ECWOKz3+SmJw7wXsFSFQrP8DJ6L
+# GYnn8AtqgcKBGUIZUnWKNsIdw2FzLixre24/LAl4FOmRsqlb30mjdAy87JGA0j3m
+# Sj5mO0+7hvoyGtmW9I/2kQH2zsZ0/fZMcm8Qq3UwxTSwethQ/gpY3UA8x1RtnWN0
+# SCyxTkctwRQEcb9k+SS+c23Kjgm9swFXSVRk2XPXfx5bRAGOWhmRaw2fpCjcZxko
+# JLo4S5pu+yFUa2pFEUep8beuyOiJXk+d0tBMdrVXVAmxaQFEfnyhYWxz/gq77EFm
+# PWn9y8FBSX5+k77L+DvktxW/tM4+pTFRhLy/AsGConsXHRWJjXD+57XQKBqJC482
+# 2rpM+Zv/Cuk0+CQ1ZyvgDbjmjJnW4SLq8CdCPSWU5nR0W2rRnj7tfqAxM328y+l7
+# vzhwRNGQ8cirOoo6CGJ/2XBjU02N7oJtpQUQwXEGahC0HVUzWLOhcGbyoYICzzCC
+# AjgCAQEwgfyhgdSkgdEwgc4xCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5n
+# dG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9y
+# YXRpb24xKTAnBgNVBAsTIE1pY3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNv
+# MSYwJAYDVQQLEx1UaGFsZXMgVFNTIEVTTjo0NjJGLUUzMTktM0YyMDElMCMGA1UE
+# AxMcTWljcm9zb2Z0IFRpbWUtU3RhbXAgU2VydmljZaIjCgEBMAcGBSsOAwIaAxUA
+# NBwo4pNrfEL6DVo+tw96vGJvLp+ggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEG
+# A1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWlj
+# cm9zb2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFt
+# cCBQQ0EgMjAxMDANBgkqhkiG9w0BAQUFAAIFAOeLZvwwIhgPMjAyMzAyMDYxNTQ2
+# MDRaGA8yMDIzMDIwNzE1NDYwNFowdDA6BgorBgEEAYRZCgQBMSwwKjAKAgUA54tm
+# /AIBADAHAgEAAgIGMDAHAgEAAgIRwTAKAgUA54y4fAIBADA2BgorBgEEAYRZCgQC
+# MSgwJjAMBgorBgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0GCSqG
+# SIb3DQEBBQUAA4GBAEOERf9O6zVGTNImLlXoMhCgAD312KiF+w527AsKUqionpfp
+# Mbapw18TtCDANDAxurB6Fdk2Y8fqaBfmOiwDTG+yde5GmH0dbqW112QF0C606mym
+# TAoj8pjJCfItR7AqLt6bRC3Cte0/vqAk1M3RWXyuH2Af75XOLlGFaVbg5g7XMYIE
+# DTCCBAkCAQEwgZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0b24x
+# EDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlv
+# bjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMAAAGk
+# B8/jj6O6b9YAAQAAAaQwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJAzEN
+# BgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgvV4LhEhr6BMKA8/cb4wL7Qsq
+# kJr332YSOmqFrLrFigYwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCAF/OCj
+# ISZwpMBJ8MJ3WwMCF3qOa5YHFG6J4uHjaup5+DCBmDCBgKR+MHwxCzAJBgNVBAYT
+# AlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYD
+# VQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29mdCBU
+# aW1lLVN0YW1wIFBDQSAyMDEwAhMzAAABpAfP44+jum/WAAEAAAGkMCIEIDvfX1om
+# PNUFWdROwc2zWCI1fuaUhoCdKOPSJE9R/mwwMA0GCSqGSIb3DQEBCwUABIICAD9u
+# FmRDc4p9+zTI/n1I9enb0e2Hk9vpJOvIXrAA5KJwemyyIhZ8k0V1PzQqBUvEpTI4
+# oLfQBX8KI7IbAjc5aPXwwi0+euWfe6GYZWgCq8ez3boo4vo8u7PaOPV3vzBRP6Xd
+# JfFUJTPtLDLl9W2cL2vXqMz4vxBF+6YPRLeNnHDRDz9VmfM1vOFOzdGk4muX2Hu7
+# DD32+jCPT+n9Hjd0ZwI9rc6kNAw4Nv/hiU2Q5FpaZ/ET6B/s+CrZjXFs7Ifn7C1F
+# kc/n4TK71UQkWDTqDhu2XNACQ2BFccDULW6sweSQLjOrHKqwVYhVJVX8uA+ROWOM
+# IfmHHjKgvJilhHsXi6wPEDlxU7OppFLwXO1hKKT21dcv6ygyVAJgZkvWToWk5MHb
+# j8g9EV4fXcNfCbYqmtTaYY2glhLcc9+WD1BzOyFfsLx6y6krUjYVl/vwnT2Pi5Ss
+# J3cYa35UC9ZyMlRO1RG7GzLArgOCEfIzRxuD9eioR1jZulrt+2LEOWcV7uT1tBzQ
+# kbOsUNNkqlXJ/xNZW7flY9V4MguCIAPzvPlnAEceUKVC3/zKtcDoGUiGmnJs6VQI
+# ddRBizkZhe5n1C02EosblYJlMVcNfRLus/8Q8+hb8E67LYXUcK3vms7ReWLV3l7b
+# KWVIIncvSZwAfRJMc4PjerXtsYBWoJA6m5xZnXqC
 # SIG # End signature block

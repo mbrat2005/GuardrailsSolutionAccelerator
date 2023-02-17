@@ -23,7 +23,7 @@ function Get-VNetComplianceInformation {
     )
     [PSCustomObject] $VNetList = New-Object System.Collections.ArrayList
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
-
+    $ExcludeVnetTag="GR9-ExcludeVNetFromCompliance"
     try {
         $subs=Get-AzSubscription -ErrorAction Stop | Where-Object {$_.State -eq 'Enabled' -and $_.Name -ne $CBSSubscriptionName}  
     }
@@ -31,7 +31,6 @@ function Get-VNetComplianceInformation {
         $ErrorList.Add("Failed to execute the 'Get-AzSubscription' command--verify your permissions and the installion of the Az.Accounts module; returned error message: $_" )
         throw "Error: Failed to execute the 'Get-AzSubscription'--verify your permissions and the installion of the Az.Accounts module; returned error message: $_"                
     }
-
     if ($ExcludedVNets -ne $null)
     {
         $ExcludedVNetsList=$ExcludedVNets.Split(",")
@@ -48,31 +47,17 @@ function Get-VNetComplianceInformation {
             foreach ($VNet in $VNets)
             {
                 Write-Debug "Working on $($VNet.Name) VNet..."
-                $ev=get-tagValue -tagKey "ExcludeFromCompliance" -object $VNet
+                $ev=get-tagValue -tagKey $ExcludeVnetTag -object $VNet
                 if ($ev -ne "true" -and $vnet.Name -notin $ExcludedVNetsList)
                 {
                     if ($Vnet.EnableDdosProtection) 
                     {
                         $ComplianceStatus = $true 
                         $Comments="$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
-                        #$MitigationCommands="N/A"
                     }
                     else {
                         $ComplianceStatus = $false
                         $Comments= $msgTable.ddosNotEnabled
-                        <#$MitigationCommands=@"
-                        # https://docs.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview
-                        # Selects Subscription
-                        Select-azsubscription $($sub.SubscriptionId)
-                        # Create a new DDos Plan
-                        `$plan=new-azddosProtectionPlan -ResourceGroupName $($Vnet.ResourceGroupName) -Name '$($Vnet.Name)-plan' -Location '$($vnet.Location)'
-                        `$vnet=Get-AzVirtualNetwork -Name $($vnet.Name) -ResourceGroupName $($Vnet.ResourceGroupName)
-                        #change DDos configuration
-                        `$vnet.EnableDdosProtection=$true
-                        `$vnet.DdosProtectionPlan.Id=`$plan.id
-                        #Apply configuration
-                        Set-azvirtualNetwork -VirtualNetwork `$vnet
-    "@#>
                     }
                     # Create PSOBject with Information.
                     $VNetObject = [PSCustomObject]@{ 
@@ -83,7 +68,6 @@ function Get-VNetComplianceInformation {
                         ItemName = $msgTable.vnetDDosConfig
                         itsgcode = $itsgcode
                         ControlName = $ControlName
-                        #MitigationCommands=$MitigationCommands
                         ReportTime = $ReportTime
                     }
                     $VNetList.add($VNetObject) | Out-Null                
@@ -105,15 +89,14 @@ function Get-VNetComplianceInformation {
         AdditionalResults = $AdditionalResults
     }
     return $moduleOutput
-
 }
 
 
 # SIG # Begin signature block
 # MIInrQYJKoZIhvcNAQcCoIInnjCCJ5oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDMuE/9gcNB2hdx
-# 3jIq/RRS//VX6U2rS24jjujc9/2olqCCDYEwggX/MIID56ADAgECAhMzAAACzI61
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCWDHH9GdDVqQgD
+# lBMP7TMWjwuC49O6MaKoAfJPDNiIR6CCDYEwggX/MIID56ADAgECAhMzAAACzI61
 # lqa90clOAAAAAALMMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAYTAlVTMRMwEQYD
 # VQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4wHAYDVQQKExVNaWNy
 # b3NvZnQgQ29ycG9yYXRpb24xKDAmBgNVBAMTH01pY3Jvc29mdCBDb2RlIFNpZ25p
@@ -190,19 +173,19 @@ function Get-VNetComplianceInformation {
 # HjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEoMCYGA1UEAxMfTWljcm9z
 # b2Z0IENvZGUgU2lnbmluZyBQQ0EgMjAxMQITMwAAAsyOtZamvdHJTgAAAAACzDAN
 # BglghkgBZQMEAgEFAKCBrjAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgor
-# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgOjaFF2M8
-# 5oxxLeMsFE334EWMty8WaKnSIx2F/0Lu9LswQgYKKwYBBAGCNwIBDDE0MDKgFIAS
+# BgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQg9zXunXTR
+# vmtGyQBPNJHH/R/0Iqs9Gi06suQYHIG10AkwQgYKKwYBBAGCNwIBDDE0MDKgFIAS
 # AE0AaQBjAHIAbwBzAG8AZgB0oRqAGGh0dHA6Ly93d3cubWljcm9zb2Z0LmNvbTAN
-# BgkqhkiG9w0BAQEFAASCAQBjfEJNQ4QiiqNaHkUueKicfW2X8asC2FpL6JD6ouwy
-# plK3ADhwz6MOwGzcK/m3IC/+e02pRAbPRS/LLvkfoGNvMXbNTtiZVBJjXdHctLOL
-# 48LLIcP1bNdRyvnfS0S97zsZXPc83s5BM9ZypXzJfzOVaFOz1oDv2sEpNYSMnTbq
-# 0H9aa8yxvrcLbbl8TcrJSOazSlnVp7BPz8WYoL9IQxVPKW/dhhExUvTUTa7sZvxS
-# 6C6K3thvBjjms4ayzMEX781Xp7DZt5zxLJaZpG5i2Fr6sFcUe8CMzq1vjW3vssVv
-# E+b0gvZlFtmTueyja0wTGbHTA96qczKb4YMfL5RSxtxIoYIXDDCCFwgGCisGAQQB
+# BgkqhkiG9w0BAQEFAASCAQAN+Zz0vSzLhlnh/fJ/lIxFvk8CQJXYQZ9I3URMLmZD
+# cKXSJAkLg/zr8fGxWxFTR2AwJLEI7eJyultVxqAMX1wmPvTBC7NTBQvu8AR5sLmu
+# RzxbtNjLcpo5mNsGXfMI2l0566MSH1H3Q46cNycetoGC43W4ghe1sEnynoQKzA/K
+# gyEIYzC5NElofwGxvygTZSwGQFFlYME69zGSlaZLi+2lUXRibwTjeZfONym4rkjJ
+# ZqAT+t6SKyLY3OZtJ38/Lmkc9fVV3GgodvFGo2M7INXFpvUjZ8W531pQbN5rUvoC
+# HNOCYBLn2yI7c2NdJkTVaEBEgXa1mjxpN36PP6+DJ/q4oYIXDDCCFwgGCisGAQQB
 # gjcDAwExghb4MIIW9AYJKoZIhvcNAQcCoIIW5TCCFuECAQMxDzANBglghkgBZQME
 # AgEFADCCAVUGCyqGSIb3DQEJEAEEoIIBRASCAUAwggE8AgEBBgorBgEEAYRZCgMB
-# MDEwDQYJYIZIAWUDBAIBBQAEIOPWu84htDWwFoZaHrE1ZJEjwdiGARiVaDb2tuT8
-# o6pSAgZjc45gm60YEzIwMjIxMTMwMTgxMTM0LjEwNlowBIACAfSggdSkgdEwgc4x
+# MDEwDQYJYIZIAWUDBAIBBQAEIEDlSNYm+0pSNLdQsKsj0aQPYK7+STL9hctS6voz
+# aRA1AgZjxouK7GwYEzIwMjMwMjA2MTUwOTIyLjAxM1owBIACAfSggdSkgdEwgc4x
 # CzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRt
 # b25kMR4wHAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xKTAnBgNVBAsTIE1p
 # Y3Jvc29mdCBPcGVyYXRpb25zIFB1ZXJ0byBSaWNvMSYwJAYDVQQLEx1UaGFsZXMg
@@ -293,33 +276,33 @@ function Get-VNetComplianceInformation {
 # wH7vHimSAzeDLN0qzWNb2p2vRH+ggYMwgYCkfjB8MQswCQYDVQQGEwJVUzETMBEG
 # A1UECBMKV2FzaGluZ3RvbjEQMA4GA1UEBxMHUmVkbW9uZDEeMBwGA1UEChMVTWlj
 # cm9zb2Z0IENvcnBvcmF0aW9uMSYwJAYDVQQDEx1NaWNyb3NvZnQgVGltZS1TdGFt
-# cCBQQ0EgMjAxMDANBgkqhkiG9w0BAQUFAAIFAOcx0vYwIhgPMjAyMjExMzAxNzAy
-# NDZaGA8yMDIyMTIwMTE3MDI0NlowdzA9BgorBgEEAYRZCgQBMS8wLTAKAgUA5zHS
-# 9gIBADAKAgEAAgIIwAIB/zAHAgEAAgIRdTAKAgUA5zMkdgIBADA2BgorBgEEAYRZ
+# cCBQQ0EgMjAxMDANBgkqhkiG9w0BAQUFAAIFAOeLZ30wIhgPMjAyMzAyMDYxNTQ4
+# MTNaGA8yMDIzMDIwNzE1NDgxM1owdzA9BgorBgEEAYRZCgQBMS8wLTAKAgUA54tn
+# fQIBADAKAgEAAgIVzgIB/zAHAgEAAgIQXjAKAgUA54y4/QIBADA2BgorBgEEAYRZ
 # CgQCMSgwJjAMBgorBgEEAYRZCgMCoAowCAIBAAIDB6EgoQowCAIBAAIDAYagMA0G
-# CSqGSIb3DQEBBQUAA4GBAC7orJaM5qfqDrpI+C0ngsqra+NazoIVxIlyZVepUpR2
-# u8oGYG+HMQ1E4JfulEOgjhL4hMIZU9ENu/jGclszzreNDMCEd31RO3X6ke206cZU
-# stIusVug+6hPi2pbu/sZ/o+T/Uj7GArvyKysNdPVWShI0G5JNp5PpnPdfkjM15mv
+# CSqGSIb3DQEBBQUAA4GBAEi7bPIkIVHKXj76u3fI/bi807tf9lY2i9GoessdJHlc
+# 64BYAQFS6w0T18WAv51hhC/OTkAIGB5hH/bwg9wbtxhZxiSf2FfSbhYQwg8cFtRK
+# 6nddFXvgHuY98Dwz+PI9a0DmXEeccwZ1yPlLOugyb7sIOoRGFHQPj36fhRY9lU5v
 # MYIEDTCCBAkCAQEwgZMwfDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCldhc2hpbmd0
 # b24xEDAOBgNVBAcTB1JlZG1vbmQxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3Jh
 # dGlvbjEmMCQGA1UEAxMdTWljcm9zb2Z0IFRpbWUtU3RhbXAgUENBIDIwMTACEzMA
 # AAGnNbsuwmSFUCkAAQAAAacwDQYJYIZIAWUDBAIBBQCgggFKMBoGCSqGSIb3DQEJ
-# AzENBgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgInhcdJCNCfXnCv/FqcpU
-# 6HbnBR+j+Pyv7xXfsmy5dnUwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBH
+# AzENBgsqhkiG9w0BCRABBDAvBgkqhkiG9w0BCQQxIgQgvoyjCrjtqzu22uXIkGOr
+# ADqsJaoGyhGv+upSmk2k91MwgfoGCyqGSIb3DQEJEAIvMYHqMIHnMIHkMIG9BCBH
 # 8H/nCZUC4L0Yqbz3sH3w5kzhwJ4RqCkXXKxNPtqOGzCBmDCBgKR+MHwxCzAJBgNV
 # BAYTAlVTMRMwEQYDVQQIEwpXYXNoaW5ndG9uMRAwDgYDVQQHEwdSZWRtb25kMR4w
 # HAYDVQQKExVNaWNyb3NvZnQgQ29ycG9yYXRpb24xJjAkBgNVBAMTHU1pY3Jvc29m
-# dCBUaW1lLVN0YW1wIFBDQSAyMDEwAhMzAAABpzW7LsJkhVApAAEAAAGnMCIEIBNV
-# ctfx+xRccvYcmsBlXt+z0W345Ka/wzuBC1LW2UUUMA0GCSqGSIb3DQEBCwUABIIC
-# AGEn77raBQ3JuLkW06ixEf/PvX23iKx0OJFiPDtTtO4dDGHI92DyZSUZw9f2AHTH
-# cyXtwMeg/My5F9/FTfuTyj/lPT7A2k9++kwgt7NjdN0jyDqdpfoThi0ZVTGvHTum
-# K5l9C1yo2l1pJNXxDPC6QKuI3PaftAU+Pv3S+dNwRpBI6dAr0Zla5Mynhn+lyDp0
-# 70rKNEvua/rIQ3pP1eCUcdcwQwtnW0s5WVScbkWLRolG1IHH+Q11SvsSBsqftp/Y
-# JXp47b4arwaWMMHD0WYmnH4f4ilVj96sbbxWZd+yUCWBaZcQbJAsrpSd4jY4W6JK
-# NhnG0WvN/lVfOllxwvZJRrOlcNz26GhXbtNvlF7qdNKrwpANxIvy6fkIEUMzWhZW
-# LLp0+2VBmdhnVeHClN8kZQJSL6aTOuJw/MBUrXU8pu5I1b0z14f91TSGFV7JxJrd
-# XjgMcaQQfPBfcD/d7hnyyVPoM9rs/KuNg6/VvphXiTBYxL2R9oMpetM7xZFJOQWL
-# k7l48wka2BChZn4cAa7DuJ8OSZXcZil2AheZjwa0tXTV+bRt4XQpCDUlPyEZabHl
-# lf41TT4o8jC0cpbWs4o9XsNp9Lm9UIABZxbUiVqoQVl+19faeqYQWY4gChBkw+po
-# 823t1NY9l21ZsaXjMn+T824qIVc9B28afwtYbyFefNU4
+# dCBUaW1lLVN0YW1wIFBDQSAyMDEwAhMzAAABpzW7LsJkhVApAAEAAAGnMCIEID7w
+# 4h15iO2oV82gC+RJvlCe9O+McMvUf1wfGtlYRZ8WMA0GCSqGSIb3DQEBCwUABIIC
+# AE7TbFi2294e2vxnLD1MDT1u7DlPCYxmFqYhbRO8H5AWYiKU40QdvMr5NTHvHyR5
+# AMYbZ+2CtHxcpylyyTkP+QSB9d14U5zkohxIhF2utLM6irrkb+Z18q6mU2RDeek9
+# VxcpUV+5OGiwlCMiWVOHCKYt4Li85IO3+U+OB2jLJIpm5Ek7HMEwO5y/2DQqV7i2
+# EZX34d/ol8EV8ab1SwCEHXCMorXmX0jkgp/PEfdDqzcNQwN+SHLHhD12xM4FZmXU
+# MAi7FMadj43gq3C2zDsQSX4a/bULWAZoxRHqkXE5JOpu4mcdViyU9CvIiuiKssEr
+# kYB3N5XnMfFe5Z6oivLTDbf4HcEciL9ChGhkabFH1pLAm8YJ60Kmk6LlSewOVIMy
+# H5La0rEBNEm7TVtaSSGhnIcp8e8G6GIveccaBHh4H+0xeJfavHqkkSJl/1/0D99B
+# YrcfrNfhCP/ba7wqePYe/FE/PZca4/pQgRlih6w/JtB7c5Wp5UWzKNnnsDVmiZbh
+# tcvV0QDBhqf4TuIFP7rO5QBqxtYduw3jxWItiTJ6Du8UZR/ryIAXUW09ZQp+5ZUA
+# OtTU/Cq4Y/k6issQ4SiOcxJRZmeAfk3Y2Su0TZpCn65aQdW9TMuwdwRl0TvKxqqk
+# gBQQLV+X2KWWe78lVnZnXDgwKLUnnRAWl4rZ6BvgPkQe
 # SIG # End signature block

@@ -55,6 +55,7 @@ In this control the solution tries to validate multiple items as follow.
 This Module module verifies the following items:
 - The existance of at least one Conditional Access Named Location that only contains Canada. If no Location is defined or no locations have just Canada in it, the control will be considered non-Compliant.
 - If the above is Compliant, the solution with check if there is at least one conditional access policy that uses any of the Canada only named locations determined before. If no policies with this criteria are found, the control will be considered non-compliant.
+- The existence of a file named 'PrivilegedAccountManagementPlan.txt' (case-sensitive) in the Guardrails Solution Accelerator storage account, providing attestation that the organization has the required privileged account management plan documented.
 
 ## GUARDRAIL 4 ENTERPRISE MONITORING ACCOUNTS
 
@@ -119,6 +120,26 @@ If any of the above rules is not true, the subnet will be considered non complia
 
 If any of the above rules is not true, the subnet will be considered not compliant.
 
+#### Exclusion
+
+Subnets can be excluded from the compliance check in four different ways:
+
+Automatically:
+
+- The following subnets are considered reserved and are automatically excluded:
+      GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet
+      This configuration is contained in the 'reservedSubnetList' variable in the Automation Account and can be updated as needed.
+
+The whole VNet:
+
+  - If a tag named "GR8-ExcludeVNetFromCompliance" is found in the VNet, all subnets are ignored.
+
+One or more specific subnets: 
+
+- A tag called "GR-ExcludedSubnets" is found, containing a list of subnets separated by commas, each of those subnets will be excluded from the compliance check.
+
+- A list of subnet names can be provided as a parameter to the module ($ExcludedSubnetsList). All subnets in this list will be excluded from the compliance check, from all VNets.
+
 ### Network Architecture Diagram
 
 * If you have created a network diagram and it meets ITSG-33 controls, make sure to upload an empty text file with the name "ConfirmNetworkDiagramExists.txt" to the container name "guardrailsstorage" in the storage account created by the setup. This file tells the solution that you have completed this task. Please do not upload the network diagram itself. Once the solution detects the file, the check mark status will be changed from (❌) to (✔️).
@@ -135,6 +156,8 @@ For each VNet the following items will be evaluated.
 - DDos Protection set to Standard (*Enabling DDos standard protection on your Azure environment will have a financial impact on your monthly billing*) 
 
 If any of the above rules is not true, the VNet will be considered not compliant.
+
+If the Vnet object containts a tag "GR9-ExcludeVNetFromCompliance" the VNet will be excluded from the compliance check.
 
 ## GUARDRAIL 10 CYBER DEFENSE SERVICES
     
