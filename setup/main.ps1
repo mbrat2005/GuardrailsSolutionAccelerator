@@ -1,5 +1,6 @@
 param (
-    [switch]$localExecution
+    [switch]$localExecution,
+    [string]$keyVaultName
 )
 
 Disable-AzContextAutosave | Out-Null
@@ -16,6 +17,33 @@ If (!$localExecution.IsPresent) {
 Else {
     Write-Output "Running locally, skipping Azure connection."
     Write-Output "Importing all modules manually..."
+
+    Get-ChildItem -path ../src -Filter *.psd1 -Recurse -File -Exclude 'GR-ComplianceCheck*' | Import-Module -Force 
+
+    Import-Module ../src/Guardrails-Localization/GR-ComplianceChecks.psd1 
+
+    # install marketplace module
+    Install-Module -Name Az.Marketplace -Scope CurrentUser 
+
+    # setting local environment variables
+    $config = Get-GSAExportedConfig -KeyVaultName $keyVaultName -yes | Select-Object -Expand configString | ConvertFrom-Json | Select-Object -ExcludeProperty runtime
+    $config.psobject.properties | ForEach-Object {
+        Write-Host "Setting environment variable: $($_.Name) = $($_.Value.ToString())"
+        [System.Environment]::SetEnvironmentVariable($_.Name, $_.Value.ToString(), [System.EnvironmentVariableTarget]::Process)
+    }
+    ## overwrite config vars with runtime full values
+    $config = Get-GSAExportedConfig -KeyVaultName $keyVaultName -yes | Select-Object -Expand configString | ConvertFrom-Json | Select-Object -Expand runtime
+    $config.psobject.properties | ForEach-Object {
+        Write-Host "Setting environment variable: $($_.Name) = $($_.Value.ToString())"
+        [System.Environment]::SetEnvironmentVariable($_.Name, $_.Value.ToString(), [System.EnvironmentVariableTarget]::Process)
+    }
+
+    # manually set additional variables
+    [System.Environment]::SetEnvironmentVariable('GuardrailWorkspaceIDKeyName', 'WorkSpaceKey', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('LogType', 'GuardrailsCompliance', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('WorkSpaceID', (Get-AzOperationalInsightsWorkspace -ResourceGroupName $env:ResourceGroup -Name $env:logAnalyticsworkspaceName).CustomerId, [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('ContainerName', 'guardrailsstorage', [System.EnvironmentVariableTarget]::Process)
+    [System.Environment]::SetEnvironmentVariable('ReservedSubnetList', "GatewaySubnet,AzureFirewallSubnet,AzureBastionSubnet,AzureFirewallManagementSubnet,RouteServerSubnet", [System.EnvironmentVariableTarget]::Process)
 }
 
 #Standard variables
@@ -23,11 +51,11 @@ $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID"
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
-$ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
+$ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroup"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
-$Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale" 
+$Locale = Get-GSAAutomationVariable -Name "Locale" 
 
 
 $SubID = (Get-AzContext).Subscription.Id
@@ -60,7 +88,7 @@ Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $
 
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName = "GR-ComplianceChecks-Msgs"
-$messagesBaseDirectory = (Get-Module -ListAvailable GR-ComplianceChecks).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
+$messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
 $messagesBindingVariableName = "msgTable"
 Write-Output "Loading messages in $($Locale)"
 #dir 'C:\Modules\User\GR-ComplianceChecks'

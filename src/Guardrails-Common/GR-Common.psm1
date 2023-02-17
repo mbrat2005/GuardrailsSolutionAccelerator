@@ -493,6 +493,7 @@ function Invoke-GraphQuery {
 function Get-GSAAutomationVariable {
     param ([parameter(Mandatory = $true)]$name)
 
+    Write-Verbose "Getting automation variable '$name'"
     # when running in an Azure Automation Account
     If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
         $value = Get-AutomationVariable -Name $name
@@ -501,11 +502,13 @@ function Get-GSAAutomationVariable {
     # when running outside an automation account
     Else {
         If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+            Write-Host "Found variable '$name' in environment variables"
             return $value
         }
         Else {
-            return $secretValue.trim('"')
+            Write-Host "Variable '$name' not found in environment variables, trying keyvault"
             $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+            return $secretValue.trim('"')
         }
     }
 }
