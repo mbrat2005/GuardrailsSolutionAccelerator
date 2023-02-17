@@ -62,7 +62,7 @@ noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les poli
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
-authorizedProcessedByCSO = TBS's key consideration of having an authorized user process approved by CSO or designated official for cyber security. Includes a risk-based conditional access control policy with appropriate logging and monitoring enabled
+authorizedProcessedByCSO = Authorized Access
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte

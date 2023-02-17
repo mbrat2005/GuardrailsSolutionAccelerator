@@ -62,7 +62,7 @@ consoleAccessConditionalPolicy = Conditional Access Policy for Cloud Console Acc
 noCompliantPoliciesfound=No compliant policies found. Policies need to have a single location and that location must be Canada Only.
 allPoliciesAreCompliant=All policies are compliant.
 noLocationsCompliant=No locations have only Canada in them.
-authorizedProcessedByCSO = TBS's key consideration of having an authorized user process approved by CSO or designated official for cyber security. Includes a risk-based conditional access control policy with appropriate logging and monitoring enabled
+authorizedProcessedByCSO = Authorized Access
 
 # GuardRail #4
 monitorAccount = Monitor Account Creation
