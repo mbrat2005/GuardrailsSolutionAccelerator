@@ -284,12 +284,13 @@ function Add-LogAnalyticsResults {
         -TimeStampField Get-Date 
 }
 function Check-DocumentExistsInStorage {
+    [Alias('Check-DocumentsExistInStorage')]
     param (
         [string] $StorageAccountName,
         [string] $ContainerName, 
         [string] $ResourceGroupName,
         [string] $SubscriptionID, 
-        [string] $DocumentName, 
+        [string[]] $DocumentName, 
         [string] $ControlName, 
         [string]$ItemName,
         [hashtable] $msgTable, 
@@ -322,17 +323,29 @@ function Check-DocumentExistsInStorage {
             subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
     }
 
-    # check for procedure doc in blob storage account
-    $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $DocumentName -ErrorAction SilentlyContinue
+    $docMissing = $false
+    $commentsArray = @()
+    ForEach ($docName in $DocumentName) {
+        # check for procedure doc in blob storage account
+        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
 
-    If ($blobs) {
-        # a blob with the name $DocumentName was located in the specified storage account
-        $IsCompliant = $True
-        $Comments = $msgTable.procedureFileFound -f $DocumentName
+        If ($blobs) {
+            # a blob with the name $DocumentName was located in the specified storage account
+            $commentsArray += $msgTable.procedureFileFound -f $docName
+        }
+        else {
+            # no blob with the name $DocumentName was found in the specified storage account
+            $docMissing = $true
+            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
+        }
     }
-    else {
-        # no blob with the name $DocumentName was found in the specified storage account
-        $Comments = $msgTable.procedureFileNotFound -f $ItemName, $DocumentName, $ContainerName, $StorageAccountName
+    $Comments = $commentsArray -join ";"
+
+    If ($docMissing) {
+        $IsCompliant = $false
+    }
+    Else {
+        $IsCompliant = $true
     }
 
     $PsObject = [PSCustomObject]@{
