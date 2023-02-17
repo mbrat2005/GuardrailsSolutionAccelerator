@@ -62,7 +62,7 @@ noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les poli
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
-authorizedProcessedByCSO = Authorized Access
+authorizedProcessedByCSO = Accès Autorisé
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -86,7 +86,7 @@ dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 # GuardRail #7
-enableTLS12 = TLS 1.2 is enabled whereever possible to secure data in transit
+enableTLS12 = TLS 1.2 est activé dans la mesure du possible pour sécuriser les données en transit
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
@@ -104,23 +104,23 @@ networkDiagram = Diagramme d'architecture réseau
 noSubnets = Aucun sous-réseau n'est présent.
 
 # GuardRail # 9
-authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
+authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
-limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
-networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
-networkWatcherEnabled=Network Watcher exists for region '{0}'
-networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
+limitPublicIPsPolicy = Attestation que la politique de limitation des IPs publiques est respectée.
+networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
+networkWatcherEnabled=Network Watcher existe pour la région '{0}'
+networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
 vnetDDosConfig = Configuration DDos VNet
-networkWatcherConfig = VNet Network Watcher configuration
+networkWatcherConfig = Configuration de Network Watcher
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
 cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
 cbssCompliant = Ressources trouvées dans ces abonnements: 
-MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
+MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
 securityMonitoring = Surveillance de la sécurité
@@ -154,8 +154,8 @@ noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
-passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
-severityNotificationToEmailConfigured = Attestation that severity notifications are configured to be sent to an email address.
+passwordNotificationsConfigured = Attestation que les notifications lorsque les utilisateurs réinitialisent les mots de passe et toute modification du mot de passe administrateur est configurée
+severityNotificationToEmailConfigured = Attestation que les notifications de sévérité sont configurées pour être envoyées à une adresse courriel
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
