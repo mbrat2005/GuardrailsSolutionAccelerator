@@ -63,8 +63,8 @@ allPoliciesAreCompliant=Toutes les politiques sont conformes.
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
 authorizedProcessedByCSO = Accès Autorisé
-mfaRequiredForAllUsers = Multi-Factor authentication required for all users by Conditional Access Policy
-noMFAPolicyForAllUsers = No conditional access policy requiring MFA for all users and applications was found. A Conditional Access Policy meeting the following requirements must be configured: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
+mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
+noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -156,8 +156,8 @@ noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
-passwordNotificationsConfigured = Notifications Enabled
-severityNotificationToEmailConfigured = Severity Notifications to a Primary Email
+passwordNotificationsConfigured = Notifications activées
+severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
