@@ -263,6 +263,20 @@
     ]
   },
   {
+    "ModuleName": "Check-MFARequired",
+    "Control": "Guardrails3",
+    "ModuleType": "Builtin",
+    "Status": "Enabled",
+    "Required": "False",
+    "Script": "Check-MFARequired -ControlName $msgTable.CtrName3 -ItemName $msgTable.mfaRequiredForAllUsers -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "localVariables": [
+      {
+        "Name": "itsgcode",
+        "Value": "AC4(7)"
+      }
+    ]
+  },
+  {
     "ModuleName": "Check-DocumentExistsInStorage",
     "Control": "Guardrails3",
     "ModuleType": "Builtin",
