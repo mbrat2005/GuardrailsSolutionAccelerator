@@ -253,62 +253,6 @@
     "Control": "Guardrails3",
     "ModuleType": "Builtin",
     "Status": "Enabled",
-    "Required": "True",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.gcPasswordGuidanceDoc -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "GCPasswordGuidanceDoc.txt"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-DocumentExistsInStorage",
-    "Control": "Guardrails2",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
-    "Required": "True",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
-    "localVariables": [
-      {
-        "Name": "DocumentName",
-        "Value": "AuthorizedProcessApprovedByCSO.txt"
-      },
-      {
-        "Name": "itsgcode",
-        "Value": "AC2"
-      }
-    ]
-  },
-  {
-    "ModuleName": "Check-CloudConsoleAccess",
-    "Control": "Guardrails3",
-    "ModuleType": "Builtin",
-    "Status": "Enabled",
     "Required": "False",
     "Script": "Get-CloudConsoleAccess -ControlName $msgTable.CtrName3 -ItemName $msgTable.consoleAccessConditionalPolicy -MsgTable $msgTable  -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "localVariables": [

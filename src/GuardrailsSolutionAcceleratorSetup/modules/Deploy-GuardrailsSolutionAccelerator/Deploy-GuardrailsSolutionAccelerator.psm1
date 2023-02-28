@@ -338,7 +338,7 @@ Function Deploy-GuardrailsSolutionAccelerator {
                 Deploy-GSACoreResources -config $config -paramObject $paramObject -Verbose:$useVerbose
                 
                 # add runbooks to AA
-                # Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
+                Add-GSAAutomationRunbooks -config $config -Verbose:$useVerbose
             }
             
             # deploy Lighthouse components
@@ -415,8 +415,8 @@ Function Deploy-GuardrailsSolutionAccelerator {
         }
 
         # after successful deployment or update
-        #Write-Verbose "Invoking manual execution of Azure Automation runbooks..."
-        #Invoke-GSARunbooks -config $config -Verbose:$useVerbose
+        Write-Verbose "Invoking manual execution of Azure Automation runbooks..."
+        Invoke-GSARunbooks -config $config -Verbose:$useVerbose
 
         Write-Verbose "Exporting configuration to GSA KeyVault '$($config['runtime']['keyVaultName'])' as secret 'gsaConfigExportLatest'..."
         $configSecretName = 'gsaConfigExportLatest'

@@ -34,7 +34,7 @@ Function Deploy-GSACoreResources {
         Exit
     }
     # add automation account msi to config object
-    $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsContainerInstanceMSI.value
+    $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
     Write-Verbose "Core resource deployment complete!"
 
     # grant current user permissions to the new key vault

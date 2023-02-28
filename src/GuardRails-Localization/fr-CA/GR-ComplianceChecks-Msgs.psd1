@@ -44,14 +44,14 @@ ADDisabledUsers = Utilisateur AD désactivé
 apiError = Erreur API
 apiErrorMitigation = Vérifiez l'existence des utilisateurs ou les permissions de l'application.
 compliantComment = Aucun utilisateur non synchronisé ou désactivé trouvé
-gcPasswordGuidanceDoc = Adherence to GC Password Guidance document attestation exists
+gcPasswordGuidanceDoc = GC Password Guidance Doc
 guestAccountsNoPermission = Il y a des comptes invités dans le tenant mais ils n'ont pas de permissions dans les abonnements Azure.
 guestMustbeRemoved = Ce comptes invité ne devraient pas avoir de rôles dans les abonnements Azure
 mitigationCommands = Vérifiez si les utilisateurs trouvés sont obsolètes. 
 noGuestAccounts = Il n'y a aucun compte invité dans votre tenant
 noncompliantComment = Nombre d'utilisateurs non-conformes {0}. 
 noncompliantUsers = Les utilisateurs suivants sont désactivés et ne sont pas synchronisés avec AD: - 
-privilegedAccountManagementPlan = Attestation that the privileged account management plan is adhered to. 
+privilegedAccountManagementPlan = Privileged Account Management plan 
 removeDeletedAccount = Supprimez définitivement les comptes supprimés
 removeDeprecatedAccount = Supprimez les comptes obsolètes
 removeGuestAccounts = Supprimez les comptes invités.
@@ -62,7 +62,9 @@ noCompliantPoliciesfound=Aucune stratégie conforme n'a été trouvée. Les poli
 allPoliciesAreCompliant=Toutes les politiques sont conformes.
 noLocationsCompliant=Aucun endroit n'a seulement le Canada en eux.
 consoleAccessConditionalPolicy = Stratégie d'accès conditionnel pour l'accès à la console.
-authorizedProcessedByCSO = Authorized Access
+authorizedProcessedByCSO = Accès Autorisé
+mfaRequiredForAllUsers = Authentification multifacteur requise pour tous les utilisateurs par accès conditionnel
+noMFAPolicyForAllUsers = Aucune stratégie d'accès conditionnel nécessitant MFA pour tous les utilisateurs et applications n'a été trouvée. Une politique d'accès conditionnel répondant aux exigences suivantes doit être configurée: 1. state =  'enabled'; 2. includedUsers = 'All'; 3. includedApplications = 'All'; 4. grantControls.builtInControls contains 'mfa'; 5. clientAppTypes contains 'all'; 6. userRiskLevels = @(); 7. signInRiskLevels = @(); 8. platforms = null; 9. locations = null; 10. devices = null; 11. clientApplications = null
 
 # GuardRail #4
 monitorAccount = Surveiller la création de compte
@@ -86,7 +88,7 @@ dataAtRest = PROTECTION DES DONNÉES-AU-REPOS
 dataInTransit = PROTECTION DES DONNÉES-EN-TRANSIT
 
 # GuardRail #7
-enableTLS12 = TLS 1.2 is enabled whereever possible to secure data in transit
+enableTLS12 = TLS 1.2+ est activé dans la mesure du possible pour sécuriser les données en transit
 
 # GuardRail #8
 noNSG=Aucun NSG n'est présent.
@@ -104,23 +106,23 @@ networkDiagram = Diagramme d'architecture réseau
 noSubnets = Aucun sous-réseau n'est présent.
 
 # GuardRail # 9
-authSourceIPPolicyConfirm = Attestation that the authentication source IP policy is adhered to.
+authSourceIPPolicyConfirm = Attestation que la politique IPs de la source d'authentification est respectée
 ddosEnabled = Protection DDos activée. 
 ddosNotEnabled = Protection DDos non activée.
-limitPublicIPsPolicy = Attestation that the limit public IPs policy is adhered to.
-networkBoundaryProtectionPolicy = Attestation that the network boundary protection policy is adhered to.
-networkWatcherEnabled=Network Watcher exists for region '{0}'
-networkWatcherNotEnabled=Network Watcher not enabled for region '{0}'
+limitPublicIPsPolicy = Attestation que la politique de limitation des IPs publiques est respectée.
+networkBoundaryProtectionPolicy = Attestation que la politique de protection des limites du réseau est respectée.
+networkWatcherEnabled=Network Watcher existe pour la région '{0}'
+networkWatcherNotEnabled=Network Watcher non activé pour la région '{0}'
 noVNets = Aucun VNet n'est présent.
 vnetDDosConfig = Configuration DDos VNet
-networkWatcherConfig = VNet Network Watcher configuration
+networkWatcherConfig = Configuration de Network Watcher
 
 # GuardRail #10
 cbsSubDoesntExist = L'abonnement CBS n'existe pas
 cbcSensorsdontExist = Les capteurs CBC attendus n'existent pas
 cbssMitigation = Vérifiez l'abonnement fourni: {0} ou vérifiez l'existence de la solution CBS dans l'abonnement fourni.
 cbssCompliant = Ressources trouvées dans ces abonnements: 
-MOUwithCCCS = Attestation that the MOU with CCCS is acknowledged.
+MOUwithCCCS = Attestation que le protocole d'entente avec CCCS est reconnu.
 
 # GuardRail #11
 securityMonitoring = Surveillance de la sécurité
@@ -154,8 +156,8 @@ noSecurityContactInfo = L'abonnement {0} manque d'informations de contact.
 setSecurityContact = Veuillez définir un contact de sécurité pour Defender for Cloud dans l'abonnement. {0}
 notAllDfCStandard = Toutes les options de plan de tarification ne sont pas définies sur Standard pour l'abonnement {0}
 setDfCToStandard = Veuillez définir les forfaits Defender pour le cloud sur Standard. ({0})
-passwordNotificationsConfigured = Attestation that notifications when users reset passwords and any admin password changes is configured.
-severityNotificationToEmailConfigured = Attestation that severity notifications are configured to be sent to an email address.
+passwordNotificationsConfigured = Notifications activées
+severityNotificationToEmailConfigured = Notifications de sévérité à un e-mail principal
 
 # GuardRail #12
 mktPlaceCreation = Création Place de marché
