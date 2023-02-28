@@ -82,7 +82,7 @@ $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
-$Locale = Get-GSAAutomationVariable -Name "Locale"
+$Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale"
 
 If ($Locale -eq $null) {
     $Locale = "en-CA"
