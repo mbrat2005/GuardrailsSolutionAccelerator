@@ -78,7 +78,7 @@ $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID"
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
 $KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
-$ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroup"
+$ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
