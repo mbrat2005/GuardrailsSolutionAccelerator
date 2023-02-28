@@ -27,7 +27,6 @@ param TenantDomainUPN string
 param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
-param containerDeployment bool = false
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var vaultUri = 'https://${kvName}.vault.azure.net/'
@@ -38,7 +37,7 @@ module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
   name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
   params: {}
 }
-module aa 'modules/automationaccount.bicep' = if ((newDeployment || updatePSModules || updateCoreResources) &&!containerDeployment) {
+module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: 'guardrails-automationaccount'
   params: {
     AllowedLocationPolicyId: AllowedLocationPolicyId
@@ -46,33 +45,6 @@ module aa 'modules/automationaccount.bicep' = if ((newDeployment || updatePSModu
     CBSSubscriptionName: CBSSubscriptionName
     containername: containername
     ModuleBaseURL: ModuleBaseURL
-    DepartmentNumber: DepartmentNumber
-    DepartmentName: DepartmentName
-    guardrailsKVname: kvName
-    guardrailsLogAnalyticscustomerId: LAW.outputs.logAnalyticsWorkspaceId
-    guardrailsStoragename: storageAccountName
-    HealthLAWResourceId: HealthLAWResourceId
-    lighthouseTargetManagementGroupID: lighthouseTargetManagementGroupID
-    Locale: Locale
-    location: location
-    newDeployment: newDeployment
-    PBMMPolicyID: PBMMPolicyID
-    releaseDate: releaseDate
-    releaseVersion: releaseVersion
-    SecurityLAWResourceId: SecurityLAWResourceId
-    TenantDomainUPN: TenantDomainUPN
-    updatePSModules: updatePSModules
-    updateCoreResources: updateCoreResources
-  }
-}
-module containerinstance 'modules/containerinstance.bicep' = if ((newDeployment || updatePSModules || updateCoreResources) && containerDeployment) {
-  name: 'guardrails-containerinstance'
-  params: {
-    AllowedLocationPolicyId: AllowedLocationPolicyId
-    automationAccountName: automationAccountName
-    CBSSubscriptionName: CBSSubscriptionName
-    containername: containername
-    CustomModulesBaseURL: CustomModulesBaseURL
     DepartmentNumber: DepartmentNumber
     DepartmentName: DepartmentName
     guardrailsKVname: kvName
@@ -128,4 +100,4 @@ module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreR
   }
 }
 
-output guardrailsContainerInstanceMSI string = newDeployment ? containerinstance.outputs.guardrailsContainerInstanceMSI : ''
+output guardrailsAutomationAccountMSI string = newDeployment ? aa.outputs.guardrailsAutomationAccountMSI : ''
