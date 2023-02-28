@@ -1,5 +1,5 @@
 
-function Get-CloudConsoleAccess {
+function Check-MFARequired {
     param (      
         [Parameter(Mandatory=$true)]
         [string] $ControlName,
@@ -15,23 +15,12 @@ function Get-CloudConsoleAccess {
     $IsCompliant = $false
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     
-    # get named locations
-    $locationsBaseAPIUrl = '/identity/conditionalAccess/namedLocations'
-    try {
-        $response = Invoke-GraphQuery -urlPath $locationsBaseAPIUrl -ErrorAction Stop
-        $data = $response.Content
-        $locations = $data.value
-    }
-    catch {
-        $Errorlist.Add("Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_") 
-        Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$locationsBaseAPIUrl'; returned error message: $_"
-    }
 
     # get conditional access policies
     $CABaseAPIUrl = '/identity/conditionalAccess/policies'
     try {
         $response = Invoke-GraphQuery -urlPath $CABaseAPIUrl -ErrorAction Stop
-
+        
         $caps = $response.Content.value
     }
     catch {
@@ -39,41 +28,45 @@ function Get-CloudConsoleAccess {
         Write-Warning "Error: Failed to call Microsoft Graph REST API at URL '$CABaseAPIUrl'; returned error message: $_"
     }
     
-    # check that a named location for Canada exists and that a policy exists that uses it
-    $validLocations = @()
+    # check for a conditional access policy which meets these requirements:
+    # 1. state =  'enabled'
+    # 2. includedUsers = 'All'
+    # 3. includedApplications = 'All'
+    # 4. grantControls.builtInControls contains 'mfa'
+    # 5. clientAppTypes contains 'all'
+    # 6. userRiskLevels = @()
+    # 7. signInRiskLevels = @()
+    # 8. platforms = null
+    # 9. locations = null
+    # 10. devices = null
+    # 11. clientApplications = null
 
-    foreach ($location in $locations) {
-        #Determine location conditions
-        #get all valid locations: needs to have Canada Only
-        if ($location.countriesAndRegions.Count -eq 1 -and $location.countriesAndRegions[0] -eq "CA") {
-            $validLocations += $location
-        }
+    $validPolicies = $caps | Where-Object {
+        $_.state -eq 'enabled' -and
+        $_.conditions.users.includeUsers -contains 'All' -and
+        $_.conditions.applications.includeApplications -contains 'All' -and
+        $_.grantControls.builtInControls -contains 'mfa' -and
+        $_.conditions.clientAppTypes -contains 'all' -and
+        [string]::IsNullOrEmpty($_.conditions.userRiskLevels) -and
+        [string]::IsNullOrEmpty($_.conditions.signInRiskLevels) -and
+        [string]::IsNullOrEmpty($_.conditions.platforms) -and
+        [string]::IsNullOrEmpty($_.conditions.locations) -and
+        [string]::IsNullOrEmpty($_.conditions.devices)  -and
+        [string]::IsNullOrEmpty($_.conditions.clientApplications) 
     }
 
-    $locationBasedPolicies = $caps | Where-Object { $_.conditions.locations.includeLocations -in $validLocations.ID -and $_.state -eq 'enabled' }
+    if ($validPolicies.count -ne 0) {
 
-    if ($validLocations.count -ne 0) {
-        #if there is at least one location with Canada only, we are good. If no Canada Only policy, not compliant.
-        # Conditional access Policies
-        # Need a location based policy, for admins (owners, contributors) that uses one of the valid locations above.
-        # If there is no policy or the policy doesn't use one of the locations above, not compliant.
+        $IsCompliant = $true
+        $Comments = $msgTable.mfaRequiredForAllUsers    
 
-        if (!$locationBasedPolicies) {
-            #failed. No policies have valid locations.
-            $Comments = $msgTable.noCompliantPoliciesfound
-            $IsCompliant = $false
-        }
-        else {
-            #"Compliant Policies."
-            $IsCompliant = $true
-            $Comments = $msgTable.allPoliciesAreCompliant
-        }      
     }
     else {
-        # Failed. Reason: No locations have only Canada.
-        $Comments = $msgTable.noLocationsCompliant
+        # Failed. Reason: No policies meet the requirements
+        $Comments = $msgTable.noMFAPolicyForAllUsers
         $IsCompliant = $false
     }
+    
     $PsObject = [PSCustomObject]@{
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName

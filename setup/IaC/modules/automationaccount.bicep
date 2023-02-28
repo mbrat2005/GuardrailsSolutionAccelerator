@@ -268,6 +268,15 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
       }
     }
   }
+  resource module28 'modules' = if (newDeployment || updatePSModules) {
+    name: 'Check-MFARequired'
+    properties: {
+      contentLink: {
+        uri: '${ModuleBaseURL}/Check-MFARequired.zip'
+        version: '1.0.0'
+      }
+    }
+  }
   resource variable1 'variables' = if (newDeployment || updateCoreResources) {
     name: 'KeyvaultName'
     properties: {
