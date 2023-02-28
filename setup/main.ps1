@@ -5,6 +5,29 @@ param (
 
 Disable-AzContextAutosave | Out-Null
 
+function Get-GSAAutomationVariable {
+    param ([parameter(Mandatory = $true)]$name)
+
+    Write-Verbose "Getting automation variable '$name'"
+    # when running in an Azure Automation Account
+    If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
+        $value = Get-AutomationVariable -Name $name
+        return $value
+    }
+    # when running outside an automation account
+    Else {
+        If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+            Write-Host "Found variable '$name' in environment variables"
+            return $value
+        }
+        Else {
+            Write-Host "Variable '$name' not found in environment variables, trying keyvault"
+            $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+            return $secretValue.trim('"')
+        }
+    }
+}
+
 # Connects to Azure using the Automation Account's managed identity
 If (!$localExecution.IsPresent) {
     try {
@@ -16,11 +39,15 @@ If (!$localExecution.IsPresent) {
 }
 Else {
     Write-Output "Running locally, skipping Azure connection."
-    Write-Output "Importing all modules manually..."
+    
+    Write-Output "Removing previously imported Guardrail modules..."
+    Get-Module | where-object {$_.Path -like '*GUARDRAIL*'} | Remove-Module
 
+    Write-Output "Importing all modules manually..."
     Get-ChildItem -path ../src -Filter *.psd1 -Recurse -File -Exclude 'GR-ComplianceCheck*' | Import-Module -Force 
 
-    Import-Module ../src/Guardrails-Localization/GR-ComplianceChecks.psd1 
+    # manually import localization module due to directory structure
+    Import-Module ../src/Guardrails-Localization/GR-ComplianceChecks.psd1
 
     # install marketplace module
     Install-Module -Name Az.Marketplace -Scope CurrentUser 
@@ -55,7 +82,11 @@ $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroup"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
 $StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
-$Locale = Get-GSAAutomationVariable -Name "Locale" 
+$Locale = Get-GSAAutomationVariable -Name "Locale"
+
+If ($Locale -eq $null) {
+    $Locale = "en-CA"
+}
 
 
 $SubID = (Get-AzContext).Subscription.Id
@@ -84,13 +115,11 @@ catch {
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
     -additionalValues @{reportTime = $ReportTime; locale = $locale }
 
-
-
 # This loads the file containing all of the messages in the culture specified in the automation account variable "GuardRailsLocale"
 $messagesFileName = "GR-ComplianceChecks-Msgs"
-$messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
+$messagesBaseDirectory = (Get-Module -Name GR-ComplianceChecks -ListAvailable).path | Get-Item | Select-Object -Expand Directory | Select-Object -Expand FullName
 $messagesBindingVariableName = "msgTable"
-Write-Output "Loading messages in $($Locale)"
+Write-Output "Loading messages in '$($Locale)'"
 #dir 'C:\Modules\User\GR-ComplianceChecks'
 try {
     Import-LocalizedData -BindingVariable $messagesBindingVariableName -UICulture $Locale -FileName $messagesFileName -BaseDirectory $messagesBaseDirectory #-ErrorAction SilentlyContinue
