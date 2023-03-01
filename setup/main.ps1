@@ -1,6 +1,7 @@
 param (
     [switch]$localExecution,
-    [string]$keyVaultName
+    [string]$keyVaultName,
+    [string[]]$modulesToExecute
 )
 
 Disable-AzContextAutosave | Out-Null
@@ -104,6 +105,14 @@ catch {
 $modules = $modulesList | convertfrom-json
 
 Write-Output "Found $($modules.Count) modules."
+
+If ($localExecution.IsPresent -and $modulesToExecute.IsPresent) {
+    Write-Output "Running locally and filtering modules to those specified in the -modulesToExecute parameter."
+    
+    $modules = $modules | Where-Object { $modulesToExecute.Value -icontains $_.ModuleName }
+    Write-Output "Running only $($modules.Count) modules: $($modules.name -join ', ')"
+}
+
 Write-Output "Reading required secrets."
 try {
     [String] $WorkspaceKey = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
