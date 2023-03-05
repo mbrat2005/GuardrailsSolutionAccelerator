@@ -4,7 +4,7 @@ param (
     [string[]]$modulesToExecute
 )
 
-Disable-AzContextAutosave | Out-Null
+Disable-AzContextAutosave -Scope Process | Out-Null
 
 function Get-GSAAutomationVariable {
     param ([parameter(Mandatory = $true)]$name)
