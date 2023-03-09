@@ -40,9 +40,11 @@ function Get-VNetComplianceInformation {
         Write-Verbose "Selecting subscription..."
         Select-AzSubscription -SubscriptionObject $sub | Out-Null
         
-        $VNets=Get-AzVirtualNetwork
-        Write-Debug "Found $($VNets.count) VNets."
-        if ($VNets)
+        $allVNETs=Get-AzVirtualNetwork
+        $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
+        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
+
+        if ($includedVNETs.count -gt 0)
         {
             foreach ($VNet in $VNets)
             {
@@ -76,6 +78,22 @@ function Get-VNetComplianceInformation {
                     Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
                 }    
             }
+        }
+        if ($includedVNETs.count -eq 0) {
+            #No vnets found or no subnets found in vnets
+            $ComplianceStatus=$true
+            $Comments="$($msgTable.noVNets) - $($sub.Name)"
+            $VNETObject = [PSCustomObject]@{ 
+                SubscriptionName  = $sub.Name 
+                SubnetName=$msgTable.noVNets
+                ComplianceStatus = $ComplianceStatus
+                Comments = $Comments
+                ItemName = $msgTable.networkSegmentation
+                ControlName = $ControlName
+                itsgcode = $itsgcodesegmentation
+                ReportTime = $ReportTime
+            }
+            $VNETList.add($VNETObject) | Out-Null
         }
     }
     if ($debuginfo){ 
