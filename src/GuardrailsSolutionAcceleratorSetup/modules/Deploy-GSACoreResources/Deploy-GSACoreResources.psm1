@@ -35,7 +35,7 @@ Function Deploy-GSACoreResources {
     }
     # add automation account msi to config object
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
-    Write-Verbose "Core resource deployment complete!"
+    Write-Verbose "Core resource bicep deployment complete!"
 
     # grant current user permissions to the new key vault
     Write-Verbose "Adding current user '$($config['runtime']['userId'])' access to the GSA KeyVault..."
@@ -99,7 +99,7 @@ Function Deploy-GSACoreResources {
         #region Assign permissions>
         $graphAppId = "00000003-0000-0000-c000-000000000000"
         $graphAppSP = Get-AzADServicePrincipal -ApplicationId $graphAppId
-        $appRoleIds = @("Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All")
+        $appRoleIds = @("Organization.Read.All", "User.Read.All", "UserAuthenticationMethod.Read.All", "Policy.Read.All","Directory.Read.All")
 
         foreach ($approleidName in $appRoleIds) {
             Write-Verbose "`tAdding permission to $approleidName"
@@ -148,6 +148,9 @@ Function Deploy-GSACoreResources {
 
         Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure AD IAM scope"
         New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.aadiam' | Out-Null
+
+        Write-Verbose "`tAssigning 'Reader' role to the Automation Account MSI for the Azure MarketPlace"
+        New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName Reader -Scope '/providers/Microsoft.Marketplace' | Out-Null
     }
     catch {
         Write-Error "Error assigning root management group permissions. $_"
