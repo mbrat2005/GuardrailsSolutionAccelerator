@@ -22,6 +22,7 @@ $TenantId=(Get-AzTenant).Id
 #Write-Output "SP: $SecurePassword"
 #Write-Output "Tenant: $TenantId"
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='pSCredentialObject requires SecureString type; input value is plaintext')]
 $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $ApplicationId, $(ConvertTo-SecureString $SecuredPassword -AsPlainText -Force)
 
 try {Connect-AzAccount -ServicePrincipal -TenantId $TenantId -Credential $Credential}

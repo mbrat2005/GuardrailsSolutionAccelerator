@@ -177,14 +177,25 @@ if (!$update)
     # Application Id and Secure Password will be empty. Need to be updates with customer's information.
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
         Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceKey" -SecretValue $secretvalue
         $ws=Get-AzOperationalInsightsWorkspace -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceID" -SecretValue (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
+
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
+        $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
+        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceID" -SecretValue $secureString
         if (!([string]::IsNullOrEmpty($config.applicationId))) {
             "Adding Application ID to Keyvault."
-            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "ApplicationId" -SecretValue (ConvertTo-SecureString $config.applicationId -AsPlainText -Force)
-            set-azkeyvaultsecret -VaultName $keyVaultName -Name "SecurePassword" -SecretValue (ConvertTo-SecureString $config.SecurePassword -AsPlainText -Force)
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
+            $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
+            Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "ApplicationId" -SecretValue $secureString
+
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
+            $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
+            set-azkeyvaultsecret -VaultName $keyVaultName -Name "SecurePassword" -SecretValue $secureString
         }
     }
     catch { "Error adding secrets to KV. $_"; break }
