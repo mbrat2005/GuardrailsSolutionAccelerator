@@ -427,7 +427,6 @@ Function Deploy-GuardrailsSolutionAccelerator {
             'deployerAzureID'       = $config['runtime']['userId']
         }
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secretValue = (ConvertTo-SecureString -String (ConvertTo-Json $config -Depth 10) -AsPlainText -Force)
         Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name $configSecretName -SecretValue $secretValue -Tag $secretTags -ContentType 'application/json' -Verbose:$useVerbose | Out-Null
 

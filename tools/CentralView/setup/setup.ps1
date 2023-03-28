@@ -178,22 +178,18 @@ if (!$update)
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName).PrimarySharedKey
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
         Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceKey" -SecretValue $secretvalue
         $ws=Get-AzOperationalInsightsWorkspace -ResourceGroupName $logAnalyticsWorkspaceRG -Name $logAnalyticsworkspaceName
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
         Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "WorkSpaceID" -SecretValue $secureString
         if (!([string]::IsNullOrEmpty($config.applicationId))) {
             "Adding Application ID to Keyvault."
 
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
             $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
             Set-AzKeyVaultSecret -VaultName $keyVaultName -Name "ApplicationId" -SecretValue $secureString
 
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
             $secureString = (ConvertTo-SecureString $ws.CustomerId -AsPlainText -Force)
             set-azkeyvaultsecret -VaultName $keyVaultName -Name "SecurePassword" -SecretValue $secureString
         }

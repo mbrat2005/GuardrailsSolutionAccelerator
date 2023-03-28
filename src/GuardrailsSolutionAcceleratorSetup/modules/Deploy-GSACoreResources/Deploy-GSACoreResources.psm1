@@ -73,7 +73,6 @@ Function Deploy-GSACoreResources {
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsworkspaceName']).PrimarySharedKey
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "WorkSpaceKey" -SecretValue $secretvalue
     }
@@ -86,11 +85,9 @@ Function Deploy-GSACoreResources {
     try {
         $ErrorActionPreference = 'Stop'
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secretvalue = ConvertTo-SecureString $config.FirstBreakGlassAccountUPN -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA1" -SecretValue $secretvalue
 
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('AvoidUsingConvertToSecureStringWithPlainText', '', Justification='KeyVault requires SecureString type; input value is already plaintext')]
         $secretvalue = ConvertTo-SecureString $config.SecondBreakGlassAccountUPN -AsPlainText -Force 
         $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA2" -SecretValue $secretvalue
     }
