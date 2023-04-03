@@ -1,5 +1,5 @@
 param (
-    [parameter(Mandatory=$true, ParameterSetName='localexecution')][switch]$localExecution,
+    [parameter(Mandatory=$false, ParameterSetName='localexecution')][switch]$localExecution,
     [parameter(Mandatory=$true, ParameterSetName='localexecution')][string]$keyVaultName,
     [parameter(Mandatory=$false, ParameterSetName='localexecution')][string[]]$modulesToExecute
 )
