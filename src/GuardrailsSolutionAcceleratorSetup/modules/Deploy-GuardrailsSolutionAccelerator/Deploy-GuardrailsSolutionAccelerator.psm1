@@ -56,7 +56,6 @@ Function New-GSACoreResourceDeploymentParamObject {
         'deployKV'                              = $config['runtime']['deployKV']
         'deployLAW'                             = $config['runtime']['deployLAW']
         'HealthLAWResourceId'                   = $config.HealthLAWResourceId
-        'kvName'                                = $config['runtime']['keyVaultName']
         'lighthouseTargetManagementGroupID'     = $config.lighthouseTargetManagementGroupID
         'Locale'                                = $config.Locale
         'location'                              = $config.region
@@ -66,7 +65,6 @@ Function New-GSACoreResourceDeploymentParamObject {
         'releaseVersion'                        = $config['runtime']['tagsTable'].ReleaseVersion
         'SecurityLAWResourceId'                 = $config.SecurityLAWResourceId
         'SSCReadOnlyServicePrincipalNameAPPID'  = $config.SSCReadOnlyServicePrincipalNameAPPID
-        'storageAccountName'                    = $config['runtime']['storageaccountName']
         'subscriptionId'                        = (Get-AzContext).Subscription.Id
         'tenantDomainUPN'                       = $config['runtime']['tenantDomainUPN']
     }

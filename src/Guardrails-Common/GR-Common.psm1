@@ -225,7 +225,7 @@ function Get-GSAAttestationValue {
         else {
             # no blob with the name $attestionName was found in the specified storage account
             $docMissing = $true
-            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
+            $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName
         }
     }
     $Comments = $commentsArray -join ";"

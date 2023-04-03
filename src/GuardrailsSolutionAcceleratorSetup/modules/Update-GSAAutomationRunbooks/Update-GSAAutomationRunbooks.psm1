@@ -46,11 +46,6 @@ Function Update-GSAAutomationRunbooks {
     Write-Verbose "Importing 'backend' runbook version '$($config['runtime']['tagsTable'].ReleaseVersion)', replacing version '$($currentBackendRunbook.Tags['version'])'..."
     $null = Import-AzAutomationRunbook -Name $backendRunbookName -Path "$PSScriptRoot/../../../../setup/backend.ps1" -Description "$backendRunbookDescription V.$($config['runtime']['tagsTable'].ReleaseVersion)" @updateRunbookParams
 
-    Write-Verbose "Exporting modules.json to Storage Account '$($config['runtime']['StorageAccountName'])' for runbook consumption"
-
-    import-module "$PSScriptRoot/../../../../src/Guardrails-Common/GR-Common.psm1"
-    $modulesJsonPath = "$PSScriptRoot/../../../../setup/modules.json"
-    copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration"
 }
 # SIG # Begin signature block
 # MIInqgYJKoZIhvcNAQcCoIInmzCCJ5cCAQExDzANBglghkgBZQMEAgEFADB5Bgor

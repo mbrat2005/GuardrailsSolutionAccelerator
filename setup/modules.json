@@ -5,17 +5,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgProcedure -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -33,17 +24,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName1 -ItemName $msgTable.bgAccountResponsibility -MsgTable $msgTable -ReportTime $ReportTime  -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -198,17 +180,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.gcPasswordGuidanceDoc -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.gcPasswordGuidanceDoc -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -226,17 +199,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlan -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName2 -ItemName $msgTable.privilegedAccountManagementPlan -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -282,17 +246,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.authorizedProcessedByCSO -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -426,17 +381,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName7 -ItemName $msgTable.enableTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName7 -ItemName $msgTable.enableTLS12 -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -482,17 +428,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName8 -ItemName $msgTable.networkDiagram -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -550,17 +487,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.NetworkBoundaryProtectionPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.NetworkBoundaryProtectionPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -578,17 +506,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.LimitPublicIPsPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.LimitPublicIPsPolicy -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -606,17 +525,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.AuthSourceIPPolicyConfirm -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName9 -ItemName $msgTable.AuthSourceIPPolicyConfirm -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -654,17 +564,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName10 -ItemName $msgTable.MOUwithCCCS -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName10 -ItemName $msgTable.MOUwithCCCS -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -685,17 +586,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.SeverityNotificationToEmailConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.SeverityNotificationToEmailConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",
@@ -784,17 +676,8 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "Get-GSAAttestationValue -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -attestionName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.passwordNotificationsConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
-    "variables": [
-      {
-        "Name": "storageAccountName",
-        "Value": "StorageAccountName"
-      },
-      {
-        "Name": "containerName",
-        "Value": "ContainerName"
-      }
-    ],
+    "Script": "Get-GSAAttestationValue -attestionName $vars.DocumentName -ControlName $msgTable.CtrName11 -ItemName $msgTable.passwordNotificationsConfigured -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "variables": [],
     "localVariables": [
       {
         "Name": "DocumentName",

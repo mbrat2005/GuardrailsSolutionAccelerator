@@ -15,12 +15,6 @@ Function Add-GSAAutomationRunbooks {
     $backendRunbookName = "backend"
     $backendRunbookDescription = "Guardrails Backend Runbook"
 
-    Write-Verbose "Exporting modules.json to Storage Account '$($config['runtime']['StorageAccountName'])' for runbook consumption"
-
-    import-module "$PSScriptRoot/../../../../src/Guardrails-Common/GR-Common.psm1"
-    $modulesJsonPath = "$PSScriptRoot/../../../../setup/modules.json"
-    copy-toBlob -FilePath $modulesJsonPath -storageaccountName $config['runtime']['storageAccountName'] -resourceGroup $config['runtime']['resourceGroup'] -force -containerName "configuration"
-
     Write-Verbose "Importing runbook definitions..."
     #region Import main runbook
     Write-Verbose "Importing 'main' Runbook." #main runbook, runs the modules.
