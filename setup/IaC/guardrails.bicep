@@ -31,7 +31,7 @@ var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
 var rg=resourceGroup().name
 
 //Resources:
-//KeyVault
+
 module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
   name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
   params: {}

@@ -425,7 +425,7 @@ resource attestationVariable1 'Microsoft.Automation/automationAccounts/variables
   name: 'AuthorizedProcessApprovedByCSO'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable2 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -433,7 +433,7 @@ resource attestationVariable2 'Microsoft.Automation/automationAccounts/variables
   name: 'AuthSourceIPPolicyConfirm'
   properties: {
     isEncrypted: true
-    value: 'False'
+    https://learn.microsoft.com/en-us/azure/virtual-machines/migration-classic-resource-manager-faq#i-backed-up-my-classic-vms-in-a-vault--can-i-migrate-my-vms-from-classic-mode-to-resource-manager-mode-and-protect-them-in-a-recovery-services-vault-
   }
 }
 resource attestationVariable3 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -441,7 +441,7 @@ resource attestationVariable3 'Microsoft.Automation/automationAccounts/variables
   name: 'BreakGlassAccountProcedure'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable4 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -449,7 +449,7 @@ resource attestationVariable4 'Microsoft.Automation/automationAccounts/variables
   name: 'ChiefDirectoryOfficeConfirmation'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable5 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -457,7 +457,7 @@ resource attestationVariable5 'Microsoft.Automation/automationAccounts/variables
   name: 'ConfirmBreakGlassAccountResponsibleIsNotTechnical'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable6 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -465,7 +465,7 @@ resource attestationVariable6 'Microsoft.Automation/automationAccounts/variables
   name: 'ConfirmNetworkDiagramExists'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable7 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -473,7 +473,7 @@ resource attestationVariable7 'Microsoft.Automation/automationAccounts/variables
   name: 'ConfirmPasswordNotificationsConfigured'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable8 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -481,7 +481,7 @@ resource attestationVariable8 'Microsoft.Automation/automationAccounts/variables
   name: 'GCPasswordGuidanceDoc'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable9 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -489,7 +489,7 @@ resource attestationVariable9 'Microsoft.Automation/automationAccounts/variables
   name: 'LimitPublicIPsPolicy'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable10 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -497,7 +497,7 @@ resource attestationVariable10 'Microsoft.Automation/automationAccounts/variable
   name: 'MemorandumOfUnderstanding'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable12 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -505,7 +505,7 @@ resource attestationVariable12 'Microsoft.Automation/automationAccounts/variable
   name: 'NetworkBoundaryProtectionPolicy'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable13 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -513,7 +513,7 @@ resource attestationVariable13 'Microsoft.Automation/automationAccounts/variable
   name: 'PrivilegedAccountManagementPlan'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable14 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -521,7 +521,7 @@ resource attestationVariable14 'Microsoft.Automation/automationAccounts/variable
   name: 'SeverityNotificationToEmailConfigured'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 resource attestationVariable15 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
@@ -529,7 +529,7 @@ resource attestationVariable15 'Microsoft.Automation/automationAccounts/variable
   name: 'TLS12EnabledAttestation'
   properties: {
     isEncrypted: true
-    value: 'False'
+    value: '"False"'
   }
 }
 
