@@ -236,12 +236,9 @@ Function Confirm-GSAConfigurationParameters {
     }
 
     ## generate resource names
-    #TO-DO: switch to keyVaulNamePrefix, etc and existingKeyVauleName in config.json
-    $config['runtime']['keyVaultName'] = $config.KeyVaultName + $uniqueNameSuffix
     $config['runtime']['logAnalyticsWorkspaceName'] = $config.logAnalyticsWorkspaceName + $uniqueNameSuffix
     $config['runtime']['resourceGroup'] = $config.resourceGroup + $uniqueNameSuffix
     $config['runtime']['automationAccountName'] = $config.automationAccountName + $uniqueNameSuffix
-    $config['runtime']['storageAccountName'] = $config.storageAccountName + $uniqueNameSuffix.replace('-', '') # remove hyphen, which is not supported in storage account name
 
     # add values to config object
     $config['runtime']['tenantId'] = $tenantId

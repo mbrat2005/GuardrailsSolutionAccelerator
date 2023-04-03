@@ -1,33 +1,13 @@
 param (
-    [switch]$localExecution,
-    [string]$keyVaultName,
-    [string[]]$modulesToExecute
+    [parameter(Mandatory=$true, ParameterSetName='localexecution')][switch]$localExecution,
+    [parameter(Mandatory=$true, ParameterSetName='localexecution')][string]$keyVaultName,
+    [parameter(Mandatory=$false, ParameterSetName='localexecution')][string[]]$modulesToExecute
 )
 
 Disable-AzContextAutosave -Scope Process | Out-Null
 
-function Get-GSAAutomationVariable {
-    param ([parameter(Mandatory = $true)]$name)
-
-    Write-Debug "Getting automation variable '$name'"
-    # when running in an Azure Automation Account
-    If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
-        $value = Get-AutomationVariable -Name $name
-        return $value
-    }
-    # when running outside an automation account
-    Else {
-        If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
-            Write-Debug "Found variable '$name' in environment variables"
-            return $value
-        }
-        Else {
-            Write-Debug "Variable '$name' not found in environment variables, trying keyvault"
-            $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
-            return $secretValue.trim('"')
-        }
-    }
-}
+# import functions from GR-Common into the current session - allows use of Get-AutomationVariable 
+. ../src/Guardrails-Common/GR-Common.psm1
 
 # Connects to Azure using the Automation Account's managed identity
 If (!$localExecution.IsPresent) {
@@ -81,12 +61,10 @@ Else {
 #Standard variables
 $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
-$KeyVaultName = Get-GSAAutomationVariable -Name "KeyvaultName" 
 $GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
 $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
-$StorageAccountName = Get-GSAAutomationVariable -Name "StorageAccountName" 
 $Locale = Get-GSAAutomationVariable -Name "GuardRailsLocale"
 
 If ($Locale -eq $null) {
@@ -96,17 +74,18 @@ If ($Locale -eq $null) {
 
 $SubID = (Get-AzContext).Subscription.Id
 $tenantID = (Get-AzContext).Tenant.Id
+
 Write-Output "Starting main runbooks."
-Write-Output "Reading configuration file."
-read-blob -FilePath ".\modules.json" -resourcegroup $ResourceGroupName -storageaccountName $StorageAccountName -containerName "configuration" | Out-Null
+
 try {
-    $modulesList = Get-Content .\modules.json
+    $errorActionPreference = 'stop'
+
+    Get-AutomationVariable -name moduleExecutionPlanJson
+    $modules = $modulesList | convertfrom-json
 }
 catch {
-    Write-Error "Couldn't find module configuration file."    
-    break
+    throw "Failed to retrieve the Automaiton Account variable value for variable 'moduleExecutionPlanJson' or failed to convert the value to JSON. Error: $_"
 }
-$modules = $modulesList | convertfrom-json
 
 Write-Output "Found $($modules.Count) modules."
 
@@ -119,10 +98,10 @@ If ($localExecution.IsPresent -and $modulesToExecute.IsPresent) {
 
 Write-Output "Reading required secrets."
 try {
-    [String] $WorkspaceKey = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $GuardrailWorkspaceIDKeyName -AsPlainText -ErrorAction Stop
+    [String] $WorkspaceKey = Get-AutomationVariable -Name workspaceKey
 }
 catch {
-    throw "Failed to retrieve workspace key with secret name '$GuardrailWorkspaceIDKeyName' from KeyVault '$KeyVaultName'. Error message: $_"
+    throw "Failed to retrieve 'workspaceKey' Automation Account variable. Error message: $_"
 }
 
 Add-LogEntry 'Information' "Starting execution of main runbook" -workspaceGuid $WorkSpaceID -workspaceKey $WorkspaceKey -moduleName main `
@@ -171,7 +150,7 @@ foreach ($module in $modules) {
         }
         if ($null -ne $secrets) {
             foreach ($v in $secrets) {
-                $tempvarvalue = Get-AzKeyVaultSecret -VaultName $KeyVaultName -AsPlainText -Name $v.value
+                $tempvarvalue = Get-AutomationVariable -Name $v.value
                 $vars | Add-Member -MemberType Noteproperty -Name $($v.Name) -Value $tempvarvalue
             }
         }

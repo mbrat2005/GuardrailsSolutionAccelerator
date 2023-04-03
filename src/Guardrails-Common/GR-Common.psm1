@@ -68,97 +68,6 @@ function get-rgtagValue {
     }
     return ""
 }
-function copy-toBlob {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]
-        $FilePath,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $storageaccountName,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $resourcegroup,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $containerName,
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $force
-    )
-    try {
-        $saParams = @{
-            ResourceGroupName = $resourcegroup
-            Name              = $storageaccountName
-        }
-        $scParams = @{
-            Container = $containerName
-        }
-        $bcParams = @{
-            File = $FilePath
-            Blob = ($FilePath | Split-Path -Leaf)
-        }
-        if ($force)
-        { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams -Force | Out-Null }
-        else { Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Set-AzStorageBlobContent @bcParams | Out-Null }
-    }
-    catch {
-        Write-Error $_.Exception.Message
-    }
-}
-function get-blobs {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]
-        $storageaccountName,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $resourcegroup
-    )
-    $psModulesContainerName = "psmodules"
-    try {
-        $saParams = @{
-            ResourceGroupName = $resourcegroup
-            Name              = $storageaccountName
-        }
-        $scParams = @{
-            Container = $psModulesContainerName
-        }
-        return (Get-AzStorageAccount @saParams | Get-AzStorageContainer @scParams | Get-AzStorageBlob)
-    }
-    catch {
-        Write-Error $_.Exception.Message
-    }
-}
-
-function read-blob {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]
-        $FilePath,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $storageaccountName,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $resourcegroup,
-        [Parameter(Mandatory = $true)]
-        [string]
-        $containerName,
-        [Parameter(Mandatory = $false)]
-        [switch]
-        $force
-    )
-    $Context = (Get-AzStorageAccount -ResourceGroupName $resourcegroup -Name $storageaccountName).Context
-    $blobParams = @{
-        Blob        = 'modules.json'
-        Container   = $containerName
-        Destination = $FilePath
-        Context     = $Context
-        Force       = $true
-    }
-    Get-AzStorageBlobContent @blobParams
-}
 
 Function Add-LogEntry {
     [CmdletBinding()]
@@ -283,14 +192,9 @@ function Add-LogAnalyticsResults {
         -logType $LogType `
         -TimeStampField Get-Date 
 }
-function Check-DocumentExistsInStorage {
-    [Alias('Check-DocumentsExistInStorage')]
+function Get-GSAAttestationValue {
     param (
-        [string] $StorageAccountName,
-        [string] $ContainerName, 
-        [string] $ResourceGroupName,
-        [string] $SubscriptionID, 
-        [string[]] $DocumentName, 
+        [string[]] $attestionName, 
         [string] $ControlName, 
         [string]$ItemName,
         [hashtable] $msgTable, 
@@ -302,39 +206,24 @@ function Check-DocumentExistsInStorage {
     [PSCustomObject] $ErrorList = New-Object System.Collections.ArrayList
     [bool] $IsCompliant = $false
     [string] $Comments = $null
-    try {
-        Select-AzSubscription -Subscription $SubscriptionID | out-null
-    }
-    catch {
-        $ErrorList.Add("Failed to run 'Select-Azsubscription' with error: $_")
-        #Add-LogEntry 'Error' 
-        throw "Error: Failed to run 'Select-Azsubscription' with error: $_"
-    }
-    try {
-        $StorageAccount = Get-Azstorageaccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -ErrorAction Stop
-    }
-    catch {
-        $ErrorList.Add("Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_")
-        #Add-LogEntry 'Error' "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-        #    subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_" `
-        #    -workspaceKey $workspaceKey -workspaceGuid $WorkSpaceID
-        Write-Error "Could not find storage account '$storageAccountName' in resoruce group '$resourceGroupName' of `
-            subscription '$subscriptionId'; verify that the storage account exists and that you have permissions to it. Error: $_"
-    }
 
     $docMissing = $false
     $commentsArray = @()
-    ForEach ($docName in $DocumentName) {
+    ForEach ($attestionNameItem in $attestionName) {
         # check for procedure doc in blob storage account
-        $blobs = Get-AzStorageBlob -Container $ContainerName -Context $StorageAccount.Context -Blob $docName -ErrorAction SilentlyContinue
+        try {
+            $attestationValue = Get-AutomationVariable -Name $attestionNameItem -ErrorAction Stop
+        }
+        catch {
+            Write-Error "An error occured while running 'Get-AutomationVariable' for attestion name '$attestationNameItem'. This command can only be run in an Azure Automation workbook. Check that a variable by that name exists and that you have permisisons."
+        }
 
-        If ($blobs) {
-            # a blob with the name $DocumentName was located in the specified storage account
+        If ($attestationValue -ieq 'true') {
+            # a blob with the name $attestionName was located in the specified storage account
             $commentsArray += $msgTable.procedureFileFound -f $docName
         }
         else {
-            # no blob with the name $DocumentName was found in the specified storage account
+            # no blob with the name $attestionName was found in the specified storage account
             $docMissing = $true
             $commentsArray += $msgTable.procedureFileNotFound -f $ItemName, $docName, $ContainerName, $StorageAccountName
         }
@@ -352,7 +241,7 @@ function Check-DocumentExistsInStorage {
         ComplianceStatus = $IsCompliant
         ControlName      = $ControlName
         ItemName         = $ItemName
-        DocumentName     = $DocumentName
+        DocumentName     = $attestionName
         Comments         = $Comments
         ReportTime       = $ReportTime
         itsgcode         = $itsgcode
@@ -503,6 +392,29 @@ function Invoke-GraphQuery {
     @{
         Content    = $response.Content | ConvertFrom-Json
         StatusCode = $response.StatusCode
+    }
+}
+
+function Get-GSAAutomationVariable {
+    param ([parameter(Mandatory = $true)]$name)
+
+    Write-Debug "Getting automation variable '$name'"
+    # when running in an Azure Automation Account
+    If ($ENV:AZUREPS_HOST_ENVIRONMENT -eq 'AzureAutomation/') {
+        $value = Get-AutomationVariable -Name $name
+        return $value
+    }
+    # when running outside an automation account
+    Else {
+        If ($value = [System.Environment]::GetEnvironmentVariable($name)) {
+            Write-Debug "Found variable '$name' in environment variables"
+            return $value
+        }
+        Else {
+            Write-Debug "Variable '$name' not found in environment variables, trying keyvault"
+            $secretValue = Get-AzKeyVaultSecret -VaultName $ENV:KeyvaultName -Name $name -AsPlainText
+            return $secretValue.trim('"')
+        }
     }
 }
 

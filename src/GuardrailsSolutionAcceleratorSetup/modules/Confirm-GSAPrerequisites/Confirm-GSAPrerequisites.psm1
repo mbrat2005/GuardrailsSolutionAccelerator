@@ -37,28 +37,6 @@ Function Confirm-GSAPrerequisites {
             Write-Verbose "`t Sufficent role assignment for current user exists..."
         }
 
-        # confirm that target resources do not already exist
-
-        ## storage account
-        Write-Verbose "Verifying that storage account name '$($config['runtime']['storageAccountName'])' is available"
-        $nameAvailability = Get-AzStorageAccountNameAvailability -Name $config['runtime']['storageaccountName']
-        if (($nameAvailability).NameAvailable -eq $false) {
-            Write-Error "Storage account $($config['runtime']['storageaccountName']) is not available. Message: $($nameAvailability.Message)"
-            break
-        }
-        Else {
-            Write-Verbose "Storage account name '$($config['runtime']['storageAccountName'])' is available"
-        }
-
-        ## keyvault
-        Write-Verbose "Verifying the Key Vault name '$($config['runtime']['keyVaultName'])' is available"
-        $kvContent = ((Invoke-AzRest -Uri "https://management.azure.com/subscriptions/$($config['runtime']['subscriptionId'])/providers/Microsoft.KeyVault/checkNameAvailability?api-version=2021-11-01-preview" `
-                    -Method Post -Payload "{""name"": ""$config['runtime']['keyVaultName']"",""type"": ""Microsoft.KeyVault/vaults""}").Content | ConvertFrom-Json).NameAvailable
-        if (!($kvContent) -and $deployKV) {
-            write-output "Error: keyvault name '$($config['runtime']['keyVaultName'])' is not available. Specify another prefix in config.json or a different unique resource name suffix"
-            break
-        }
-
         ## resource providers - proactively registers RPs if missing
         Write-Verbose "Verifying that required resource providers are pre-registered..."
         "Microsoft.Network","Microsoft.Security","Microsoft.Management" | ForEach-Object {

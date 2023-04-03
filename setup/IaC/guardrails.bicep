@@ -11,7 +11,6 @@ param deployKV bool = true
 param deployLAW bool = true
 param DeployTelemetry bool = true
 param HealthLAWResourceId string
-param kvName string = 'guardrails-kv'
 param lighthouseTargetManagementGroupID string
 param Locale string = 'EN'
 param location string = 'canadacentral'
@@ -22,16 +21,13 @@ param releaseDate string
 param releaseVersion string
 param SecurityLAWResourceId string
 param SSCReadOnlyServicePrincipalNameAPPID string
-param storageAccountName string
 param subscriptionId string
 param TenantDomainUPN string
 param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
 
-var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
-var vaultUri = 'https://${kvName}.vault.azure.net/'
 var rg=resourceGroup().name
 
 //Resources:
@@ -46,17 +42,15 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     AllowedLocationPolicyId: AllowedLocationPolicyId
     automationAccountName: automationAccountName
     CBSSubscriptionName: CBSSubscriptionName
-    containername: containername
     ModuleBaseURL: ModuleBaseURL
     DepartmentNumber: DepartmentNumber
     DepartmentName: DepartmentName
-    guardrailsKVname: kvName
     guardrailsLogAnalyticscustomerId: LAW.outputs.logAnalyticsWorkspaceId
-    guardrailsStoragename: storageAccountName
     HealthLAWResourceId: HealthLAWResourceId
     lighthouseTargetManagementGroupID: lighthouseTargetManagementGroupID
     Locale: Locale
     location: location
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     newDeployment: newDeployment
     PBMMPolicyID: PBMMPolicyID
     releaseDate: releaseDate
@@ -68,18 +62,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updateCoreResources: updateCoreResources
   }
 }
-module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
-  name: 'guardrails-keyvault'
-  params: {
-    kvName: kvName
-    location: location
-    vaultUri: vaultUri
-    releaseVersion: releaseVersion
-    releaseDate: releaseDate
-    deployKV: deployKV
-    tenantId: subscription().tenantId
-  }
-}
+
 module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
   name: 'guardrails-loganalytics'
   params: {
@@ -93,14 +76,6 @@ module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployme
     GRDocsBaseUrl: GRDocsBaseUrl
     newDeployment: newDeployment
     updateWorkbook: updateWorkbook
-  }
-}
-module storageaccount 'modules/storage.bicep' = if (newDeployment || updateCoreResources) {
-  name: 'guardrails-storageaccount'
-  params: {
-    storageAccountName: storageAccountName
-    location: location
-    containername: containername
   }
 }
 
