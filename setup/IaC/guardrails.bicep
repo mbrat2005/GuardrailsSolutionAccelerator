@@ -61,6 +61,9 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources
   }
+  dependsOn: [
+    LAW
+  ]
 }
 
 module LAW 'modules/loganalyticsworkspace.bicep' = if ((deployLAW && newDeployment) || updateWorkbook || updateCoreResources) {
