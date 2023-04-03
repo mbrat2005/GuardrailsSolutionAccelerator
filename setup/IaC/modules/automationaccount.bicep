@@ -21,7 +21,7 @@ param SSCReadOnlyServicePrincipalNameAPPID string
 param TenantDomainUPN string
 param updatePSModules bool = false
 param updateCoreResources bool = false
-param healthRetentionDays string
+param securityRetentionDays string
 
 resource guardrailsAC 'Microsoft.Automation/automationAccounts@2021-06-22' = if (newDeployment || updatePSModules || updateCoreResources) {
   name: automationAccountName
@@ -425,10 +425,10 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
   }
   }
   resource variable20 'variables' = if (newDeployment || updateCoreResources) {
-    name: 'healthRetentionDays'
+    name: 'securityRetentionDays'
     'properties': {
       'isEncrypted': true
-      'value': '"${healthRetentionDays}"'
+      'value': '"${securityRetentionDays}"'
   }
   }
 }

@@ -19,5 +19,5 @@
   "lighthousePrincipalDisplayName": "",
   "lighthousePrincipalId": "",
   "lighthouseTargetManagementGroupID": "",
-  "healthRetentionDays": "730"
+  "securityRetentionDays": "730"
 }

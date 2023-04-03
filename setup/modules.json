@@ -760,7 +760,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "False",
-    "Script": "get-SecurityMonitoringStatus -SecurityLAWResourceId $vars.SecurityLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -LAWRetention $vars.healthRetentionDays",
+    "Script": "get-SecurityMonitoringStatus -SecurityLAWResourceId $vars.SecurityLAWResourceId -ControlName $msgTable.CtrName11 -MsgTable $msgTable -ReportTime $ReportTime -CBSSubscriptionName $vars.cbssubscriptionName -itsginfosecmon $vars.itsgcodesecmon -LAWRetention $vars.securityRetentionDays",
     "variables": [
       {
         "Name": "SecurityLAWResourceId",
@@ -771,8 +771,8 @@
         "Value": "CBSSubscriptionName"
       },
       {
-        "Name": "healthRetentionDays",
-        "Value": "healthRetentionDays"
+        "Name": "securityRetentionDays",
+        "Value": "securityRetentionDays"
       }
     ],
     "localVariables": [
