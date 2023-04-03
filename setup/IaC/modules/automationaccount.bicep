@@ -414,7 +414,7 @@ resource moduleExecutionPlanJson 'Microsoft.Automation/automationAccounts/variab
   parent: guardrailsAC
   name: 'moduleExecutionPlanJson'
   properties: {
-    isEncrypted: true
+    isEncrypted: false
     value: loadTextContent('../../modules.json')
   }
 }

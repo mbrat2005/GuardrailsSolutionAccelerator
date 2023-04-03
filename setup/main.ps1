@@ -6,9 +6,6 @@ param (
 
 Disable-AzContextAutosave -Scope Process | Out-Null
 
-# import functions from GR-Common into the current session - allows use of Get-AutomationVariable 
-. ../src/Guardrails-Common/GR-Common.psm1
-
 # Connects to Azure using the Automation Account's managed identity
 If (!$localExecution.IsPresent) {
     try {
@@ -61,7 +58,7 @@ Else {
 #Standard variables
 $WorkSpaceID = Get-GSAAutomationVariable -Name "WorkSpaceID" 
 $LogType = Get-GSAAutomationVariable -Name "LogType" 
-$GuardrailWorkspaceIDKeyName = Get-GSAAutomationVariable -Name "GuardrailWorkspaceIDKeyName" 
+$GuardrailWorkspaceIDKeyName = "WorkspaceKey" 
 $ResourceGroupName = Get-GSAAutomationVariable -Name "ResourceGroupName"
 # This is one of the valid date format (ISO-8601) that can be sorted properly in KQL
 $ReportTime = (get-date).tostring("yyyy-MM-dd HH:mm:ss")
@@ -80,8 +77,8 @@ Write-Output "Starting main runbooks."
 try {
     $errorActionPreference = 'stop'
 
-    Get-AutomationVariable -name moduleExecutionPlanJson
-    $modules = $modulesList | convertfrom-json
+    $modulesListJson = Get-AutomationVariable -name moduleExecutionPlanJson
+    $modules = [System.Web.Script.Serialization.JavaScriptSerializer]::new().Deserialize($modulesListJson, [psobject[]])
 }
 catch {
     throw "Failed to retrieve the Automaiton Account variable value for variable 'moduleExecutionPlanJson' or failed to convert the value to JSON. Error: $_"
