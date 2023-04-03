@@ -1,7 +1,7 @@
 param (
-    [parameter(Mandatory=$false, ParameterSetName='localexecution')][switch]$localExecution,
-    [parameter(Mandatory=$true, ParameterSetName='localexecution')][string]$keyVaultName,
-    [parameter(Mandatory=$false, ParameterSetName='localexecution')][string[]]$modulesToExecute
+    [switch]$localExecution,
+    [string]$keyVaultName,
+    [string[]]$modulesToExecute
 )
 
 Disable-AzContextAutosave -Scope Process | Out-Null
