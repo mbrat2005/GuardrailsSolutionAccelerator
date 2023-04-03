@@ -405,7 +405,7 @@ resource workspaceKey 'Microsoft.Automation/automationAccounts/variables@2022-08
   name: 'WorkspaceKey'
   properties: {
     isEncrypted: true
-    value: logAnalyticWorkspace.listKeys().primarySharedKey
+    value: '"${logAnalyticWorkspace.listKeys().primarySharedKey}"'
   }
 }
 
