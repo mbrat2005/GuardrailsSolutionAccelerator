@@ -400,7 +400,7 @@ resource logAnalyticWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-
   name: logAnalyticsWorkspaceName
 }
 
-resource workspaceKey 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment || updateCoreResources ) {
+resource workspaceKey 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment || updateCoreResources) {
   parent: guardrailsAC
   name: 'WorkspaceKey'
   properties: {
@@ -433,7 +433,7 @@ resource attestationVariable2 'Microsoft.Automation/automationAccounts/variables
   name: 'AuthSourceIPPolicyConfirm'
   properties: {
     isEncrypted: true
-    https://learn.microsoft.com/en-us/azure/virtual-machines/migration-classic-resource-manager-faq#i-backed-up-my-classic-vms-in-a-vault--can-i-migrate-my-vms-from-classic-mode-to-resource-manager-mode-and-protect-them-in-a-recovery-services-vault-
+    value: '"False"' 
   }
 }
 resource attestationVariable3 'Microsoft.Automation/automationAccounts/variables@2022-08-08' = if (newDeployment) {
