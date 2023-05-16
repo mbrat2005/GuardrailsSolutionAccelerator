@@ -30,6 +30,10 @@ param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
 param securityRetentionDays string 
+@secure()
+param breakglassAccount1 string = ''
+@secure()
+param breakglassAccount2 string = ''
 
 var containername = 'guardrailsstorage'
 var GRDocsBaseUrl='https://github.com/Azure/GuardrailsSolutionAccelerator/docs/'
@@ -78,6 +82,9 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
     location: location
     currentUserObjectId: currentUserObjectId
     automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
+    breakglassAccount1: breakglassAccount1
+    breakglassAccount2: breakglassAccount2
+    logAnalyticsWorkspaceName: split(LAW.outputs.logAnalyticsResourceId,'/')[8]
     vaultUri: vaultUri
     releaseVersion: releaseVersion
     releaseDate: releaseDate

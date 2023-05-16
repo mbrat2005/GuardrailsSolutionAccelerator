@@ -37,32 +37,32 @@ Function Deploy-GSACoreResources {
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
     Write-Verbose "Core resource bicep deployment complete!"
 
-    Write-Verbose "Adding workspacekey secret to key vault."
-    try {
-        $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsworkspaceName']).PrimarySharedKey
+    # Write-Verbose "Adding workspacekey secret to key vault."
+    # try {
+    #     $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsworkspaceName']).PrimarySharedKey
 
-        $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
-        $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "WorkSpaceKey" -SecretValue $secretvalue
-    }
-    catch { 
-        Write-Error "Error adding WS secret to KV. $_" 
-        break 
-    }
+    #     $secretvalue = ConvertTo-SecureString $workspaceKey -AsPlainText -Force 
+    #     $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "WorkSpaceKey" -SecretValue $secretvalue
+    # }
+    # catch { 
+    #     Write-Error "Error adding WS secret to KV. $_" 
+    #     break 
+    # }
 
-    Write-Verbose "Adding Breakglass account names to Key Vault"
-    try {
-        $ErrorActionPreference = 'Stop'
+    # Write-Verbose "Adding Breakglass account names to Key Vault"
+    # try {
+    #     $ErrorActionPreference = 'Stop'
 
-        $secretvalue = ConvertTo-SecureString $config.FirstBreakGlassAccountUPN -AsPlainText -Force 
-        $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA1" -SecretValue $secretvalue
+    #     $secretvalue = ConvertTo-SecureString $config.FirstBreakGlassAccountUPN -AsPlainText -Force 
+    #     $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA1" -SecretValue $secretvalue
 
-        $secretvalue = ConvertTo-SecureString $config.SecondBreakGlassAccountUPN -AsPlainText -Force 
-        $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA2" -SecretValue $secretvalue
-    }
-    catch {
-        Write-Error "Error adding Breakglass secrets to KeyVault. $_"
-        break
-    }
+    #     $secretvalue = ConvertTo-SecureString $config.SecondBreakGlassAccountUPN -AsPlainText -Force 
+    #     $secret = Set-AzKeyVaultSecret -VaultName $config['runtime']['keyVaultName'] -Name "BGA2" -SecretValue $secretvalue
+    # }
+    # catch {
+    #     Write-Error "Error adding Breakglass secrets to KeyVault. $_"
+    #     break
+    # }
 
     Write-Verbose "Granting Automation Account MSI permission to the Graph API"
     try {
