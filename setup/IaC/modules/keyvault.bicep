@@ -35,7 +35,7 @@ resource guardrailsKV 'Microsoft.KeyVault/vaults@2021-06-01-preview' = if (deplo
 }
 
 resource adminUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = if (currentUserObjectId != '') {
-  name: 'adminUserRoleAssignment'
+  name: 'c5a51db0-f2a7-4832-947e-32359393c190' //random guid 'adminUserRoleAssignment'
   scope: guardrailsKV
   properties: {
     // key vault administrator role definition id
@@ -45,7 +45,7 @@ resource adminUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-0
 }
 
 resource automationAccountRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (automationAccountMSI != '') {
-  name: 'automationAccountRoleAssignment'
+  name: '7b13d1ff-d722-4761-9473-701a9a481aa2' // random guid 'automationAccountRoleAssignment'
   scope: guardrailsKV
   properties: {
     // key vault secret user role definition id
