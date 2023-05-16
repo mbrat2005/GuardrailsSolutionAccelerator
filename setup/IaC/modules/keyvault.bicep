@@ -48,7 +48,7 @@ resource adminUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2020-0
   scope: guardrailsKV
   properties: {
     // key vault administrator role definition id
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions','8e3af657-a8ff-443c-a75c-2fe8c4bcb635')
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions','00482a5a-887f-4fb3-b363-3b7fe8e74483')
     principalId: currentUserObjectId
   }
 }
