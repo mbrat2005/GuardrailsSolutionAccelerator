@@ -37,38 +37,6 @@ Function Deploy-GSACoreResources {
     $config['guardrailsAutomationAccountMSI'] = $mainBicepDeployment.Outputs.guardrailsAutomationAccountMSI.value
     Write-Verbose "Core resource bicep deployment complete!"
 
-    # grant current user permissions to the new key vault
-    Write-Verbose "Adding current user '$($config['runtime']['userId'])' access to the GSA KeyVault..."
-    try { 
-        $kv = Get-AzKeyVault -ResourceGroupName $config['runtime']['resourceGroup'] -VaultName $config['runtime']['keyVaultName'] -ErrorAction Stop
-    }
-    catch { 
-        Write-Error "Error fetching KV '$($config['runtime']['KeyVaultName'])'. $_"
-        break 
-    }
-
-    try { 
-        $null = New-AzRoleAssignment -ObjectId $config['runtime']['userId'] -RoleDefinitionName "Key Vault Administrator" -Scope $kv.ResourceId -ErrorAction Stop
-    }
-    catch { 
-        Write-Error "Error assigning permissions to KV '$($config['runtime']['KeyVaultName'])'. $_"
-        break 
-    }
-
-    Write-Verbose "Sleeping 30 seconds to allow KeyVault permissions to be propagated."
-    Start-Sleep -Seconds 30
-
-    # Adds keyvault secret user permissions for the Automation account MSI
-    Write-Verbose "Adding automation account Keyvault Secret User."
-    try {
-        $null = New-AzRoleAssignment -ObjectId $config.guardrailsAutomationAccountMSI -RoleDefinitionName "Key Vault Secrets User" -Scope $kv.ResourceId
-    }
-    catch {
-        Write-Error "Error assigning permissions to Automation account (for keyvault). $_"
-        break
-    }
-    Write-Verbose "Completed adding user access to Key Vault"
-
     Write-Verbose "Adding workspacekey secret to key vault."
     try {
         $workspaceKey = (Get-AzOperationalInsightsWorkspaceSharedKey -ResourceGroupName $config['runtime']['resourceGroup'] -Name $config['runtime']['logAnalyticsworkspaceName']).PrimarySharedKey
@@ -159,10 +127,6 @@ Function Deploy-GSACoreResources {
         break
     }
     Write-Verbose "Completed granting Automation Account required permissions."
-
-    # sleep 60 seconds to ensure Automation Account delegations have applied before next steps
-    Write-Verbose "Sleeping 60 seconds to ensure Automation Account delegations have applied..."
-    Start-Sleep -Seconds 60
 
     Write-Verbose "Core resource deployment completed"
 }

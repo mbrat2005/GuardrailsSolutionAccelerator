@@ -51,6 +51,7 @@ Function New-GSACoreResourceDeploymentParamObject {
         'AllowedLocationPolicyId'               = $config.AllowedLocationPolicyId
         'automationAccountName'                 = $config['runtime']['autoMationAccountName']
         'CBSSubscriptionName'                   = $config.CBSSubscriptionName
+        'currentUserObjectId'                   = $config['runtime']['userId']
         'DepartmentNumber'                      = $config.DepartmentNumber
         'DepartmentName'                        = $config['runtime']['departmentName']
         'deployKV'                              = $config['runtime']['deployKV']

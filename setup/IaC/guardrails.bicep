@@ -4,6 +4,7 @@ targetScope = 'resourceGroup'
 param AllowedLocationPolicyId string = 'e56962a6-4747-49cd-b67b-bf8b01975c4c'
 param automationAccountName string = 'guardrails-AC'
 param CBSSubscriptionName string 
+param currentUserObjectId string = ''
 param ModuleBaseURL string
 param DepartmentNumber string
 param DepartmentName string
@@ -75,6 +76,8 @@ module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {
   params: {
     kvName: kvName
     location: location
+    currentUserObjectId: currentUserObjectId
+    automationAccountMSI: aa.outputs.guardrailsAutomationAccountMSI
     vaultUri: vaultUri
     releaseVersion: releaseVersion
     releaseDate: releaseDate
