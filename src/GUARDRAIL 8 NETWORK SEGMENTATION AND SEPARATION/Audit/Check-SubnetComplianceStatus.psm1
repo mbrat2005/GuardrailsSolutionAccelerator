@@ -67,7 +67,7 @@ function Get-SubnetComplianceInformation {
                         if ($subnet.Name -notin $allexcluded -and $subnet.Name -notin $ExcludedSubnetListFromTag) {
                             #checks NSGs
                             $ComplianceStatus = $false
-                            $Comments = $msgTable.noNSG
+                            $Comments = ''
                             if ($null -ne $subnet.NetworkSecurityGroup) {
                                 Write-Debug "Found $($subnet.NetworkSecurityGroup.Id.Split("/")[8]) NSG"
                                 #Add routine to analyze NSG regarding standard rules.
@@ -94,6 +94,9 @@ function Get-SubnetComplianceInformation {
                                     $Comments = $msgTable.nsgCustomRule
 
                                 }
+                            }
+                            else {
+                                $Comments = $msgTable.noNSG
                             }
                             $SubnetObject = [PSCustomObject]@{ 
                                 SubscriptionName = $sub.Name 
@@ -126,9 +129,9 @@ function Get-SubnetComplianceInformation {
                             $ComplianceStatus = $true
                             
                             If ($subnet.Name -in $reservedSubnetNames) {
-                                $Comments = $msgTable.subnetExcludedByReservedName -f $subnet.Name,$reservedSubnetNames
+                                $Comments = $msgTable.subnetExcludedByReservedName -f $subnet.Name,$ReservedSubnetList
                             }
-                            ElseIf ($subnet.Namt -in $ExcludedSubnetListFromTag) {
+                            ElseIf ($subnet.Name -in $ExcludedSubnetListFromTag) {
                                 $Comments = $msgTable.subnetExcludedByTag -f $subnet.Name,$VNet.Name,$ExcludedSubnetListTag
                             }
                         }
