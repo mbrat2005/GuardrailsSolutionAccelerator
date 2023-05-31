@@ -819,6 +819,7 @@
         "version": "KqlItem/1.0",
         "query": "let dt = GR_TenantInfo_CL | summarize max(ReportTime_s);\r\nGR_TenantInfo_CL\r\n| where ReportTime_s == toscalar (dt)\r\n| project [\"Cloud Usage Profiles\"] = iff(cloudUsageProfiles_s == 'default',toscalar(\"No Cloud Profile Data Found\"),cloudUsageProfiles_s),[\"Report Time\"]=toscalar (dt)",
         "size": 0,
+        "title": "Cloud Usage Profile Configuration",
         "timeContext": {
           "durationMs": 86400000
         },
