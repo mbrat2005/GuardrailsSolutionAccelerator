@@ -66,11 +66,12 @@ GuardrailsCompliance_CL
         "Working on $ws workspace."
         # Get latest report time for that Tenant
         try {
-            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project TenantDomain=TenantDomain_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A')"
+            $Query="GR_TenantInfo_CL | summarize arg_max(ReportTime_s, *) by TenantDomain_s | project TenantDomain=TenantDomain_s,TenantDomainName=DepartmentTenantName_s, DepartmentName=column_ifexists('DepartmentName_s','N/A'), DepartmentNumber=column_ifexists('DepartmentNumber_s','N/A')"
             $resultsArray = [System.Linq.Enumerable]::ToArray((Invoke-AzOperationalInsightsQuery -WorkspaceId $ws -Query $Query -errorAction SilentlyContinue).Results)   
             $TenantDomain=$resultsArray[0].TenantDomain
             $DepartmentName=$resultsArray[0].DepartmentName
             $DepartmentNumber=$resultsArray[0].DepartmentNumber
+            $DepartmentTenantName=$resultsArray[0].TenantDomainName
         }
         catch {
             "Error reading info from $ws workspace."
@@ -123,6 +124,7 @@ GuardrailsCompliance_CL
                         $tempArray | Add-Member -MemberType NoteProperty -Name TenantDomain -Value $TenantDomain -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentName -Value $DepartmentName -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentNumber -Value $DepartmentNumber -Force | Out-Null
+                        $tempArray | Add-Member -MemberType NoteProperty -Name DepartmentTenantName -Value $DepartmentTenantName -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name ReportTime -Value $ReportTime -Force | Out-Null
                         $tempArray | Add-Member -MemberType NoteProperty -Name WSId -Value $ws -Force 
                         if ($DebugInfo) { $tempArray}
