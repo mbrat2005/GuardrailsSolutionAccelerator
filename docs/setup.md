@@ -57,7 +57,7 @@ All named resources will have the first 6 characters of the tenant Id appended t
 |logAnalyticsworkspaceName| name prefix for the Log Analytics workspace| True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
 |autoMationAccountName| Name prefix for the Automation Account | True | 'guardrails' | '^[a-z0-9][a-z0-9-_]{2,64}$' |
 |FirstBreakGlassAccountUPN| User principal name of the first break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
-|FirstBreakGlassAccountUPN| User principal name of the first break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
+|SecondBreakGlassAccountUPN| User principal name of the second break glass account (ex: breakglass@contoso.com) | True | | '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' |
 |PBMMPolicyID|Guid of the PBMM applied policy. 4c4a5f27-de81-430b-b4e5-9cbd50595a87 is the default Id but a customized version may have been used.| True |'4c4a5f27-de81-430b-b4e5-9cbd50595a87' | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
 |AllowedLocationPolicyId|Guid for the Allowed Location policy. e56962a6-4747-49cd-b67b-bf8b01975c4c is the default| True |'e56962a6-4747-49cd-b67b-bf8b01975c4c' | '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$' |
 |DepartmentNumber| The office Government of Canada department number - see: https://open.canada.ca/data/en/dataset/22090865-f8a6-4b83-9bad-e9d61f26a821 | True | | integer 1-999 |
