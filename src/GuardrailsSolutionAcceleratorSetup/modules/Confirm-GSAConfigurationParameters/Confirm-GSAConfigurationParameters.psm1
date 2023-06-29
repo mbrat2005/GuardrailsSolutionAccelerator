@@ -130,6 +130,7 @@ Function Confirm-GSAConfigurationParameters {
     }
 
     # verify params match expected patterns
+    Write-Verbose "Validating parameters in config file/string..."
     $paramsValidationTable = @{
         keyVaultName                      = @{
             IsRequired        = $true
@@ -225,6 +226,8 @@ Function Confirm-GSAConfigurationParameters {
         $paramName = $configParam.Key
         $paramValue = $configParam.Value
         $paramValidation = $paramsValidationTable[$paramName]
+
+        Write-Verbose "Validating parameter '$paramName' wtih value '$paramValue'..."
         if ($paramValidation -eq $null) {
             Write-Warning "Parameter '$paramName' is not a valid configuration parameter or has not been added to the `$paramsValidationTable above yet."
             continue
@@ -245,16 +248,6 @@ Function Confirm-GSAConfigurationParameters {
             Write-Error "Parameter '$paramName' value '$paramValue' does not match the expected pattern '$($paramValidation.ValidationPattern)'."
             break
         }
-    }
-
-    # verify standard config parameters
-    if ($config.SecurityLAWResourceId.split("/").Count -ne 9) {
-        Write-Output "Error in SecurityLAWResourceId ID ('$($config.SecurityLAWResourceId)'). Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
-        Break
-    }
-    if ( $config.HealthLAWResourceId.Split("/").Count -ne 9) {
-        Write-Output "Error in HealthLAWResourceId ID ('$($config.HealthLAWResourceId)'). Parameter needs to be a full resource Id. (/subscriptions/<subid>/...)"
-        Break
     }
 
     # verify that Department Number has an associated Department Name, get name value for AA variable
