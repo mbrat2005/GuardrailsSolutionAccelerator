@@ -218,7 +218,7 @@ Function Confirm-GSAConfigurationParameters {
         }
         cloudUsageProfiles                = @{
             IsRequired        = $false
-            ValidationList = @('default', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10')
+            ValidationPattern = '^default|([0-9](,[0-9]){0,9})$'
         }
     }
 
