@@ -46,12 +46,16 @@ Function Confirm-GSAPrerequisites {
             If ($rpStatus.RegistrationState -eq 'Registered') {
                 Write-Verbose "`t`tResource provider '$_' is already registered."
             }
+            ElseIf ($_ -in ("Microsoft.Storage", "Microsoft.KeyVault")) {
+                Write-Verbose "`t`tRegistering resource provider '$_', waiting for completion."
+                Register-AzResourceProvider -ProviderNamespace $_ | Out-Null
+            }
             Else {
                 Write-Verbose "`t`tRegistering resource provider '$_' as background job."
                 Register-AzResourceProvider -ProviderNamespace $_ -AsJob | Out-Null
             }
         }
-        
+
         # confirm that target resources do not already exist
 
         ## storage account
