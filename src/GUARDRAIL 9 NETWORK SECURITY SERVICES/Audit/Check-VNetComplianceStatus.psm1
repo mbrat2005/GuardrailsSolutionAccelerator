@@ -34,21 +34,45 @@ function Get-VNetComplianceInformation {
     if ($null -ne $ExcludedVNets) {
         $ExcludedVNetsList = $ExcludedVNets.Split(",")
     }
-    foreach ($sub in $subs) {
-        Write-Verbose "Selecting subscription..."
-        Select-AzSubscription -SubscriptionObject $sub | Out-Null
-        
-        $allVNETs = Get-AzVirtualNetwork
-        $includedVNETs = $allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' }
-        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
+
+    $graphQuery = @"
+    resourcecontainers | 
+    where type == 'microsoft.resources/subscriptions' | 
+    project subscriptionId, subscriptionName = name |
+    join kind=leftouter (
+        resources | 
+            where type == 'microsoft.network/virtualnetworks' | 
+            project name, id, enableDdosProtection = properties.enableDdosProtection, DdosProtectionPlanId = properties.DdosProtectionPlan.id, tags, subscriptionId
+    ) on subscriptionId
+"@
+
+    $vnets = @()
+    $allVNETs = @()
+
+    $vnets = Search-AzGraph -Query $graphQuery -UseTenantScope
+    $allVNETs += $vnets
+    # resource graph returns pages of 100 resources, if there are more than 100 resources in a batch, recursively query for more
+    while ($vnets.count -eq 100 -and $vnets.SkipToken) {
+        $vnets = Search-AzGraph -query $graphQuery -skipToken $vnets.SkipToken
+        $allVNETs += $vnets
+    }
+
+    $allVNETsGrouped = $allVNETs | Group-Object -Property subscriptionName
+
+    ForEach ($subscriptionVNETGroup in $allVNETsGrouped) {
+        Write-Verbose "Working on subscription '$($subscriptionVNETGroup.Name)'"
+
+        $allSubscriptionVNETs = $subscriptionVNETGroup.Group
+        $includedVNETs = $allSubscriptionVNETs | Where-Object { $_.tags.$ExcludeVnetTag -ine 'true' }
+        Write-Debug "Found $($allSubscriptionVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag."
 
         if ($includedVNETs.count -gt 0) {
-            foreach ($VNet in $allVNETs) {
+            foreach ($VNet in $allSubscriptionVNETs) {
                 Write-Debug "Working on $($VNet.Name) VNet..."
                 if ($vnet.Name -notin $ExcludedVNetsList -and $vnet.id -in $includedVNETs.id) {
                     if ($Vnet.EnableDdosProtection) {
                         $ComplianceStatus = $true 
-                        $Comments = "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlan.Id)"
+                        $Comments = "$($msgTable.ddosEnabled) $($VNet.DdosProtectionPlanId)"
                     }
                     else {
                         $ComplianceStatus = $false
@@ -57,7 +81,7 @@ function Get-VNetComplianceInformation {
                     # Create PSOBject with Information.
                     $VNetObject = [PSCustomObject]@{ 
                         VNETName         = $VNet.Name
-                        SubscriptionName = $sub.Name 
+                        SubscriptionName = $VNet.subscriptionName
                         ComplianceStatus = $ComplianceStatus
                         Comments         = $Comments
                         ItemName         = $msgTable.vnetDDosConfig
@@ -70,7 +94,7 @@ function Get-VNetComplianceInformation {
                 else {
                     Write-Verbose "Excluding $($VNet.Name) (Tag or parameter)."
                     $ComplianceStatus = $true
-                    
+                
                     If ($VNet.Name -in $ExcludedVNetsList) {
                         $Comments = $msgTable.vnetExcludedByParameter -f $Vnet.name, $ExcludedVNets
                     }
@@ -81,7 +105,7 @@ function Get-VNetComplianceInformation {
                     # Create PSOBject with Information.
                     $VNetObject = [PSCustomObject]@{ 
                         VNETName         = $VNet.Name
-                        SubscriptionName = $sub.Name 
+                        SubscriptionName = $VNet.subscriptionName
                         ComplianceStatus = $ComplianceStatus
                         Comments         = $Comments
                         ItemName         = $msgTable.vnetDDosConfig
@@ -98,7 +122,7 @@ function Get-VNetComplianceInformation {
             $ComplianceStatus = $true
             $Comments = "$($msgTable.noVNets) - $($sub.Name)"
             $VNETObject = [PSCustomObject]@{ 
-                SubscriptionName = $sub.Name 
+                SubscriptionName = $subscriptionVNETGroup.Name
                 SubnetName       = $msgTable.noVNets
                 ComplianceStatus = $ComplianceStatus
                 Comments         = $Comments
@@ -110,6 +134,7 @@ function Get-VNetComplianceInformation {
             $VNETList.add($VNETObject) | Out-Null
         }
     }
+    
     if ($debuginfo) { 
         Write-Output "Listing $($VNetList.Count) List members."
         $VNetList | Write-Output "VNet: $($_.VNETName) - Compliant: $($_.ComplianceStatus) Comments: $($_.Comments)" 
