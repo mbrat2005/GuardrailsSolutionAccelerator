@@ -293,8 +293,8 @@ resource module14 'modules' = if (newDeployment || updatePSModules) {
     name: 'Az.ResourceGraph'
     properties: {
       contentLink: {
-        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.0.13.0.nupkg'
-        version: '0.13.0'
+        uri: 'https://devopsgallerystorage.blob.core.windows.net:443/packages/az.resourcegraph.0.12.0.nupkg'
+        version: '0.12.0'
       }
     }
   }
