@@ -49,11 +49,11 @@ function Get-VNetComplianceInformation {
     $vnets = @()
     $allVNETs = @()
 
-    $vnets = Search-AzGraph -Query $graphQuery -UseTenantScope
+    $vnets = Search-AzGraph -Query $graphQuery -Subscription $subs.Id
     $allVNETs += $vnets
     # resource graph returns pages of 100 resources, if there are more than 100 resources in a batch, recursively query for more
     while ($vnets.count -eq 100 -and $vnets.SkipToken) {
-        $vnets = Search-AzGraph -query $graphQuery -skipToken $vnets.SkipToken
+        $vnets = Search-AzGraph -query $graphQuery -skipToken $vnets.SkipToken -Subscription $subs.Id
         $allVNETs += $vnets
     }
 
