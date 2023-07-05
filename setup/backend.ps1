@@ -35,6 +35,7 @@ $Locale=Get-GSAAutomationVariable -Name "GuardRailsLocale"
 $lighthouseTargetManagementGroupID = Get-GSAAutomationVariable -Name lighthouseTargetManagementGroupID -ErrorAction SilentlyContinue
 $DepartmentName = Get-GSAAutomationVariable -Name "DepartmentName" 
 $DepartmentNumber = Get-GSAAutomationVariable -Name "DepartmentNumber" 
+$cloudUsageProfiles = Get-GSAAutomationVariable -Name "cloudUsageProfiles"
 
 # Connects to Azure using the Automation Account's managed identity
 try {

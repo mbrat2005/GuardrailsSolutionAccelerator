@@ -30,6 +30,7 @@ param updateCoreResources bool = false
 param updatePSModules bool = false
 param updateWorkbook bool = false
 param securityRetentionDays string 
+param cloudUsageProfiles string = 'default'
 @secure()
 param breakglassAccount1 string = ''
 @secure()
@@ -42,8 +43,10 @@ var rg=resourceGroup().name
 
 //Resources:
 //KeyVault
-module telemetry './nested_telemetry.bicep' = if (DeployTelemetry) {
-  name: 'pid-9c273620-d12d-4647-878a-8356201c7fe8'
+var telemetryInfo = json(loadTextContent('./modules/telemetry.json'))
+
+module telemetry './nested_telemetry.bicep' =  if (telemetryInfo.customerUsageAttribution.enabled) {
+  name: telemetryInfo.customerUsageAttribution.SolutionIdentifier
   params: {}
 }
 module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModules || updateCoreResources) {
@@ -73,6 +76,7 @@ module aa 'modules/automationaccount.bicep' = if (newDeployment || updatePSModul
     updatePSModules: updatePSModules
     updateCoreResources: updateCoreResources
     securityRetentionDays: securityRetentionDays
+    cloudUsageProfiles: cloudUsageProfiles
   }
 }
 module KV 'modules/keyvault.bicep' = if (newDeployment && deployKV) {

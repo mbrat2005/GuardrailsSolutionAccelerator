@@ -242,6 +242,9 @@ Function Add-TenantInfo {
         $DepartmentNumber,
         [Parameter(Mandatory = $true)]
         [string]
+        $cloudUsageProfiles,
+        [Parameter(Mandatory = $true)]
+        [string]
         $tenantName
     )
     $tenantInfo = Get-GSAAutomationVariable("tenantDomainUPN")
@@ -253,6 +256,7 @@ Function Add-TenantInfo {
         ReportTime         = $ReportTime
         DepartmentName     = $DepartmentName
         DepartmentNumber   = $DepartmentNumber
+        cloudUsageProfiles = $cloudUsageProfiles
     }
     if ($debug) { Write-Output $tenantInfo }
     $JSON = ConvertTo-Json -inputObject $object
