@@ -36,14 +36,14 @@ function Get-VNetComplianceInformation {
     }
 
     $graphQuery = @"
-    resourcecontainers | 
-    where type == 'microsoft.resources/subscriptions' | 
-    project subscriptionId, subscriptionName = name |
-    join kind=leftouter (
-        resources | 
-            where type == 'microsoft.network/virtualnetworks' | 
-            project name, id, enableDdosProtection = properties.enableDdosProtection, DdosProtectionPlanId = properties.DdosProtectionPlan.id, tags, subscriptionId
-    ) on subscriptionId
+        resourcecontainers | 
+        where type == 'microsoft.resources/subscriptions' | 
+        project subscriptionId, subscriptionName = name |
+        join kind=leftouter (
+            resources | 
+                where type == 'microsoft.network/virtualnetworks' | 
+                project name, id, enableDdosProtection = properties.enableDdosProtection, DdosProtectionPlanId = properties.DdosProtectionPlan.id, tags, subscriptionId
+        ) on subscriptionId
 "@
 
     $vnets = @()

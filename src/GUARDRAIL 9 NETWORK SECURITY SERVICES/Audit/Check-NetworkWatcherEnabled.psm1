@@ -35,65 +35,92 @@ function Get-NetworkWatcherStatus {
     {
         $ExcludedVNetsList=$ExcludedVNets.Split(",")
     }
-    foreach ($sub in $subs)
-    {
-        Write-Verbose "Selecting subscription..."
-        Select-AzSubscription -SubscriptionObject $sub | Out-Null
+
+    $graphQuery = @"
+        resourcecontainers | 
+        where type == 'microsoft.resources/subscriptions' | 
+        project subscriptionId, subscriptionName = name |
+        join kind=leftouter (
+            resources | 
+                where type == 'microsoft.network/virtualnetworks' | 
+                project vNetName = name, vnetId = id, location, vnetTags = tags, subscriptionId |
+                join kind=leftouter (
+                    resources | 
+                        where type == 'microsoft.network/networkwatchers' | 
+                        project networkWatcherName = name, location, subscriptionId
+                        ) on location, subscriptionId
+        ) on subscriptionId |
+        project-away subscriptionId1,subscriptionId2,location1
+"@
         
-        $allVNETs=Get-AzVirtualNetwork
-        $includedVNETs=$allVNETs | Where-Object { $_.Tag.$ExcludeVnetTag -ine 'true' -and $_.Name -notin $ExcludedVNetsList }
-        Write-Debug "Found $($allVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag or -ExcludedVNets parameter."
+        $vnets = @()
+        $allVNETs = @()
 
-        $nonExcludedVnetRegions = @()
-        if ($includedVNETs.count -gt 0)
-        {
-            foreach ($VNet in $includedVNETs)
+        $vnets = Search-AzGraph -Query $graphQuery -Subscription $subs.Id
+        $allVNETs += $vnets
+        # resource graph returns pages of 100 resources, if there are more than 100 resources in a batch, recursively query for more
+        while ($vnets.count -eq 100 -and $vnets.SkipToken) {
+            $vnets = Search-AzGraph -query $graphQuery -skipToken $vnets.SkipToken -Subscription $subs.Id
+            $allVNETs += $vnets
+        }
+
+        # create grouping of vnets by subscription
+        $allVNETsGrouped = $allVNETs | Group-Object -Property subscriptionName
+
+        ForEach ($subscriptionVNETGroup in $allVNETsGrouped) {
+            Write-Verbose "Working on subscription '$($subscriptionVNETGroup.Name)'"
+
+            $allSubscriptionVNETs = $subscriptionVNETGroup.Group
+
+            $includedVNETs=$allSubscriptionVNETs | Where-Object { $_.vnetTags.$ExcludeVnetTag -ine 'true' -and $_.vnetName -notin $ExcludedVNetsList }
+            Write-Debug "Found $($allSubscriptionVNETs.count) VNets total; $($includedVNETs.count) not excluded by tag or -ExcludedVNets parameter."
+
+            if ($includedVNETs.count -gt 0)
             {
-                Write-Debug "Working on VNET '$($VNet.Name)'..."
-                # add vnet region to regions list - used in checking for network watcher in that region
-                $nonExcludedVnetRegions += $VNet.Location  
-            }
+                # create grouping of vnets by region
+                $subscriptionVNETsGrouped = $includedVNETs | Group-Object -Property location
 
-            # check if network watcher is enabled in the region
-            $comments = $null
-            $ComplianceStatus = $false
-            ForEach ($region in ($nonExcludedVnetRegions | Get-Unique)) {
-                $nw = Get-AzNetworkWatcher -Location $region -ErrorAction SilentlyContinue
-                if ($nw) {
-                    $ComplianceStatus = $true 
-                    $Comments= $msgTable.networkWatcherEnabled -f $region
+                # check if network watcher is enabled in the region
+                ForEach ($vnetRegion in $subscriptionVNETsGrouped) {
+                    Write-Verbose "Working on region '$($vnetRegion.Name)' '$($vnetRegion.Group.networkWatcherName -join ',')'"
+
+                    If (![String]::IsNullOrEmpty($vnetRegion.Group.networkWatcherName)) {
+                        # region has network watcher enabled and is compliant
+                        $ComplianceStatus = $true 
+                        $Comments= $msgTable.networkWatcherEnabled -f $vnetRegion.Name
+                    }
+                    Else {
+                        # region does not have network watcher enabled and is not compliant
+                        $ComplianceStatus = $false
+                        $Comments = $msgTable.networkWatcherNotEnabled -f $vnetRegion.Name
+                    }
+                    # Create PSOBject with Information.
+                    $RegionObject = [PSCustomObject]@{ 
+                        SubscriptionName  = $subscriptionVNETGroup.Name
+                        ComplianceStatus = $ComplianceStatus
+                        Comments = $Comments
+                        ItemName = $msgTable.networkWatcherConfig
+                        itsgcode = $itsgcode
+                        ControlName = $ControlName
+                        ReportTime = $ReportTime
+                    }
+                    $RegionList.add($RegionObject) | Out-Null 
                 }
-                else {
-                    $ComplianceStatus = $false
-                    $Comments = $msgTable.networkWatcherNotEnabled -f $region
-                }
-                # Create PSOBject with Information.
+            }
+            else {
+                $ComplianceStatus = $true
                 $RegionObject = [PSCustomObject]@{ 
-                    SubscriptionName  = $sub.Name 
+                    SubscriptionName  = $subscriptionVNETGroup.Name
                     ComplianceStatus = $ComplianceStatus
                     Comments = $Comments
-                    ItemName = $msgTable.networkWatcherConfig
+                    ItemName = $msgTable.networkWatcherConfigNoRegions
                     itsgcode = $itsgcode
                     ControlName = $ControlName
                     ReportTime = $ReportTime
                 }
-                $RegionList.add($RegionObject) | Out-Null                               
+                $RegionList.add($RegionObject) | Out-Null   
             }
         }
-        else {
-            $ComplianceStatus = $true
-            $RegionObject = [PSCustomObject]@{ 
-                SubscriptionName  = $sub.Name 
-                ComplianceStatus = $ComplianceStatus
-                Comments = $Comments
-                ItemName = $msgTable.networkWatcherConfigNoRegions
-                itsgcode = $itsgcode
-                ControlName = $ControlName
-                ReportTime = $ReportTime
-            }
-            $RegionList.add($RegionObject) | Out-Null   
-        }
-    }
     if ($debuginfo){ 
         Write-Output "Listing $($RegionList.Count) List members."
     }
