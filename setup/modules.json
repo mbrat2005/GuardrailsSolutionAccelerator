@@ -323,8 +323,9 @@
         "Value": "AC2(4)"
       }
     ]
-  },{
-    "ModuleName": "Check-ServicePrincipalName",
+  },
+  {
+    "ModuleName": "Check-ServicePrincipalNameSecrets",
     "Control": "Guardrails4",
     "ModuleType": "Builtin",
     "Status": "Enabled",
@@ -349,7 +350,7 @@
     "ModuleType": "Builtin",
     "Status": "Enabled",
     "Required": "True",
-    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName3 -ItemName $msgTable.CSPMEncryptedEmailConfirmation -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
+    "Script": "Check-DocumentExistsInStorage -StorageAccountName $vars.storageaccountname -ContainerName $vars.containerName -ResourceGroupName $ResourceGroupName -SubscriptionID $SubID -DocumentName $vars.DocumentName -ControlName $msgTable.CtrName4 -ItemName $msgTable.CSPMEncryptedEmailConfirmation -MsgTable $msgTable -ReportTime $ReportTime -itsgcode $vars.itsgcode",
     "variables": [
       {
         "Name": "storageAccountName",
