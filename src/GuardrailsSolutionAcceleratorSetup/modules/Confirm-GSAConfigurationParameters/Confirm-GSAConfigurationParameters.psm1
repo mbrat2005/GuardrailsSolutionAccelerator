@@ -181,7 +181,7 @@ Function Confirm-GSAConfigurationParameters {
             ValidationPattern = '^([a-zA-Z0-9][a-zA-Z0-9-_]{2,128})|(N/A)$'
         }
         SSCReadOnlyServicePrincipalNameAPPID = @{
-            IsRequired        = $false
+            IsRequired        = $true
             ValidationByType = 'guid'
         }
         SecurityLAWResourceId             = @{
